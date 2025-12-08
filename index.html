@@ -113,8 +113,22 @@
             <!-- Sol Panel - Ayarlar -->
             <div class="left-panel">
                 <div class="section">
-                    <h3>📝 Nick Yazısı</h3>
-                    <input type="text" id="nickInput" placeholder="Nickinizi yazın..." value="SevDa">
+                    <h3>📝 Yazı Katmanları</h3>
+                    <div class="layer-manager">
+                        <button onclick="maker.addTextLayer()" class="add-layer-btn">➕ Yeni Yazı Ekle</button>
+                        <div id="textLayerList" class="text-layer-list"></div>
+                    </div>
+                    <div class="layer-extra-controls">
+                        <label>🔄 Döndür: <span id="layerRotationVal">0</span>°</label>
+                        <input type="range" id="layerRotation" min="-180" max="180" value="0">
+                        <label>💫 Opaklık: <span id="layerOpacityVal">100</span>%</label>
+                        <input type="range" id="layerOpacity" min="0" max="100" value="100">
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>✏️ Aktif Yazı Düzenle</h3>
+                    <input type="text" id="nickInput" placeholder="Yazıyı girin..." value="SevDa">
                     <div class="nick-suggestions">
                         <small>Öneriler:</small>
                         <span onclick="setNick('★SevDa★')">★SevDa★</span>
@@ -607,6 +621,107 @@
                     
                     <label>Blur Gücü: <span id="blurBrushStrengthVal">10</span></label>
                     <input type="range" id="blurBrushStrength" min="2" max="25" value="10">
+                </div>
+
+                <!-- Fotoğraf Overlay Efektleri -->
+                <div class="section">
+                    <h3>🎨 Fotoğraf Overlay Efektleri</h3>
+                    
+                    <label>Overlay Türü:</label>
+                    <select id="photoOverlay">
+                        <option value="none">Kapalı</option>
+                        <option value="gradient-blue">🔵 Mavi Gradient</option>
+                        <option value="gradient-red">🔴 Kırmızı Gradient</option>
+                        <option value="gradient-purple">🟣 Mor Gradient</option>
+                        <option value="gradient-green">🟢 Yeşil Gradient</option>
+                        <option value="gradient-orange">🟠 Turuncu Gradient</option>
+                        <option value="duotone-cyan">🎭 Duotone Cyan</option>
+                        <option value="duotone-pink">💕 Duotone Pink</option>
+                        <option value="vignette">⚫ Vignette (Köşe Karart)</option>
+                        <option value="light-leak">☀️ Light Leak</option>
+                        <option value="film-grain">📹 Film Grain</option>
+                        <option value="glow">✨ Glow</option>
+                    </select>
+                    
+                    <label>Overlay Yoğunluğu: <span id="overlayIntensityVal">50</span>%</label>
+                    <input type="range" id="overlayIntensity" min="0" max="100" value="50">
+                    
+                    <label>Özel Renk Overlay:</label>
+                    <input type="color" id="customOverlayColor" value="#ff00ff">
+                    
+                    <label>Renk Overlay Modu:</label>
+                    <select id="colorOverlayMode">
+                        <option value="none">Kapalı</option>
+                        <option value="multiply">Multiply</option>
+                        <option value="screen">Screen</option>
+                        <option value="overlay">Overlay</option>
+                        <option value="soft-light">Soft Light</option>
+                        <option value="color">Color</option>
+                    </select>
+                </div>
+
+                <!-- Fotoğraf Animasyon -->
+                <div class="section">
+                    <h3>🎬 Fotoğraf Animasyonu</h3>
+                    
+                    <label>Animasyon Türü:</label>
+                    <select id="photoAnimation">
+                        <option value="none">Kapalı</option>
+                        <option value="zoom-in">🔍 Zoom In</option>
+                        <option value="zoom-out">🔎 Zoom Out</option>
+                        <option value="zoom-pulse">💫 Zoom Pulse</option>
+                        <option value="pan-left">⬅️ Pan Left</option>
+                        <option value="pan-right">➡️ Pan Right</option>
+                        <option value="pan-up">⬆️ Pan Up</option>
+                        <option value="pan-down">⬇️ Pan Down</option>
+                        <option value="pan-circle">🔄 Pan Circle</option>
+                        <option value="rotate-cw">🔄 Rotate Clockwise</option>
+                        <option value="rotate-ccw">🔃 Rotate Counter</option>
+                        <option value="rotate-swing">↔️ Rotate Swing</option>
+                        <option value="pulse">💓 Pulse</option>
+                        <option value="shake">📳 Shake</option>
+                        <option value="wave">🌊 Wave</option>
+                        <option value="bounce">⚽ Bounce</option>
+                        <option value="float">☁️ Float</option>
+                        <option value="wobble">🎭 Wobble</option>
+                        <option value="flip-h">↔️ Flip Horizontal</option>
+                        <option value="flip-v">↕️ Flip Vertical</option>
+                    </select>
+                    
+                    <label>Animasyon Hızı: <span id="photoAnimSpeedVal">3</span></label>
+                    <input type="range" id="photoAnimSpeed" min="1" max="10" value="3">
+                    
+                    <button onclick="previewPhotoAnimation()" style="width: 100%; padding: 10px; margin-top: 8px; background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 8px; color: #fff; cursor: pointer; font-weight: bold;">
+                        ▶️ Önizle
+                    </button>
+                </div>
+
+                <!-- Split Layout (Fotoğraf + Yazı) -->
+                <div class="section">
+                    <h3>📐 Split Layout</h3>
+                    
+                    <label>Layout Modu:</label>
+                    <select id="splitLayout">
+                        <option value="none">Normal (Tam)</option>
+                        <option value="left-right">↔️ Sol Foto / Sağ Yazı</option>
+                        <option value="right-left">↔️ Sağ Foto / Sol Yazı</option>
+                        <option value="top-bottom">↕️ Üst Foto / Alt Yazı</option>
+                        <option value="bottom-top">↕️ Alt Foto / Üst Yazı</option>
+                        <option value="diagonal">📐 Diagonal Split</option>
+                    </select>
+                    
+                    <label>Bölme Oranı: <span id="splitRatioVal">50</span>%</label>
+                    <input type="range" id="splitRatio" min="30" max="70" value="50">
+                    
+                    <label><input type="checkbox" id="splitBorder"> Bölme Çizgisi Göster</label>
+                    
+                    <label>Fotoğraf Tarafı Efekti:</label>
+                    <select id="photoSideEffect">
+                        <option value="none">Normal</option>
+                        <option value="blur-bg">Blur Arka Plan</option>
+                        <option value="zoom-in">Zoom In</option>
+                        <option value="pan">Pan Effect</option>
+                    </select>
                 </div>
             </div>
 

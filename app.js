@@ -14,6 +14,37 @@ class FlashNickMaker {
         this.sparkles = [];
         this.sparkleFrame = 0;
         
+        // Çoklu text öğeleri
+        this.textLayers = [
+            {
+                id: 1,
+                text: 'SevDa',
+                fontFamily: 'Lobster',
+                fontSize: 40,
+                textColor: '#ffffff',
+                shadowColor: '#000000',
+                shadowBlur: 5,
+                outlineColor: '#000000',
+                outlineWidth: 2,
+                gradientColor1: '#ff0000',
+                gradientColor2: '#ffff00',
+                effectGlow: false,
+                effectOutline: true,
+                effectGradient: false,
+                effect3D: false,
+                textX: 50,
+                textY: 50,
+                textBlendMode: 'source-over',
+                warpType: 'none',
+                warpAmount: 0.35,
+                textAnimationType: 'none',
+                rotation: 0,
+                opacity: 100,
+                visible: true
+            }
+        ];
+        this.activeTextLayer = 1;
+        
         this.settings = {
             text: 'SevDa',
             fontFamily: 'Lobster',
@@ -85,10 +116,23 @@ class FlashNickMaker {
             imageCropX: 0,             // Kırpma X başlangıç (%)
             imageCropY: 0,             // Kırpma Y başlangıç (%)
             imageCropWidth: 100,       // Kırpma genişlik (%)
-            imageCropHeight: 100       // Kırpma yükseklik (%)
+            imageCropHeight: 100,      // Kırpma yükseklik (%)
+            // Fotoğraf overlay ve animasyon
+            photoOverlay: 'none',
+            overlayIntensity: 50,
+            customOverlayColor: '#ff00ff',
+            colorOverlayMode: 'none',
+            photoAnimation: 'none',
+            photoAnimSpeed: 3,
+            splitLayout: 'none',
+            splitRatio: 50,
+            splitBorder: false,
+            photoSideEffect: 'none'
         };
 
         this.textAnimationFrame = null;
+        this.photoAnimationFrame = null;
+        this.photoAnimPhase = 0;
         this.scrollAnimationFrame = null;
         this.flagAnimationFrame = null;
         this.flagPhase = 0;
@@ -266,6 +310,7 @@ class FlashNickMaker {
         // Text input
         document.getElementById('nickInput').addEventListener('input', (e) => {
             this.settings.text = e.target.value;
+            this.updateActiveLayer();
             this.initSparkles();
             this.render();
         });
@@ -273,6 +318,7 @@ class FlashNickMaker {
         // Font family
         document.getElementById('fontFamily').addEventListener('change', (e) => {
             this.settings.fontFamily = e.target.value;
+            this.updateActiveLayer();
             this.render();
         });
 
@@ -280,6 +326,7 @@ class FlashNickMaker {
         document.getElementById('fontSize').addEventListener('input', (e) => {
             this.settings.fontSize = parseInt(e.target.value);
             document.getElementById('fontSizeVal').textContent = e.target.value;
+            this.updateActiveLayer();
             this.render();
         });
 
@@ -335,21 +382,25 @@ class FlashNickMaker {
         // Effects
         document.getElementById('effectGlow').addEventListener('change', (e) => {
             this.settings.effectGlow = e.target.checked;
+            this.updateActiveLayer();
             this.render();
         });
 
         document.getElementById('effectOutline').addEventListener('change', (e) => {
             this.settings.effectOutline = e.target.checked;
+            this.updateActiveLayer();
             this.render();
         });
 
         document.getElementById('effectGradient').addEventListener('change', (e) => {
             this.settings.effectGradient = e.target.checked;
+            this.updateActiveLayer();
             this.render();
         });
 
         document.getElementById('effect3D').addEventListener('change', (e) => {
             this.settings.effect3D = e.target.checked;
+            this.updateActiveLayer();
             this.render();
         });
 
@@ -372,12 +423,14 @@ class FlashNickMaker {
         document.getElementById('textX').addEventListener('input', (e) => {
             this.settings.textX = parseInt(e.target.value);
             document.getElementById('textXVal').textContent = e.target.value;
+            this.updateActiveLayer();
             this.render();
         });
 
         document.getElementById('textY').addEventListener('input', (e) => {
             this.settings.textY = parseInt(e.target.value);
             document.getElementById('textYVal').textContent = e.target.value;
+            this.updateActiveLayer();
             this.render();
         });
 
@@ -761,9 +814,17 @@ class FlashNickMaker {
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+        // Split layout kontrolü
+        if (this.settings.splitLayout !== 'none' && this.bgImage) {
+            this.drawSplitLayout(ctx, canvas, offset, hueShift, particleFrame, sparkleFrame, transparent);
+            return;
+        }
+
         // Draw background (skip if transparent export)
         if (!transparent) {
             this.drawBackground(ctx, canvas, hueShift);
+            // Photo overlay efektlerini uygula
+            this.applyPhotoOverlay(ctx, canvas);
         }
 
         // Draw frame (behind everything)
@@ -3015,17 +3076,37 @@ class FlashNickMaker {
     }
 
     drawText(ctx, canvas, offset = { x: 0, y: 0 }, hueShift = 0) {
-        const text = this.settings.text;
-        ctx.font = `${this.settings.fontSize}px "${this.settings.fontFamily}"`;
+        // Tüm text layer'ları çiz
+        this.textLayers.forEach(layer => {
+            if (!layer.visible) return;
+            this.drawSingleTextLayer(ctx, canvas, layer, offset, hueShift);
+        });
+    }
+    
+    drawSingleTextLayer(ctx, canvas, layer, offset = { x: 0, y: 0 }, hueShift = 0) {
+        const text = layer.text;
+        ctx.font = `${layer.fontSize}px "${layer.fontFamily}"`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
         // Pozisyonu yüzdeye göre hesapla
-        const x = (canvas.width * this.settings.textX / 100) + offset.x;
-        const y = (canvas.height * this.settings.textY / 100) + offset.y;
+        const x = (canvas.width * layer.textX / 100) + offset.x;
+        const y = (canvas.height * layer.textY / 100) + offset.y;
 
+        ctx.save();
+        
+        // Opaklık
+        ctx.globalAlpha = layer.opacity / 100;
+        
+        // Rotasyon
+        if (layer.rotation !== 0) {
+            ctx.translate(x, y);
+            ctx.rotate((layer.rotation * Math.PI) / 180);
+            ctx.translate(-x, -y);
+        }
+        
         // 3D Effect
-        if (this.settings.effect3D) {
+        if (layer.effect3D) {
             for (let i = 5; i > 0; i--) {
                 ctx.fillStyle = `rgba(0, 0, 0, ${0.1 * i})`;
                 ctx.fillText(text, x + i, y + i);
@@ -3033,37 +3114,37 @@ class FlashNickMaker {
         }
 
         // Glow effect
-        if (this.settings.effectGlow) {
-            ctx.shadowColor = this.shiftHue(this.settings.textColor, hueShift);
+        if (layer.effectGlow) {
+            ctx.shadowColor = this.shiftHue(layer.textColor, hueShift);
             ctx.shadowBlur = 20;
             ctx.shadowOffsetX = 0;
             ctx.shadowOffsetY = 0;
         } else {
-            ctx.shadowColor = this.settings.shadowColor;
-            ctx.shadowBlur = this.settings.shadowBlur;
+            ctx.shadowColor = layer.shadowColor;
+            ctx.shadowBlur = layer.shadowBlur;
             ctx.shadowOffsetX = 2;
             ctx.shadowOffsetY = 2;
         }
 
         // Blend mode ayarla
-        const blend = this.settings.textBlendMode || 'source-over';
+        const blend = layer.textBlendMode || 'source-over';
         ctx.globalCompositeOperation = blend;
 
         const fillTextRoutine = (drawX, drawY) => {
             // Text fill
-            if (this.settings.effectGradient) {
+            if (layer.effectGradient) {
                 const gradient = ctx.createLinearGradient(drawX - 100, drawY, drawX + 100, drawY);
-                gradient.addColorStop(0, this.shiftHue(this.settings.gradientColor1, hueShift));
-                gradient.addColorStop(1, this.shiftHue(this.settings.gradientColor2, hueShift));
+                gradient.addColorStop(0, this.shiftHue(layer.gradientColor1, hueShift));
+                gradient.addColorStop(1, this.shiftHue(layer.gradientColor2, hueShift));
                 ctx.fillStyle = gradient;
             } else {
-                ctx.fillStyle = this.shiftHue(this.settings.textColor, hueShift);
+                ctx.fillStyle = this.shiftHue(layer.textColor, hueShift);
             }
 
             // Outline
-            if (this.settings.effectOutline && this.settings.outlineWidth > 0) {
-                ctx.strokeStyle = this.settings.outlineColor;
-                ctx.lineWidth = this.settings.outlineWidth * 2;
+            if (layer.effectOutline && layer.outlineWidth > 0) {
+                ctx.strokeStyle = layer.outlineColor;
+                ctx.lineWidth = layer.outlineWidth * 2;
                 ctx.strokeText(text, drawX, drawY);
             }
 
@@ -3071,7 +3152,7 @@ class FlashNickMaker {
         };
 
         // Warp support
-        if (this.settings.warpType === 'none') {
+        if (layer.warpType === 'none') {
             fillTextRoutine(x, y);
         } else {
             // Per-letter warp
@@ -3079,19 +3160,19 @@ class FlashNickMaker {
             const metrics = ctx.measureText(text);
             const totalWidth = metrics.width;
             let cursorX = x - totalWidth / 2;
-            const amount = this.settings.warpAmount || 0.3;
+            const amount = layer.warpAmount || 0.3;
             for (let i = 0; i < letters.length; i++) {
                 const letter = letters[i];
                 const w = ctx.measureText(letter).width;
                 const progress = letters.length > 1 ? i / (letters.length - 1) : 0.5;
                 let offsetY = 0;
                 let rot = 0;
-                if (this.settings.warpType === 'flag') {
-                    offsetY = Math.sin(progress * Math.PI * 2) * this.settings.fontSize * amount;
-                } else if (this.settings.warpType === 'arc') {
+                if (layer.warpType === 'flag') {
+                    offsetY = Math.sin(progress * Math.PI * 2) * layer.fontSize * amount;
+                } else if (layer.warpType === 'arc') {
                     const arcSpan = Math.PI * amount;
                     const angle = -arcSpan / 2 + progress * arcSpan;
-                    offsetY = Math.sin(angle) * this.settings.fontSize * amount;
+                    offsetY = Math.sin(angle) * layer.fontSize * amount;
                     rot = angle * 0.35;
                 }
                 ctx.save();
@@ -3108,6 +3189,7 @@ class FlashNickMaker {
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
         ctx.globalCompositeOperation = 'source-over';
+        ctx.restore();
     }
 
     shiftHue(color, shift) {
@@ -3989,6 +4071,137 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+
+    // Photo overlay ve animasyon kontrolleri
+    const photoOverlay = document.getElementById('photoOverlay');
+    if (photoOverlay) {
+        photoOverlay.addEventListener('change', (e) => {
+            if (window.flashNickMaker) {
+                window.flashNickMaker.settings.photoOverlay = e.target.value;
+                window.flashNickMaker.render();
+            }
+        });
+    }
+
+    const overlayIntensity = document.getElementById('overlayIntensity');
+    if (overlayIntensity) {
+        overlayIntensity.addEventListener('input', (e) => {
+            if (window.flashNickMaker) {
+                window.flashNickMaker.settings.overlayIntensity = parseInt(e.target.value);
+                window.flashNickMaker.render();
+            }
+            document.getElementById('overlayIntensityVal').textContent = e.target.value;
+        });
+    }
+
+    const customOverlayColor = document.getElementById('customOverlayColor');
+    if (customOverlayColor) {
+        customOverlayColor.addEventListener('input', (e) => {
+            if (window.flashNickMaker) {
+                window.flashNickMaker.settings.customOverlayColor = e.target.value;
+                window.flashNickMaker.render();
+            }
+        });
+    }
+
+    const colorOverlayMode = document.getElementById('colorOverlayMode');
+    if (colorOverlayMode) {
+        colorOverlayMode.addEventListener('change', (e) => {
+            if (window.flashNickMaker) {
+                window.flashNickMaker.settings.colorOverlayMode = e.target.value;
+                window.flashNickMaker.render();
+            }
+        });
+    }
+
+    const photoAnimation = document.getElementById('photoAnimation');
+    if (photoAnimation) {
+        photoAnimation.addEventListener('change', (e) => {
+            if (window.flashNickMaker) {
+                window.flashNickMaker.settings.photoAnimation = e.target.value;
+            }
+        });
+    }
+
+    const photoAnimSpeed = document.getElementById('photoAnimSpeed');
+    if (photoAnimSpeed) {
+        photoAnimSpeed.addEventListener('input', (e) => {
+            if (window.flashNickMaker) {
+                window.flashNickMaker.settings.photoAnimSpeed = parseInt(e.target.value);
+            }
+            document.getElementById('photoAnimSpeedVal').textContent = e.target.value;
+        });
+    }
+
+    const splitLayout = document.getElementById('splitLayout');
+    if (splitLayout) {
+        splitLayout.addEventListener('change', (e) => {
+            if (window.flashNickMaker) {
+                window.flashNickMaker.settings.splitLayout = e.target.value;
+                window.flashNickMaker.render();
+            }
+        });
+    }
+
+    const splitRatio = document.getElementById('splitRatio');
+    if (splitRatio) {
+        splitRatio.addEventListener('input', (e) => {
+            if (window.flashNickMaker) {
+                window.flashNickMaker.settings.splitRatio = parseInt(e.target.value);
+                window.flashNickMaker.render();
+            }
+            document.getElementById('splitRatioVal').textContent = e.target.value;
+        });
+    }
+
+    const splitBorder = document.getElementById('splitBorder');
+    if (splitBorder) {
+        splitBorder.addEventListener('change', (e) => {
+            if (window.flashNickMaker) {
+                window.flashNickMaker.settings.splitBorder = e.target.checked;
+                window.flashNickMaker.render();
+            }
+        });
+    }
+
+    const photoSideEffect = document.getElementById('photoSideEffect');
+    if (photoSideEffect) {
+        photoSideEffect.addEventListener('change', (e) => {
+            if (window.flashNickMaker) {
+                window.flashNickMaker.settings.photoSideEffect = e.target.value;
+                window.flashNickMaker.render();
+            }
+        });
+    }
+    
+    // Layer Rotation
+    const layerRotation = document.getElementById('layerRotation');
+    if (layerRotation) {
+        layerRotation.addEventListener('input', (e) => {
+            document.getElementById('layerRotationVal').textContent = e.target.value;
+            if (window.flashNickMaker) {
+                window.flashNickMaker.updateActiveLayer();
+                window.flashNickMaker.render();
+            }
+        });
+    }
+    
+    // Layer Opacity
+    const layerOpacity = document.getElementById('layerOpacity');
+    if (layerOpacity) {
+        layerOpacity.addEventListener('input', (e) => {
+            document.getElementById('layerOpacityVal').textContent = e.target.value;
+            if (window.flashNickMaker) {
+                window.flashNickMaker.updateActiveLayer();
+                window.flashNickMaker.render();
+            }
+        });
+    }
+    
+    // İlk layer listesini göster
+    if (window.flashNickMaker) {
+        window.flashNickMaker.updateLayerList();
+    }
 });
 
 function applyTemplate(templateNum) {
@@ -4152,6 +4365,709 @@ function randomizeWithLocks() {
     maker.render();
     showToast('Rastgele stil uygulandı!');
 }
+
+// ===== FOTOĞRAF OVERLAY VE ANİMASYON FONKSİYONLARI =====
+
+FlashNickMaker.prototype.applyPhotoOverlay = function(ctx, canvas) {
+    if (this.settings.photoOverlay === 'none' && this.settings.colorOverlayMode === 'none') return;
+    
+    const intensity = this.settings.overlayIntensity / 100;
+    
+    ctx.save();
+    
+    switch (this.settings.photoOverlay) {
+        case 'gradient-blue':
+            const gradBlue = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradBlue.addColorStop(0, `rgba(0, 100, 255, ${intensity * 0.5})`);
+            gradBlue.addColorStop(1, `rgba(0, 50, 150, ${intensity * 0.3})`);
+            ctx.fillStyle = gradBlue;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            break;
+        case 'gradient-red':
+            const gradRed = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradRed.addColorStop(0, `rgba(255, 50, 50, ${intensity * 0.5})`);
+            gradRed.addColorStop(1, `rgba(150, 0, 0, ${intensity * 0.3})`);
+            ctx.fillStyle = gradRed;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            break;
+        case 'gradient-purple':
+            const gradPurple = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradPurple.addColorStop(0, `rgba(150, 50, 255, ${intensity * 0.5})`);
+            gradPurple.addColorStop(1, `rgba(80, 0, 150, ${intensity * 0.3})`);
+            ctx.fillStyle = gradPurple;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            break;
+        case 'gradient-green':
+            const gradGreen = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradGreen.addColorStop(0, `rgba(50, 255, 100, ${intensity * 0.5})`);
+            gradGreen.addColorStop(1, `rgba(0, 150, 50, ${intensity * 0.3})`);
+            ctx.fillStyle = gradGreen;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            break;
+        case 'gradient-orange':
+            const gradOrange = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradOrange.addColorStop(0, `rgba(255, 150, 50, ${intensity * 0.5})`);
+            gradOrange.addColorStop(1, `rgba(200, 80, 0, ${intensity * 0.3})`);
+            ctx.fillStyle = gradOrange;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            break;
+        case 'duotone-cyan':
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.fillStyle = `rgba(0, 200, 200, ${intensity * 0.6})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'screen';
+            ctx.fillStyle = `rgba(100, 255, 255, ${intensity * 0.4})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'source-over';
+            break;
+        case 'duotone-pink':
+            ctx.globalCompositeOperation = 'multiply';
+            ctx.fillStyle = `rgba(200, 50, 100, ${intensity * 0.6})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'screen';
+            ctx.fillStyle = `rgba(255, 150, 200, ${intensity * 0.4})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'source-over';
+            break;
+        case 'vignette':
+            const vignetteGrad = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 0,
+                canvas.width / 2, canvas.height / 2, Math.max(canvas.width, canvas.height) * 0.7
+            );
+            vignetteGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            vignetteGrad.addColorStop(1, `rgba(0, 0, 0, ${intensity * 0.7})`);
+            ctx.fillStyle = vignetteGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            break;
+        case 'light-leak':
+            const leakGrad = ctx.createRadialGradient(
+                canvas.width * 0.8, canvas.height * 0.2, 0,
+                canvas.width * 0.8, canvas.height * 0.2, canvas.width * 0.5
+            );
+            leakGrad.addColorStop(0, `rgba(255, 255, 200, ${intensity * 0.5})`);
+            leakGrad.addColorStop(0.5, `rgba(255, 200, 100, ${intensity * 0.3})`);
+            leakGrad.addColorStop(1, 'rgba(255, 150, 0, 0)');
+            ctx.globalCompositeOperation = 'screen';
+            ctx.fillStyle = leakGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'source-over';
+            break;
+        case 'film-grain':
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const grain = (Math.random() - 0.5) * intensity * 50;
+                data[i] += grain;
+                data[i + 1] += grain;
+                data[i + 2] += grain;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            break;
+        case 'glow':
+            ctx.shadowColor = 'rgba(255, 255, 255, ' + (intensity * 0.8) + ')';
+            ctx.shadowBlur = 30 * intensity;
+            ctx.fillStyle = `rgba(255, 255, 255, ${intensity * 0.1})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            break;
+    }
+    
+    // Özel renk overlay
+    if (this.settings.colorOverlayMode !== 'none') {
+        const hexToRgb = (hex) => {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        };
+        
+        const rgb = hexToRgb(this.settings.customOverlayColor);
+        if (rgb) {
+            ctx.globalCompositeOperation = this.settings.colorOverlayMode;
+            ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${intensity})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.globalCompositeOperation = 'source-over';
+        }
+    }
+    
+    ctx.restore();
+};
+
+FlashNickMaker.prototype.drawSplitLayout = function(ctx, canvas, offset, hueShift, particleFrame, sparkleFrame, transparent) {
+    const layout = this.settings.splitLayout;
+    const ratio = this.settings.splitRatio / 100;
+    
+    ctx.save();
+    
+    if (layout === 'left-right') {
+        const splitX = canvas.width * ratio;
+        
+        // Foto tarafı (sol)
+        ctx.save();
+        ctx.rect(0, 0, splitX, canvas.height);
+        ctx.clip();
+        
+        // Fotoğrafı çiz
+        this.drawImageWithEffect(ctx, this.bgImage, 0, 0, canvas.width, canvas.height, true);
+        
+        // Overlay efektlerini uygula
+        if (this.settings.photoOverlay !== 'none' || this.settings.colorOverlayMode !== 'none') {
+            this.applyPhotoOverlay(ctx, canvas);
+        }
+        
+        ctx.restore();
+        
+        // Yazı tarafı (sağ)
+        ctx.save();
+        ctx.rect(splitX, 0, canvas.width - splitX, canvas.height);
+        ctx.clip();
+        if (!transparent) this.drawBackground(ctx, canvas, hueShift);
+        if (this.settings.particleType !== 'none') this.drawParticles(ctx, canvas, particleFrame);
+        this.drawText(ctx, canvas, offset, hueShift);
+        if (this.settings.textSparkleType !== 'none') this.drawTextSparkles(ctx, canvas, sparkleFrame);
+        ctx.restore();
+        
+        // Bölme çizgisi
+        if (this.settings.splitBorder) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(splitX, 0);
+            ctx.lineTo(splitX, canvas.height);
+            ctx.stroke();
+        }
+    } else if (layout === 'right-left') {
+        const splitX = canvas.width * ratio;
+        
+        // Yazı tarafı (sol)
+        ctx.save();
+        ctx.rect(0, 0, splitX, canvas.height);
+        ctx.clip();
+        if (!transparent) this.drawBackground(ctx, canvas, hueShift);
+        if (this.settings.particleType !== 'none') this.drawParticles(ctx, canvas, particleFrame);
+        this.drawText(ctx, canvas, offset, hueShift);
+        if (this.settings.textSparkleType !== 'none') this.drawTextSparkles(ctx, canvas, sparkleFrame);
+        ctx.restore();
+        
+        // Foto tarafı (sağ)
+        ctx.save();
+        ctx.rect(splitX, 0, canvas.width - splitX, canvas.height);
+        ctx.clip();
+        
+        // Fotoğrafı çiz
+        this.drawImageWithEffect(ctx, this.bgImage, 0, 0, canvas.width, canvas.height, true);
+        
+        // Overlay efektlerini uygula
+        if (this.settings.photoOverlay !== 'none' || this.settings.colorOverlayMode !== 'none') {
+            this.applyPhotoOverlay(ctx, canvas);
+        }
+        
+        ctx.restore();
+        
+        if (this.settings.splitBorder) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(splitX, 0);
+            ctx.lineTo(splitX, canvas.height);
+            ctx.stroke();
+        }
+    } else if (layout === 'top-bottom') {
+        const splitY = canvas.height * ratio;
+        
+        // Foto tarafı (üst)
+        ctx.save();
+        ctx.rect(0, 0, canvas.width, splitY);
+        ctx.clip();
+        
+        // Fotoğrafı çiz
+        this.drawImageWithEffect(ctx, this.bgImage, 0, 0, canvas.width, canvas.height, true);
+        
+        // Overlay efektlerini uygula
+        if (this.settings.photoOverlay !== 'none' || this.settings.colorOverlayMode !== 'none') {
+            this.applyPhotoOverlay(ctx, canvas);
+        }
+        
+        ctx.restore();
+        
+        // Yazı tarafı (alt)
+        ctx.save();
+        ctx.rect(0, splitY, canvas.width, canvas.height - splitY);
+        ctx.clip();
+        if (!transparent) this.drawBackground(ctx, canvas, hueShift);
+        if (this.settings.particleType !== 'none') this.drawParticles(ctx, canvas, particleFrame);
+        this.drawText(ctx, canvas, offset, hueShift);
+        if (this.settings.textSparkleType !== 'none') this.drawTextSparkles(ctx, canvas, sparkleFrame);
+        ctx.restore();
+        
+        if (this.settings.splitBorder) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, splitY);
+            ctx.lineTo(canvas.width, splitY);
+            ctx.stroke();
+        }
+    } else if (layout === 'bottom-top') {
+        const splitY = canvas.height * ratio;
+        
+        // Yazı tarafı (üst)
+        ctx.save();
+        ctx.rect(0, 0, canvas.width, splitY);
+        ctx.clip();
+        if (!transparent) this.drawBackground(ctx, canvas, hueShift);
+        if (this.settings.particleType !== 'none') this.drawParticles(ctx, canvas, particleFrame);
+        this.drawText(ctx, canvas, offset, hueShift);
+        if (this.settings.textSparkleType !== 'none') this.drawTextSparkles(ctx, canvas, sparkleFrame);
+        ctx.restore();
+        
+        // Foto tarafı (alt)
+        ctx.save();
+        ctx.rect(0, splitY, canvas.width, canvas.height - splitY);
+        ctx.clip();
+        
+        // Fotoğrafı çiz
+        this.drawImageWithEffect(ctx, this.bgImage, 0, 0, canvas.width, canvas.height, true);
+        
+        // Overlay efektlerini uygula
+        if (this.settings.photoOverlay !== 'none' || this.settings.colorOverlayMode !== 'none') {
+            this.applyPhotoOverlay(ctx, canvas);
+        }
+        
+        ctx.restore();
+        
+        if (this.settings.splitBorder) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, splitY);
+            ctx.lineTo(canvas.width, splitY);
+            ctx.stroke();
+        }
+    } else if (layout === 'diagonal') {
+        // Diagonal split - Foto tarafı
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(canvas.width, 0);
+        ctx.lineTo(canvas.width * (1 - ratio), canvas.height);
+        ctx.lineTo(0, canvas.height);
+        ctx.closePath();
+        ctx.clip();
+        
+        // Fotoğrafı çiz
+        this.drawImageWithEffect(ctx, this.bgImage, 0, 0, canvas.width, canvas.height, true);
+        
+        // Overlay efektlerini uygula
+        if (this.settings.photoOverlay !== 'none' || this.settings.colorOverlayMode !== 'none') {
+            this.applyPhotoOverlay(ctx, canvas);
+        }
+        
+        ctx.restore();
+        
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(canvas.width, 0);
+        ctx.lineTo(canvas.width, canvas.height);
+        ctx.lineTo(canvas.width * (1 - ratio), canvas.height);
+        ctx.closePath();
+        ctx.clip();
+        if (!transparent) this.drawBackground(ctx, canvas, hueShift);
+        if (this.settings.particleType !== 'none') this.drawParticles(ctx, canvas, particleFrame);
+        this.drawText(ctx, canvas, offset, hueShift);
+        if (this.settings.textSparkleType !== 'none') this.drawTextSparkles(ctx, canvas, sparkleFrame);
+        ctx.restore();
+        
+        if (this.settings.splitBorder) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width, 0);
+            ctx.lineTo(canvas.width * (1 - ratio), canvas.height);
+            ctx.stroke();
+        }
+    }
+    
+    ctx.restore();
+};
+
+FlashNickMaker.prototype.applyPhotoSideEffect = function(ctx, canvas, x, y, width, height) {
+    const effect = this.settings.photoSideEffect;
+    
+    if (effect === 'blur-bg') {
+        ctx.filter = 'blur(8px)';
+        // Re-draw with blur in the clipped area
+        ctx.drawImage(canvas, x, y, width, height, x, y, width, height);
+        ctx.filter = 'none';
+    }
+};
+
+function previewPhotoAnimation() {
+    const maker = window.flashNickMaker;
+    if (!maker || !maker.bgImage) {
+        showToast('Önce bir fotoğraf yükleyin! 📷');
+        return;
+    }
+    
+    const anim = maker.settings.photoAnimation;
+    if (anim === 'none') {
+        showToast('Bir animasyon türü seçin! 🎬');
+        return;
+    }
+    
+    maker.stopPhotoAnimation();
+    maker.startPhotoAnimation();
+}
+
+FlashNickMaker.prototype.startPhotoAnimation = function() {
+    this.stopPhotoAnimation();
+    
+    const anim = this.settings.photoAnimation;
+    if (anim === 'none') return;
+    
+    this.photoAnimPhase = 0;
+    const speed = this.settings.photoAnimSpeed;
+    
+    const animate = () => {
+        this.photoAnimPhase += speed * 0.05;
+        
+        // Animasyon efektini uygula (arka plan çiziminde)
+        this.renderWithPhotoAnimation();
+        
+        this.photoAnimationFrame = requestAnimationFrame(animate);
+    };
+    
+    animate();
+};
+
+FlashNickMaker.prototype.stopPhotoAnimation = function() {
+    if (this.photoAnimationFrame) {
+        cancelAnimationFrame(this.photoAnimationFrame);
+        this.photoAnimationFrame = null;
+    }
+    this.photoAnimPhase = 0;
+};
+
+FlashNickMaker.prototype.renderWithPhotoAnimation = function() {
+    if (!this.bgImage) {
+        this.render();
+        return;
+    }
+    
+    const ctx = this.ctx;
+    const canvas = this.canvas;
+    const anim = this.settings.photoAnimation;
+    const phase = this.photoAnimPhase;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.save();
+    
+    switch (anim) {
+        case 'zoom-in':
+            const scale1 = 1 + Math.sin(phase) * 0.1;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(scale1, scale1);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'zoom-out':
+            const scale2 = 1 - Math.sin(phase) * 0.1;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(scale2, scale2);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'pan-left':
+            ctx.translate(-Math.sin(phase) * 20, 0);
+            break;
+        case 'pan-right':
+            ctx.translate(Math.sin(phase) * 20, 0);
+            break;
+        case 'pan-up':
+            ctx.translate(0, -Math.sin(phase) * 20);
+            break;
+        case 'pan-down':
+            ctx.translate(0, Math.sin(phase) * 20);
+            break;
+        case 'rotate-cw':
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(phase * 0.05);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'rotate-ccw':
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(-phase * 0.05);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'pulse':
+            const pulse = 1 + Math.sin(phase * 2) * 0.05;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(pulse, pulse);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'shake':
+            ctx.translate(
+                Math.sin(phase * 10) * 3,
+                Math.cos(phase * 10) * 3
+            );
+            break;
+        case 'zoom-pulse':
+            const zoomPulse = 1 + Math.sin(phase * 1.5) * 0.15;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(zoomPulse, zoomPulse);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'pan-circle':
+            const radius = 30;
+            ctx.translate(
+                Math.cos(phase * 0.5) * radius,
+                Math.sin(phase * 0.5) * radius
+            );
+            break;
+        case 'rotate-swing':
+            const swingAngle = Math.sin(phase * 0.8) * 0.1;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(swingAngle);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'wave':
+            ctx.save();
+            for (let y = 0; y < canvas.height; y += 5) {
+                ctx.save();
+                ctx.rect(0, y, canvas.width, 5);
+                ctx.clip();
+                ctx.translate(Math.sin(phase + y * 0.05) * 10, 0);
+                this.drawBackground(ctx, canvas, 0);
+                if (this.settings.photoOverlay !== 'none' || this.settings.colorOverlayMode !== 'none') {
+                    this.applyPhotoOverlay(ctx, canvas);
+                }
+                ctx.restore();
+            }
+            ctx.restore();
+            // Skip normal draw for wave
+            ctx.restore();
+            if (this.settings.frameStyle !== 'none') this.drawFrame(ctx, canvas);
+            if (this.settings.particleType !== 'none') this.drawParticles(ctx, canvas, 0);
+            this.drawDecorations(ctx, canvas);
+            if (this.settings.lineStyle !== 'none') this.drawDecorativeLines(ctx, canvas);
+            this.drawText(ctx, canvas, {x: 0, y: 0}, 0);
+            if (this.settings.innerSparkleType !== 'none') this.drawInnerSparkles(ctx, canvas, this.innerSparkleFrame);
+            if (this.settings.textSparkleType !== 'none') this.drawTextSparkles(ctx, canvas, this.sparkleFrame);
+            return;
+        case 'bounce':
+            const bounceY = Math.abs(Math.sin(phase * 1.5)) * 30;
+            ctx.translate(0, -bounceY);
+            break;
+        case 'float':
+            const floatY = Math.sin(phase * 0.8) * 15;
+            ctx.translate(0, floatY);
+            break;
+        case 'wobble':
+            const wobbleX = Math.sin(phase * 2) * 10;
+            const wobbleRot = Math.sin(phase * 2.5) * 0.05;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(wobbleRot);
+            ctx.translate(-canvas.width / 2 + wobbleX, -canvas.height / 2);
+            break;
+        case 'flip-h':
+            const flipH = Math.cos(phase * 0.8);
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(flipH, 1);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'flip-v':
+            const flipV = Math.cos(phase * 0.8);
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(1, flipV);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+    }
+    
+    this.drawBackground(ctx, canvas, 0);
+    if (this.settings.photoOverlay !== 'none' || this.settings.colorOverlayMode !== 'none') {
+        this.applyPhotoOverlay(ctx, canvas);
+    }
+    
+    ctx.restore();
+    
+    // Normal render devam eder
+    if (this.settings.frameStyle !== 'none') this.drawFrame(ctx, canvas);
+    if (this.settings.particleType !== 'none') this.drawParticles(ctx, canvas, 0);
+    this.drawDecorations(ctx, canvas);
+    if (this.settings.lineStyle !== 'none') this.drawDecorativeLines(ctx, canvas);
+    this.drawText(ctx, canvas, {x: 0, y: 0}, 0);
+    if (this.settings.innerSparkleType !== 'none') this.drawInnerSparkles(ctx, canvas, this.innerSparkleFrame);
+    if (this.settings.textSparkleType !== 'none') this.drawTextSparkles(ctx, canvas, this.sparkleFrame);
+};
+
+// ===== TEXT LAYER YÖNETİMİ =====
+
+FlashNickMaker.prototype.addTextLayer = function() {
+    const newId = Math.max(...this.textLayers.map(l => l.id)) + 1;
+    const newLayer = {
+        id: newId,
+        text: 'Yeni Yazı',
+        fontFamily: 'Lobster',
+        fontSize: 30,
+        textColor: '#ffffff',
+        shadowColor: '#000000',
+        shadowBlur: 5,
+        outlineColor: '#000000',
+        outlineWidth: 2,
+        gradientColor1: '#ff0000',
+        gradientColor2: '#ffff00',
+        effectGlow: false,
+        effectOutline: true,
+        effectGradient: false,
+        effect3D: false,
+        textX: 50,
+        textY: 70,
+        textBlendMode: 'source-over',
+        warpType: 'none',
+        warpAmount: 0.35,
+        textAnimationType: 'none',
+        rotation: 0,
+        opacity: 100,
+        visible: true
+    };
+    this.textLayers.push(newLayer);
+    this.activeTextLayer = newId;
+    this.updateLayerList();
+    this.loadLayerToUI(newLayer);
+    this.render();
+    showToast('Yeni yazı katmanı eklendi! ✨');
+};
+
+FlashNickMaker.prototype.deleteTextLayer = function(id) {
+    if (this.textLayers.length === 1) {
+        showToast('En az bir yazı katmanı olmalı! ⚠️');
+        return;
+    }
+    this.textLayers = this.textLayers.filter(l => l.id !== id);
+    if (this.activeTextLayer === id) {
+        this.activeTextLayer = this.textLayers[0].id;
+        this.loadLayerToUI(this.textLayers[0]);
+    }
+    this.updateLayerList();
+    this.render();
+    showToast('Katman silindi! 🗑️');
+};
+
+FlashNickMaker.prototype.selectTextLayer = function(id) {
+    const layer = this.textLayers.find(l => l.id === id);
+    if (layer) {
+        this.activeTextLayer = id;
+        this.loadLayerToUI(layer);
+        this.updateLayerList();
+    }
+};
+
+FlashNickMaker.prototype.toggleLayerVisibility = function(id) {
+    const layer = this.textLayers.find(l => l.id === id);
+    if (layer) {
+        layer.visible = !layer.visible;
+        this.updateLayerList();
+        this.render();
+    }
+};
+
+FlashNickMaker.prototype.moveLayerUp = function(id) {
+    const index = this.textLayers.findIndex(l => l.id === id);
+    if (index < this.textLayers.length - 1) {
+        [this.textLayers[index], this.textLayers[index + 1]] = [this.textLayers[index + 1], this.textLayers[index]];
+        this.updateLayerList();
+        this.render();
+    }
+};
+
+FlashNickMaker.prototype.moveLayerDown = function(id) {
+    const index = this.textLayers.findIndex(l => l.id === id);
+    if (index > 0) {
+        [this.textLayers[index], this.textLayers[index - 1]] = [this.textLayers[index - 1], this.textLayers[index]];
+        this.updateLayerList();
+        this.render();
+    }
+};
+
+FlashNickMaker.prototype.updateLayerList = function() {
+    const container = document.getElementById('textLayerList');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    this.textLayers.slice().reverse().forEach(layer => {
+        const div = document.createElement('div');
+        div.className = 'text-layer-item' + (layer.id === this.activeTextLayer ? ' active' : '');
+        div.innerHTML = `
+            <button onclick="maker.toggleLayerVisibility(${layer.id})" class="layer-visibility">
+                ${layer.visible ? '👁️' : '👁️‍🗨️'}
+            </button>
+            <span onclick="maker.selectTextLayer(${layer.id})" class="layer-name">${layer.text || 'Boş'}</span>
+            <div class="layer-controls">
+                <button onclick="maker.moveLayerUp(${layer.id})" title="Yukarı">⬆️</button>
+                <button onclick="maker.moveLayerDown(${layer.id})" title="Aşağı">⬇️</button>
+                <button onclick="maker.deleteTextLayer(${layer.id})" title="Sil">🗑️</button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+};
+
+FlashNickMaker.prototype.loadLayerToUI = function(layer) {
+    // Text ayarlarını UI'a yükle
+    document.getElementById('nickInput').value = layer.text;
+    document.getElementById('fontFamily').value = layer.fontFamily;
+    document.getElementById('fontSize').value = layer.fontSize;
+    document.getElementById('fontSizeVal').textContent = layer.fontSize;
+    document.getElementById('textColor').value = layer.textColor;
+    document.getElementById('textX').value = layer.textX;
+    document.getElementById('textXVal').textContent = layer.textX;
+    document.getElementById('textY').value = layer.textY;
+    document.getElementById('textYVal').textContent = layer.textY;
+    
+    // Efektler
+    document.getElementById('effectGlow').checked = layer.effectGlow;
+    document.getElementById('effectOutline').checked = layer.effectOutline;
+    document.getElementById('effectGradient').checked = layer.effectGradient;
+    document.getElementById('effect3D').checked = layer.effect3D;
+    
+    // Ek ayarlar varsa
+    if (document.getElementById('layerRotation')) {
+        document.getElementById('layerRotation').value = layer.rotation;
+        document.getElementById('layerRotationVal').textContent = layer.rotation;
+    }
+    if (document.getElementById('layerOpacity')) {
+        document.getElementById('layerOpacity').value = layer.opacity;
+        document.getElementById('layerOpacityVal').textContent = layer.opacity;
+    }
+};
+
+FlashNickMaker.prototype.updateActiveLayer = function() {
+    const layer = this.textLayers.find(l => l.id === this.activeTextLayer);
+    if (!layer) return;
+    
+    // UI'daki değerleri aktif katmana aktar
+    layer.text = document.getElementById('nickInput').value;
+    layer.fontFamily = document.getElementById('fontFamily').value;
+    layer.fontSize = parseInt(document.getElementById('fontSize').value);
+    layer.textColor = document.getElementById('textColor').value;
+    layer.textX = parseFloat(document.getElementById('textX').value);
+    layer.textY = parseFloat(document.getElementById('textY').value);
+    layer.effectGlow = document.getElementById('effectGlow').checked;
+    layer.effectOutline = document.getElementById('effectOutline').checked;
+    layer.effectGradient = document.getElementById('effectGradient').checked;
+    layer.effect3D = document.getElementById('effect3D').checked;
+    
+    if (document.getElementById('layerRotation')) {
+        layer.rotation = parseFloat(document.getElementById('layerRotation').value);
+    }
+    if (document.getElementById('layerOpacity')) {
+        layer.opacity = parseFloat(document.getElementById('layerOpacity').value);
+    }
+    
+    this.updateLayerList();
+};
 
 // ===== YENİ PROFESYONEL ÖZELLİKLER =====
 
