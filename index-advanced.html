@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flash Nick Pro - Sesli Chat Nick Yapma Programı</title>
+    <meta name="description" content="Sesli sohbet siteleri için profesyonel flash nick yapma programı. Ücretsiz, animasyonlu, şık nickler oluşturun.">
+    <meta name="keywords" content="flash nick, sesli chat, nick yapma, sesli sohbet, animasyonlu nick">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Lobster&family=Dancing+Script:wght@700&family=Satisfy&family=Great+Vibes&family=Kaushan+Script&family=Permanent+Marker&family=Rock+Salt&family=Caveat:wght@700&family=Amatic+SC:wght@700&family=Righteous&family=Bangers&family=Bungee&family=Russo+One&family=Press+Start+2P&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎨 Flash Nick Pro</h1>
+            <p>Sesli Chat için Profesyonel Nickler • <span id="visitorCount">12,847</span> kullanıcı</p>
+            <div class="header-buttons">
+                <button id="darkModeToggle" class="mode-btn" title="Tema Değiştir">🌙</button>
+                <button id="helpBtn" class="mode-btn" title="Yardım">❓</button>
+            </div>
+        </header>
+
+        <!-- Hızlı Erişim Bar -->
+        <div class="quick-bar">
+            <button onclick="applyQuickStyle('romantic')" class="quick-btn">💕 Romantik</button>
+            <button onclick="applyQuickStyle('cool')" class="quick-btn">😎 Havalı</button>
+            <button onclick="applyQuickStyle('gaming')" class="quick-btn">🎮 Oyuncu</button>
+            <button onclick="applyQuickStyle('elegant')" class="quick-btn">👑 Zarif</button>
+            <button onclick="applyQuickStyle('neon')" class="quick-btn">💡 Neon</button>
+            <button onclick="applyQuickStyle('fire')" class="quick-btn">🔥 Ateşli</button>
+            <button onclick="applyQuickStyle('turkish')" class="quick-btn">🇹🇷 Türk</button>
+            <button onclick="randomStyle()" class="quick-btn rainbow-btn">🎲 Rastgele</button>
+        </div>
+
+        <div class="main-content">
+            <!-- Sol Panel - Ayarlar -->
+            <div class="left-panel">
+                <div class="section">
+                    <h3>📝 Nick Yazısı</h3>
+                    <input type="text" id="nickInput" placeholder="Nickinizi yazın..." value="SevDa">
+                    <div class="nick-suggestions">
+                        <small>Öneriler:</small>
+                        <span onclick="setNick('★SevDa★')">★SevDa★</span>
+                        <span onclick="setNick('♥AşK♥')">♥AşK♥</span>
+                        <span onclick="setNick('◆KraL◆')">◆KraL◆</span>
+                        <span onclick="setNick('☆PrenS☆')">☆PrenS☆</span>
+                    </div>
+                    <div class="special-chars">
+                        <span onclick="addChar('★')">★</span>
+                        <span onclick="addChar('☆')">☆</span>
+                        <span onclick="addChar('♥')">♥</span>
+                        <span onclick="addChar('♡')">♡</span>
+                        <span onclick="addChar('◆')">◆</span>
+                        <span onclick="addChar('◇')">◇</span>
+                        <span onclick="addChar('●')">●</span>
+                        <span onclick="addChar('○')">○</span>
+                        <span onclick="addChar('■')">■</span>
+                        <span onclick="addChar('□')">□</span>
+                        <span onclick="addChar('▲')">▲</span>
+                        <span onclick="addChar('△')">△</span>
+                        <span onclick="addChar('♦')">♦</span>
+                        <span onclick="addChar('♣')">♣</span>
+                        <span onclick="addChar('♠')">♠</span>
+                        <span onclick="addChar('✿')">✿</span>
+                        <span onclick="addChar('❀')">❀</span>
+                        <span onclick="addChar('✦')">✦</span>
+                        <span onclick="addChar('✧')">✧</span>
+                        <span onclick="addChar('❤')">❤</span>
+                        <span onclick="addChar('💕')">💕</span>
+                        <span onclick="addChar('🌹')">🌹</span>
+                        <span onclick="addChar('🦋')">🦋</span>
+                        <span onclick="addChar('✨')">✨</span>
+                        <span onclick="addChar('×')">×</span>
+                        <span onclick="addChar('÷')">÷</span>
+                        <span onclick="addChar('•')">•</span>
+                        <span onclick="addChar('‣')">‣</span>
+                        <span onclick="addChar('→')">→</span>
+                        <span onclick="addChar('←')">←</span>
+                        <span onclick="addChar('↑')">↑</span>
+                        <span onclick="addChar('↓')">↓</span>
+                        <span onclick="addChar('↔')">↔</span>
+                        <span onclick="addChar('∞')">∞</span>
+                        <span onclick="addChar('♪')">♪</span>
+                        <span onclick="addChar('♫')">♫</span>
+                        <span onclick="addChar('☀')">☀</span>
+                        <span onclick="addChar('☁')">☁</span>
+                        <span onclick="addChar('☂')">☂</span>
+                        <span onclick="addChar('☃')">☃</span>
+                        <span onclick="addChar('☄')">☄</span>
+                        <span onclick="addChar('⚡')">⚡</span>
+                        <span onclick="addChar('❄')">❄</span>
+                        <span onclick="addChar('☯')">☯</span>
+                        <span onclick="addChar('☮')">☮</span>
+                        <span onclick="addChar('☢')">☢</span>
+                        <span onclick="addChar('☣')">☣</span>
+                        <span onclick="addChar('⚔')">⚔</span>
+                        <span onclick="addChar('⚜')">⚜</span>
+                        <span onclick="addChar('†')">†</span>
+                        <span onclick="addChar('‡')">‡</span>
+                        <span onclick="addChar('۞')">۞</span>
+                        <span onclick="addChar('۩')">۩</span>
+                        <span onclick="addChar('๑')">๑</span>
+                        <span onclick="addChar('ღ')">ღ</span>
+                        <span onclick="addChar('웃')">웃</span>
+                        <span onclick="addChar('유')">유</span>
+                        <span onclick="addChar('☻')">☻</span>
+                        <span onclick="addChar('☺')">☺</span>
+                        <span onclick="addChar('㋛')">㋛</span>
+                        <span onclick="addChar('ツ')">ツ</span>
+                        <span onclick="addChar('シ')">シ</span>
+                        <span onclick="addChar('〠')">〠</span>
+                        <span onclick="addChar('ジ')">ジ</span>
+                        <span onclick="addChar('の')">の</span>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>🖼️ Arka Plan Resmi</h3>
+                    <input type="file" id="bgImage" accept="image/*">
+                    <div class="preset-images">
+                        <button onclick="setPresetBg('gradient1')">Gradient 1</button>
+                        <button onclick="setPresetBg('gradient2')">Gradient 2</button>
+                        <button onclick="setPresetBg('gradient3')">Gradient 3</button>
+                        <button onclick="setPresetBg('dark')">Koyu</button>
+                        <button onclick="setPresetBg('transparent')">Şeffaf</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>🎨 Yazı Stili</h3>
+                    <label>Font:</label>
+                    <select id="fontFamily">
+                        <option value="Lobster">Lobster (Klasik)</option>
+                        <option value="Pacifico">Pacifico (El Yazısı)</option>
+                        <option value="Dancing Script">Dancing Script (Dans)</option>
+                        <option value="Satisfy">Satisfy (Şık)</option>
+                        <option value="Great Vibes">Great Vibes (Zarif)</option>
+                        <option value="Kaushan Script">Kaushan Script (Kaligrafik)</option>
+                        <option value="Permanent Marker">Permanent Marker (Kalem)</option>
+                        <option value="Rock Salt">Rock Salt (Kaya)</option>
+                        <option value="Caveat">Caveat (Not)</option>
+                        <option value="Amatic SC">Amatic SC (İnce)</option>
+                        <option value="Righteous">Righteous (Modern)</option>
+                        <option value="Bangers">Bangers (Çizgi Roman)</option>
+                        <option value="Bungee">Bungee (Kalın)</option>
+                        <option value="Russo One">Russo One (Güçlü)</option>
+                        <option value="Press Start 2P">Press Start 2P (Retro)</option>
+                        <option value="Orbitron">Orbitron (Fütüristik)</option>
+                        <option value="Arial Black">Arial Black (Klasik)</option>
+                        <option value="Impact">Impact (Darbe)</option>
+                        <option value="Georgia">Georgia (Elegant)</option>
+                        <option value="Verdana">Verdana (Net)</option>
+                    </select>
+
+                    <label>Yazı Boyutu: <span id="fontSizeVal">40</span>px</label>
+                    <input type="range" id="fontSize" min="8" max="80" value="40">
+
+                    <label>Yazı Rengi:</label>
+                    <input type="color" id="textColor" value="#ffffff">
+
+                    <label>Gölge Rengi:</label>
+                    <input type="color" id="shadowColor" value="#000000">
+
+                    <label>Gölge Yoğunluğu: <span id="shadowBlurVal">5</span></label>
+                    <input type="range" id="shadowBlur" min="0" max="30" value="5">
+                </div>
+
+                <div class="section">
+                    <h3>✨ Efektler</h3>
+                    <div class="effect-buttons">
+                        <label><input type="checkbox" id="effectGlow"> Işıltı</label>
+                        <label><input type="checkbox" id="effectOutline" checked> Kenarlık</label>
+                        <label><input type="checkbox" id="effectGradient"> Gradient Yazı</label>
+                        <label><input type="checkbox" id="effect3D"> 3D Efekt</label>
+                    </div>
+                    
+                    <label>Kenarlık Rengi:</label>
+                    <input type="color" id="outlineColor" value="#000000">
+                    
+                    <label>Kenarlık Kalınlığı: <span id="outlineWidthVal">2</span></label>
+                    <input type="range" id="outlineWidth" min="0" max="10" value="2">
+
+                    <label>Gradient Renk 1:</label>
+                    <input type="color" id="gradientColor1" value="#ff0000">
+                    
+                    <label>Gradient Renk 2:</label>
+                    <input type="color" id="gradientColor2" value="#ffff00">
+                </div>
+
+                <div class="section">
+                    <h3>🌟 Parçacık Efektleri</h3>
+                    <label>Parçacık Türü:</label>
+                    <select id="particleType">
+                        <option value="none">Kapalı</option>
+                        <option value="stars">Yıldızlar ★</option>
+                        <option value="hearts">Kalpler ♥</option>
+                        <option value="sparkles">Parıltılar ✦</option>
+                        <option value="snow">Kar Taneleri ❄</option>
+                        <option value="bubbles">Baloncuklar ○</option>
+                        <option value="fire">Ateş 🔥</option>
+                        <option value="confetti">Konfeti 🎊</option>
+                        <option value="flowers">Çiçekler 🌸</option>
+                    </select>
+                    
+                    <label>Parçacık Yoğunluğu: <span id="particleDensityVal">15</span></label>
+                    <input type="range" id="particleDensity" min="5" max="50" value="15">
+                    
+                    <label>Parçacık Boyutu: <span id="particleSizeVal">12</span></label>
+                    <input type="range" id="particleSize" min="5" max="30" value="12">
+                    
+                    <label>Parçacık Rengi:</label>
+                    <input type="color" id="particleColor" value="#ffff00">
+                    
+                    <label><input type="checkbox" id="particleRainbow"> Gökkuşağı Renkleri</label>
+                    
+                    <label>Hareket Yönü:</label>
+                    <select id="particleDirection">
+                        <option value="down">Aşağı Düşen</option>
+                        <option value="up">Yukarı Yükselen</option>
+                        <option value="left">Sola Giden</option>
+                        <option value="right">Sağa Giden</option>
+                        <option value="random">Rastgele</option>
+                        <option value="explode">Patlayıcı</option>
+                    </select>
+                </div>
+
+                <div class="section">
+                    <h3>📐 Boyut</h3>
+                    <label>Genişlik: <span id="canvasWidthVal">300</span>px</label>
+                    <input type="range" id="canvasWidth" min="50" max="500" value="300">
+                    
+                    <label>Yükseklik: <span id="canvasHeightVal">100</span>px</label>
+                    <input type="range" id="canvasHeight" min="30" max="200" value="100">
+                </div>
+
+                <div class="section">
+                    <h3>📍 Yazı Pozisyonu</h3>
+                    <label>Yatay Pozisyon: <span id="textXVal">50</span>%</label>
+                    <input type="range" id="textX" min="0" max="100" value="50">
+                    
+                    <label>Dikey Pozisyon: <span id="textYVal">50</span>%</label>
+                    <input type="range" id="textY" min="0" max="100" value="50">
+                </div>
+
+                <div class="section">
+                    <h3>✨ Yazı Parıltısı</h3>
+                    <label>Parıltı Türü:</label>
+                    <select id="textSparkleType">
+                        <option value="none">Kapalı</option>
+                        <option value="sparkle">Yıldız Parıltısı ✦</option>
+                        <option value="twinkle">Işıltı ✧</option>
+                        <option value="dots">Noktalar •</option>
+                        <option value="stars">Mini Yıldızlar ★</option>
+                        <option value="hearts">Mini Kalpler ♥</option>
+                        <option value="diamonds">Elmaslar ◆</option>
+                    </select>
+                    
+                    <label>Parıltı Yoğunluğu: <span id="sparkleCountVal">8</span></label>
+                    <input type="range" id="sparkleCount" min="3" max="20" value="8">
+                    
+                    <label>Parıltı Rengi:</label>
+                    <input type="color" id="sparkleColor" value="#ffffff">
+                    
+                    <label><input type="checkbox" id="sparkleAnimate"> Animasyonlu Parıltı</label>
+                </div>
+
+                <div class="section">
+                    <h3>💫 Harf İçi Parıltı</h3>
+                    <label>İç Parıltı Türü:</label>
+                    <select id="innerSparkleType">
+                        <option value="none">Kapalı</option>
+                        <option value="stars">Yıldızlar ★</option>
+                        <option value="twinkle">Işıltılar ✧</option>
+                        <option value="dots">Noktacıklar •</option>
+                        <option value="glitter">Simler ✦</option>
+                        <option value="shimmer">Parlamalar ◇</option>
+                    </select>
+                    
+                    <label>İç Parıltı Yoğunluğu: <span id="innerSparkleCountVal">15</span></label>
+                    <input type="range" id="innerSparkleCount" min="5" max="50" value="15">
+                    
+                    <label>İç Parıltı Rengi:</label>
+                    <input type="color" id="innerSparkleColor" value="#ffffff">
+                    
+                    <label>İç Parıltı Boyutu: <span id="innerSparkleSizeVal">3</span></label>
+                    <input type="range" id="innerSparkleSize" min="1" max="8" value="3">
+                    
+                    <label><input type="checkbox" id="innerSparkleAnimate"> Animasyonlu</label>
+                </div>
+
+                <div class="section">
+                    <h3>〰️ Dekoratif Çizgiler</h3>
+                    <label>Çizgi Stili:</label>
+                    <select id="lineStyle">
+                        <option value="none">Kapalı</option>
+                        <option value="underline">Alt Çizgi ___</option>
+                        <option value="dashed">Kesikli - - -</option>
+                        <option value="dotted">Noktalı • • •</option>
+                        <option value="double">Çift Çizgi ═══</option>
+                        <option value="arrow">Oklu →──←</option>
+                        <option value="wave">Dalgalı ∿∿∿</option>
+                        <option value="fancy">Süslü ─═══─</option>
+                        <option value="heartline">Kalpli ─♥─♥─</option>
+                        <option value="starline">Yıldızlı ─★─★─</option>
+                    </select>
+                    
+                    <label>Çizgi Pozisyonu:</label>
+                    <select id="linePosition">
+                        <option value="bottom">Alt</option>
+                        <option value="top">Üst</option>
+                        <option value="both">Her İki Taraf</option>
+                        <option value="around">Çevrele</option>
+                    </select>
+                    
+                    <label>Çizgi Rengi:</label>
+                    <input type="color" id="lineColor" value="#000000">
+                </div>
+
+                <div class="section">
+                    <h3>🔲 Çerçeve</h3>
+                    <label>Çerçeve Stili:</label>
+                    <select id="frameStyle">
+                        <option value="none">Kapalı</option>
+                        <option value="simple">Basit ▢</option>
+                        <option value="rounded">Yuvarlatılmış</option>
+                        <option value="double">Çift Çizgi</option>
+                        <option value="dotted">Noktalı</option>
+                        <option value="dashed">Kesikli</option>
+                        <option value="fancy">Süslü Köşeler</option>
+                        <option value="shadow">Gölgeli</option>
+                    </select>
+                    
+                    <label>Çerçeve Rengi:</label>
+                    <input type="color" id="frameColor" value="#000000">
+                    
+                    <label>Çerçeve Kalınlığı: <span id="frameWidthVal">2</span></label>
+                    <input type="range" id="frameWidth" min="1" max="8" value="2">
+                    
+                    <label>İç Boşluk: <span id="framePaddingVal">10</span></label>
+                    <input type="range" id="framePadding" min="0" max="30" value="10">
+                </div>
+
+                <div class="section">
+                    <h3>🇹🇷 Bayrak & İkonlar</h3>
+                    
+                    <label>Sol Bayrak:</label>
+                    <select id="leftFlag">
+                        <option value="none">Kapalı</option>
+                        <option value="turkey">🇹🇷 Türkiye</option>
+                        <option value="usa">🇺🇸 ABD</option>
+                        <option value="uk">🇬🇧 İngiltere</option>
+                        <option value="germany">🇩🇪 Almanya</option>
+                        <option value="france">🇫🇷 Fransa</option>
+                        <option value="italy">🇮🇹 İtalya</option>
+                        <option value="spain">🇪🇸 İspanya</option>
+                        <option value="netherlands">🇳🇱 Hollanda</option>
+                        <option value="belgium">🇧🇪 Belçika</option>
+                        <option value="russia">🇷🇺 Rusya</option>
+                        <option value="ukraine">🇺🇦 Ukrayna</option>
+                        <option value="brazil">🇧🇷 Brezilya</option>
+                        <option value="argentina">🇦🇷 Arjantin</option>
+                        <option value="mexico">🇲🇽 Meksika</option>
+                        <option value="canada">🇨🇦 Kanada</option>
+                        <option value="australia">🇦🇺 Avustralya</option>
+                        <option value="japan">🇯🇵 Japonya</option>
+                        <option value="southkorea">🇰🇷 Güney Kore</option>
+                        <option value="china">🇨🇳 Çin</option>
+                        <option value="india">🇮🇳 Hindistan</option>
+                        <option value="pakistan">🇵🇰 Pakistan</option>
+                        <option value="indonesia">🇮🇩 Endonezya</option>
+                        <option value="saudiarabia">🇸🇦 Suudi Arabistan</option>
+                        <option value="uae">🇦🇪 BAE</option>
+                        <option value="egypt">🇪🇬 Mısır</option>
+                        <option value="israel">🇮🇱 İsrail</option>
+                        <option value="greece">🇬🇷 Yunanistan</option>
+                        <option value="portugal">🇵🇹 Portekiz</option>
+                        <option value="poland">🇵🇱 Polonya</option>
+                        <option value="austria">🇦🇹 Avusturya</option>
+                        <option value="switzerland">🇨🇭 İsviçre</option>
+                        <option value="sweden">🇸🇪 İsveç</option>
+                        <option value="norway">🇳🇴 Norveç</option>
+                        <option value="finland">🇫🇮 Finlandiya</option>
+                        <option value="denmark">🇩🇰 Danimarka</option>
+                        <option value="azerbaijan">🇦🇿 Azerbaycan</option>
+                    </select>
+                    
+                    <label>Sağ Bayrak:</label>
+                    <select id="rightFlag">
+                        <option value="none">Kapalı</option>
+                        <option value="turkey">🇹🇷 Türkiye</option>
+                        <option value="usa">🇺🇸 ABD</option>
+                        <option value="uk">🇬🇧 İngiltere</option>
+                        <option value="germany">🇩🇪 Almanya</option>
+                        <option value="france">🇫🇷 Fransa</option>
+                        <option value="italy">🇮🇹 İtalya</option>
+                        <option value="spain">🇪🇸 İspanya</option>
+                        <option value="netherlands">🇳🇱 Hollanda</option>
+                        <option value="belgium">🇧🇪 Belçika</option>
+                        <option value="russia">🇷🇺 Rusya</option>
+                        <option value="ukraine">🇺🇦 Ukrayna</option>
+                        <option value="brazil">🇧🇷 Brezilya</option>
+                        <option value="argentina">🇦🇷 Arjantin</option>
+                        <option value="mexico">🇲🇽 Meksika</option>
+                        <option value="canada">🇨🇦 Kanada</option>
+                        <option value="australia">🇦🇺 Avustralya</option>
+                        <option value="japan">🇯🇵 Japonya</option>
+                        <option value="southkorea">🇰🇷 Güney Kore</option>
+                        <option value="china">🇨🇳 Çin</option>
+                        <option value="india">🇮🇳 Hindistan</option>
+                        <option value="pakistan">🇵🇰 Pakistan</option>
+                        <option value="indonesia">🇮🇩 Endonezya</option>
+                        <option value="saudiarabia">🇸🇦 Suudi Arabistan</option>
+                        <option value="uae">🇦🇪 BAE</option>
+                        <option value="egypt">🇪🇬 Mısır</option>
+                        <option value="israel">🇮🇱 İsrail</option>
+                        <option value="greece">🇬🇷 Yunanistan</option>
+                        <option value="portugal">🇵🇹 Portekiz</option>
+                        <option value="poland">🇵🇱 Polonya</option>
+                        <option value="austria">🇦🇹 Avusturya</option>
+                        <option value="switzerland">🇨🇭 İsviçre</option>
+                        <option value="sweden">🇸🇪 İsveç</option>
+                        <option value="norway">🇳🇴 Norveç</option>
+                        <option value="finland">🇫🇮 Finlandiya</option>
+                        <option value="denmark">🇩🇰 Danimarka</option>
+                        <option value="azerbaijan">🇦🇿 Azerbaycan</option>
+                    </select>
+                    
+                    <label>Bayrak Animasyonu:</label>
+                    <select id="flagAnimation">
+                        <option value="wave">🌊 Dalgalanan</option>
+                        <option value="static">🔲 Sabit</option>
+                        <option value="rotating">🔄 Dönen</option>
+                        <option value="pulse">💓 Titreşen</option>
+                    </select>
+                    
+                    <label>Bayrak Boyutu: <span id="flagSizeVal">25</span></label>
+                    <input type="range" id="flagSize" min="15" max="60" value="25">
+                    
+                    <label>Bayrak Dikey Pozisyon: <span id="flagYVal">50</span>%</label>
+                    <input type="range" id="flagY" min="10" max="90" value="50">
+                    
+                    <label>Sol Bayrak X: <span id="flagLeftXVal">5</span></label>
+                    <input type="range" id="flagLeftX" min="0" max="50" value="5">
+                    
+                    <label>Sağ Bayrak X: <span id="flagRightXVal">95</span></label>
+                    <input type="range" id="flagRightX" min="50" max="100" value="95">
+                </div>
+
+                <div class="section">
+                    <h3>🖼️ Dekorasyon</h3>
+                    <label>Sol Dekor:</label>
+                    <input type="file" id="leftDecor" accept="image/*">
+                    <label>Sağ Dekor:</label>
+                    <input type="file" id="rightDecor" accept="image/*">
+                    <button onclick="clearDecor('left')">Sol Temizle</button>
+                    <button onclick="clearDecor('right')">Sağ Temizle</button>
+                    
+                    <label style="margin-top: 10px; display: block;">🎨 Resim Efekti:</label>
+                    <select id="imageEffect">
+                        <option value="none">Normal</option>
+                        <option value="grayscale">⬛ Siyah Beyaz</option>
+                        <option value="sepia">🟤 Sepya</option>
+                        <option value="invert">🔄 Negatif</option>
+                        <option value="brightness">☀️ Parlak</option>
+                        <option value="contrast">🔲 Yüksek Kontrast</option>
+                        <option value="blur">💨 Bulanık</option>
+                        <option value="vintage">📷 Vintage</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Orta Panel - Önizleme -->
+            <div class="center-panel">
+                <h3>👁️ Önizleme</h3>
+                <div class="preview-container">
+                    <canvas id="nickCanvas" width="300" height="100"></canvas>
+                </div>
+                
+                <div class="animation-controls">
+                    <h4>🎬 Temel Animasyon</h4>
+                    <select id="animationType">
+                        <option value="none">Animasyon Yok</option>
+                        <option value="pulse">Pulse (Nabız)</option>
+                        <option value="glow">Işıltı</option>
+                        <option value="rainbow">Gökkuşağı</option>
+                        <option value="shake">Titreme</option>
+                        <option value="bounce">Zıplama</option>
+                    </select>
+                    <button id="previewAnimation">Önizle</button>
+                </div>
+
+                <div class="animation-controls">
+                    <h4>✍️ Yazı Animasyonu</h4>
+                    <select id="textAnimationType">
+                        <option value="none">Animasyon Yok</option>
+                        <option value="typewriter">Daktilo Efekti</option>
+                        <option value="fadeIn">Harfler Belirme</option>
+                        <option value="slideIn">Harfler Kayma</option>
+                        <option value="dropIn">Harfler Düşme</option>
+                        <option value="wave">Dalga Efekti</option>
+                        <option value="elastic">Elastik Zıplama</option>
+                        <option value="rotate">Dönen Harfler</option>
+                        <option value="scale">Büyüyen Harfler</option>
+                        <option value="colorWave">Renk Dalgası</option>
+                        <option value="glitch">Glitch Efekti</option>
+                        <option value="neon">Neon Yanıp Sönme</option>
+                        <option value="matrix">Matrix Efekti</option>
+                    </select>
+                    <button id="previewTextAnimation">Önizle</button>
+                </div>
+
+                <div class="animation-controls">
+                    <h4>📜 Kayan Yazı</h4>
+                    <select id="scrollType">
+                        <option value="none">Kapalı</option>
+                        <option value="leftToRight">Soldan Sağa →</option>
+                        <option value="rightToLeft">Sağdan Sola ←</option>
+                        <option value="topToBottom">Yukarıdan Aşağı ↓</option>
+                        <option value="bottomToTop">Aşağıdan Yukarı ↑</option>
+                        <option value="bounce">Sağa Sola Zıpla</option>
+                        <option value="circular">Dairesel</option>
+                        <option value="zigzag">Zikzak</option>
+                    </select>
+                    <label>Hız: <span id="scrollSpeedVal">3</span></label>
+                    <input type="range" id="scrollSpeed" min="1" max="10" value="3">
+                    <button id="previewScroll">Önizle</button>
+                </div>
+
+                <div class="animation-controls">
+                    <h4>🧩 Blend Modları</h4>
+                    <label>Metin Blend</label>
+                    <select id="textBlendMode">
+                        <option value="source-over">Normal</option>
+                        <option value="screen">Screen</option>
+                        <option value="multiply">Multiply</option>
+                        <option value="overlay">Overlay</option>
+                        <option value="lighten">Lighten</option>
+                        <option value="darken">Darken</option>
+                        <option value="difference">Difference</option>
+                    </select>
+                    <label>Parçacık Blend</label>
+                    <select id="particleBlendMode">
+                        <option value="source-over">Normal</option>
+                        <option value="screen">Screen</option>
+                        <option value="lighter">Add (Lighter)</option>
+                        <option value="multiply">Multiply</option>
+                        <option value="overlay">Overlay</option>
+                        <option value="soft-light">Soft Light</option>
+                        <option value="color-dodge">Color Dodge</option>
+                    </select>
+                </div>
+
+                <div class="animation-controls">
+                    <h4>〰️ Yazı Deformasyon</h4>
+                    <select id="warpType">
+                        <option value="none">Deformasyon Yok</option>
+                        <option value="arc">Yay (Arc)</option>
+                        <option value="flag">Bayrak Dalga</option>
+                    </select>
+                    <label>Şiddet: <span id="warpAmountVal">0.35</span></label>
+                    <input type="range" id="warpAmount" min="0" max="0.8" step="0.05" value="0.35">
+                </div>
+
+                <div class="export-controls">
+                    <div class="export-row">
+                        <label for="exportScale">Çözünürlük:</label>
+                        <select id="exportScale">
+                            <option value="1">1x</option>
+                            <option value="2">2x</option>
+                            <option value="3">3x</option>
+                            <option value="4">4x</option>
+                        </select>
+                    </div>
+                    <label class="checkbox-inline">
+                        <input type="checkbox" id="exportTransparent"> Arka planı şeffaf yap
+                    </label>
+                </div>
+
+                <div class="animation-controls">
+                    <h4>🎨 Renk Paletleri</h4>
+                    <select id="paletteSelect">
+                        <option value="vapor">Vaporwave</option>
+                        <option value="sunset">Sunset</option>
+                        <option value="neon">Neon</option>
+                        <option value="pastel">Pastel</option>
+                        <option value="turkish">Turkuaz-Kırmızı</option>
+                    </select>
+                    <button id="applyPaletteBtn">Paleti Uygula</button>
+                </div>
+
+                <div class="animation-controls">
+                    <h4>🎲 Rastgeleleştir (Kilitli)</h4>
+                    <div class="checkbox-row"><label><input type="checkbox" id="lockFont"> Fontu kilitle</label></div>
+                    <div class="checkbox-row"><label><input type="checkbox" id="lockColors"> Renkleri kilitle</label></div>
+                    <div class="checkbox-row"><label><input type="checkbox" id="lockBackground"> Arka planı kilitle</label></div>
+                    <div class="checkbox-row"><label><input type="checkbox" id="lockParticles"> Parçacıkları kilitle</label></div>
+                    <div class="checkbox-row"><label><input type="checkbox" id="lockAnimation"> Animasyonları kilitle</label></div>
+                    <button id="randomizeLocked">Rastgele Karıştır</button>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="downloadPng" class="btn-primary">📥 PNG İndir</button>
+                    <button id="downloadGif" class="btn-secondary">🎞️ GIF İndir</button>
+                    <button id="copyToClipboard" class="btn-secondary">📋 Kopyala</button>
+                </div>
+            </div>
+
+            <!-- Sağ Panel - Hazır Şablonlar -->
+            <div class="right-panel">
+                <h3>📚 Hazır Şablonlar</h3>
+                <div class="templates">
+                    <div class="template" onclick="applyTemplate(1)">
+                        <span class="template-preview" style="background: linear-gradient(45deg, #ff6b6b, #feca57); font-family: Lobster;">SevDa</span>
+                    </div>
+                    <div class="template" onclick="applyTemplate(2)">
+                        <span class="template-preview" style="background: linear-gradient(45deg, #5f27cd, #341f97); font-family: Pacifico; color: #fff;">★ Nick ★</span>
+                    </div>
+                    <div class="template" onclick="applyTemplate(3)">
+                        <span class="template-preview" style="background: #000; font-family: 'Dancing Script'; color: #00ff00;">♥ AşK ♥</span>
+                    </div>
+                    <div class="template" onclick="applyTemplate(4)">
+                        <span class="template-preview" style="background: linear-gradient(45deg, #ff9ff3, #f368e0); font-family: 'Great Vibes'; color: #fff;">Princess</span>
+                    </div>
+                    <div class="template" onclick="applyTemplate(5)">
+                        <span class="template-preview" style="background: linear-gradient(45deg, #00d2d3, #01a3a4); font-family: 'Kaushan Script'; color: #fff;">CooL</span>
+                    </div>
+                    <div class="template" onclick="applyTemplate(6)">
+                        <span class="template-preview" style="background: #1a1a2e; font-family: 'Permanent Marker'; color: #e94560;">ReBeL</span>
+                    </div>
+                    <div class="template" onclick="applyTemplate(7)">
+                        <span class="template-preview" style="background: linear-gradient(45deg, #f9ca24, #f0932b); font-family: 'Impact'; color: #2c3e50;">GOLD</span>
+                    </div>
+                    <div class="template" onclick="applyTemplate(8)">
+                        <span class="template-preview" style="background: linear-gradient(135deg, #667eea, #764ba2); font-family: 'Satisfy'; color: #fff;">Dream</span>
+                    </div>
+                </div>
+
+                <h3>🎨 Renk Paletleri</h3>
+                <div class="color-palettes">
+                    <div class="palette" onclick="applyPalette(['#ff6b6b', '#feca57', '#48dbfb'])">
+                        <span style="background:#ff6b6b"></span>
+                        <span style="background:#feca57"></span>
+                        <span style="background:#48dbfb"></span>
+                    </div>
+                    <div class="palette" onclick="applyPalette(['#6c5ce7', '#a29bfe', '#fd79a8'])">
+                        <span style="background:#6c5ce7"></span>
+                        <span style="background:#a29bfe"></span>
+                        <span style="background:#fd79a8"></span>
+                    </div>
+                    <div class="palette" onclick="applyPalette(['#00b894', '#00cec9', '#0984e3'])">
+                        <span style="background:#00b894"></span>
+                        <span style="background:#00cec9"></span>
+                        <span style="background:#0984e3"></span>
+                    </div>
+                    <div class="palette" onclick="applyPalette(['#fdcb6e', '#e17055', '#d63031'])">
+                        <span style="background:#fdcb6e"></span>
+                        <span style="background:#e17055"></span>
+                        <span style="background:#d63031"></span>
+                    </div>
+                    <div class="palette" onclick="applyPalette(['#2d3436', '#636e72', '#b2bec3'])">
+                        <span style="background:#2d3436"></span>
+                        <span style="background:#636e72"></span>
+                        <span style="background:#b2bec3"></span>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>💾 Kayıtlı Tasarımlar</h3>
+                    <div class="save-load-buttons">
+                        <button onclick="saveCurrentDesign()" class="save-btn">💾 Kaydet</button>
+                        <button onclick="showSavedDesigns()" class="load-btn">📂 Yükle</button>
+                        <button onclick="clearSavedDesigns()" class="clear-btn">🗑️ Temizle</button>
+                    </div>
+                    <div id="savedDesignsList" class="saved-designs"></div>
+                </div>
+
+                <div class="section">
+                    <h3>📜 Geçmiş</h3>
+                    <div id="historyList" class="history-list"></div>
+                </div>
+
+                <h3>📖 Kullanım</h3>
+                <div class="help-text">
+                    <p>1. Nick yazınızı girin</p>
+                    <p>2. Font ve renkleri seçin</p>
+                    <p>3. Efektleri ayarlayın</p>
+                    <p>4. İsterseniz resim ekleyin</p>
+                    <p>5. PNG veya GIF olarak indirin</p>
+                </div>
+
+                <div class="section share-section">
+                    <h3>📤 Paylaş</h3>
+                    <div class="share-buttons">
+                        <button onclick="shareToTwitter()" class="share-btn twitter">🐦 Twitter</button>
+                        <button onclick="shareToFacebook()" class="share-btn facebook">📘 Facebook</button>
+                        <button onclick="shareToWhatsapp()" class="share-btn whatsapp">💬 WhatsApp</button>
+                        <button onclick="copyShareLink()" class="share-btn link">🔗 Link Kopyala</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>🎨 Flash Nick Pro v2.0 - Sesli Chat için En İyi Nick Yapma Programı</p>
+            <p>💡 İpucu: Hızlı stiller için üst bardaki butonları kullanın!</p>
+            <div class="footer-stats">
+                <span>📊 Bugün oluşturulan: <strong id="todayCount">1,247</strong></span>
+                <span>⭐ Toplam: <strong id="totalCount">158,493</strong></span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Yardım Modal -->
+    <div id="helpModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeHelpModal()">&times;</span>
+            <h2>🎨 Flash Nick Pro Kullanım Kılavuzu</h2>
+            <div class="help-sections">
+                <div class="help-item">
+                    <h4>🚀 Hızlı Başlangıç</h4>
+                    <p>Üst bardaki hazır stilleri kullanarak anında profesyonel nickler oluşturun.</p>
+                </div>
+                <div class="help-item">
+                    <h4>✨ Efektler</h4>
+                    <p>Glow, 3D, Gradient ve Outline efektlerini birlikte kullanarak etkileyici sonuçlar alın.</p>
+                </div>
+                <div class="help-item">
+                    <h4>🎬 Animasyonlar</h4>
+                    <p>GIF olarak indirmek için animasyon veya parçacık efekti seçmelisiniz.</p>
+                </div>
+                <div class="help-item">
+                    <h4>🇹🇷 Bayraklar</h4>
+                    <p>35+ ülke bayrağını dalgalanan animasyonla ekleyebilirsiniz.</p>
+                </div>
+                <div class="help-item">
+                    <h4>💾 Kaydetme</h4>
+                    <p>Tasarımlarınızı kaydedip daha sonra tekrar kullanabilirsiniz.</p>
+                </div>
+                <div class="help-item">
+                    <h4>📱 Sesli Chat Siteleri</h4>
+                    <p>Oluşturduğunuz nickleri tüm popüler sesli chat sitelerinde kullanabilirsiniz.</p>
+                </div>
+            </div>
+            <button onclick="closeHelpModal()" class="modal-close-btn">Anladım 👍</button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="gif.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

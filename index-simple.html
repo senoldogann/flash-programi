@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flash Nick Pro - Basit Mod</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Lobster&family=Dancing+Script:wght@700&family=Satisfy&family=Great+Vibes&family=Kaushan+Script&family=Permanent+Marker&family=Russo+One&family=Press+Start+2P&family=Orbitron:wght@700&family=Bangers&display=swap" rel="stylesheet">
+    <style>
+        /* Basit mod için ekstra stiller */
+        .simple-mode { font-size: 16px; }
+        .simple-section { 
+            background: rgba(255,255,255,0.08); 
+            padding: 20px; 
+            margin: 15px 0; 
+            border-radius: 12px;
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        .simple-section h3 { 
+            font-size: 1.4em; 
+            margin-bottom: 15px; 
+            color: #feca57;
+            cursor: pointer;
+            user-select: none;
+        }
+        .simple-section h3:before {
+            content: '▶ ';
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+        .simple-section.open h3:before {
+            transform: rotate(90deg);
+        }
+        .simple-section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .simple-section.open .simple-section-content {
+            max-height: 2000px;
+        }
+        .big-button {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.2em;
+            margin: 10px 0;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255,107,107,0.3);
+        }
+        .big-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255,107,107,0.5);
+        }
+        .big-button.secondary {
+            background: linear-gradient(45deg, #a29bfe, #6c5ce7);
+            box-shadow: 0 4px 15px rgba(162,155,254,0.3);
+        }
+        .big-button.secondary:hover {
+            box-shadow: 0 8px 25px rgba(162,155,254,0.5);
+        }
+        .simple-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 15px 0;
+        }
+        .simple-grid button {
+            padding: 15px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .center-canvas {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 15px;
+        }
+        .simple-label {
+            font-size: 1.1em;
+            margin: 12px 0 8px;
+            display: block;
+            color: #fff;
+        }
+        select.big-select {
+            width: 100%;
+            padding: 14px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body class="simple-mode">
+    <div class="container">
+        <header>
+            <h1 style="font-size: 2.5em;">🎨 Flash Nick Pro</h1>
+            <p style="font-size: 1.3em;">Sesli Chat Nick Yapıcı • Kolay Kullanım</p>
+        </header>
+
+        <div class="main-content" style="grid-template-columns: 400px 1fr;">
+            <!-- Sol Panel -->
+            <div class="left-panel">
+                <!-- Nickinizi Yazın -->
+                <div class="simple-section open">
+                    <h3 onclick="toggleSection(this)">✏️ Nickinizi Yazın</h3>
+                    <div class="simple-section-content">
+                        <input type="text" id="nickInput" placeholder="Buraya yazın..." value="SevDa" style="font-size: 1.3em; padding: 15px;">
+                        <div style="margin-top: 15px;">
+                            <span class="simple-label">Hızlı Ekle:</span>
+                            <div class="special-chars" style="gap: 8px;">
+                                <span onclick="addChar('★')" style="font-size: 1.5em;">★</span>
+                                <span onclick="addChar('☆')" style="font-size: 1.5em;">☆</span>
+                                <span onclick="addChar('♥')" style="font-size: 1.5em;">♥</span>
+                                <span onclick="addChar('♡')" style="font-size: 1.5em;">♡</span>
+                                <span onclick="addChar('◆')" style="font-size: 1.5em;">◆</span>
+                                <span onclick="addChar('●')" style="font-size: 1.5em;">●</span>
+                                <span onclick="addChar('✿')" style="font-size: 1.5em;">✿</span>
+                                <span onclick="addChar('❤')" style="font-size: 1.5em;">❤</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hazır Stiller -->
+                <div class="simple-section open">
+                    <h3 onclick="toggleSection(this)">🎨 Hazır Stiller (Tek Tık)</h3>
+                    <div class="simple-section-content">
+                        <div class="simple-grid">
+                            <button onclick="applyQuickStyle('romantic')" style="background: linear-gradient(45deg, #ff6b9d, #c44569); color: #fff;">💕 Romantik</button>
+                            <button onclick="applyQuickStyle('cool')" style="background: linear-gradient(45deg, #00d4ff, #0066ff); color: #fff;">😎 Havalı</button>
+                            <button onclick="applyQuickStyle('gaming')" style="background: linear-gradient(45deg, #00ff00, #003300); color: #fff;">🎮 Oyuncu</button>
+                            <button onclick="applyQuickStyle('fire')" style="background: linear-gradient(45deg, #ff4500, #ffd700); color: #fff;">🔥 Ateşli</button>
+                            <button onclick="applyQuickStyle('neon')" style="background: linear-gradient(45deg, #ff00ff, #00ffff); color: #fff;">💡 Neon</button>
+                            <button onclick="applyQuickStyle('turkish')" style="background: linear-gradient(45deg, #e30a17, #fff); color: #000;">🇹🇷 Türk</button>
+                        </div>
+                        <button class="big-button" onclick="randomStyle()" style="margin-top: 15px;">🎲 Rastgele Stil</button>
+                    </div>
+                </div>
+
+                <!-- Yazı Tipi -->
+                <div class="simple-section">
+                    <h3 onclick="toggleSection(this)">🔤 Yazı Tipi ve Renk</h3>
+                    <div class="simple-section-content">
+                        <label class="simple-label">Yazı Tipi:</label>
+                        <select id="fontFamily" class="big-select">
+                            <option value="Lobster">Lobster (Güzel)</option>
+                            <option value="Pacifico">Pacifico (Yumuşak)</option>
+                            <option value="Dancing Script">Dancing Script (Zarif)</option>
+                            <option value="Great Vibes">Great Vibes (Şık)</option>
+                            <option value="Bangers">Bangers (Güçlü)</option>
+                            <option value="Press Start 2P">Press Start (Oyun)</option>
+                            <option value="Orbitron">Orbitron (Modern)</option>
+                            <option value="Satisfy">Satisfy (El Yazısı)</option>
+                        </select>
+
+                        <label class="simple-label" style="margin-top: 20px;">Yazı Rengi:</label>
+                        <input type="color" id="textColor" value="#ffffff" style="height: 60px; width: 100%; border-radius: 10px;">
+
+                        <label class="simple-label" style="margin-top: 20px;">Yazı Boyutu:</label>
+                        <input type="range" id="fontSize" min="20" max="120" value="40" style="width: 100%; height: 10px;">
+                        <span id="fontSizeVal" style="font-size: 1.2em; display: block; text-align: center; margin-top: 5px;">40</span>
+                    </div>
+                </div>
+
+                <!-- Efektler -->
+                <div class="simple-section">
+                    <h3 onclick="toggleSection(this)">✨ Efektler</h3>
+                    <div class="simple-section-content">
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <label style="display: flex; align-items: center; gap: 10px; font-size: 1.2em; cursor: pointer;">
+                                <input type="checkbox" id="effectGlow" style="width: 24px; height: 24px; accent-color: #ff6b6b;">
+                                <span>💡 Parlama (Glow)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; font-size: 1.2em; cursor: pointer;">
+                                <input type="checkbox" id="effectOutline" style="width: 24px; height: 24px; accent-color: #ff6b6b;">
+                                <span>📐 Kenar Çizgisi</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 10px; font-size: 1.2em; cursor: pointer;">
+                                <input type="checkbox" id="effectGradient" style="width: 24px; height: 24px; accent-color: #ff6b6b;">
+                                <span>🌈 Renk Geçişi</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Animasyonlar -->
+                <div class="simple-section">
+                    <h3 onclick="toggleSection(this)">🎬 Hareketler</h3>
+                    <div class="simple-section-content">
+                        <label class="simple-label">Animasyon Seç:</label>
+                        <select id="textAnimationType" class="big-select">
+                            <option value="none">Hareket Yok</option>
+                            <option value="fadeIn">✨ Yavaş Belir</option>
+                            <option value="wave">🌊 Dalga</option>
+                            <option value="elastic">🎪 Zıpla</option>
+                            <option value="glow">💡 Işılda</option>
+                            <option value="rainbow">🌈 Gökkuşağı</option>
+                        </select>
+
+                        <label class="simple-label" style="margin-top: 20px;">Parçacık Efekti:</label>
+                        <select id="particleType" class="big-select">
+                            <option value="none">Parçacık Yok</option>
+                            <option value="hearts">💕 Kalpler</option>
+                            <option value="stars">⭐ Yıldızlar</option>
+                            <option value="sparkles">✨ Kıvılcımlar</option>
+                            <option value="snow">❄️ Kar Taneleri</option>
+                            <option value="fire">🔥 Ateş</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Arka Plan -->
+                <div class="simple-section">
+                    <h3 onclick="toggleSection(this)">🖼️ Arka Plan</h3>
+                    <div class="simple-section-content">
+                        <div class="simple-grid">
+                            <button onclick="setPresetBg('gradient1')" style="background: linear-gradient(45deg, #ff6b6b, #feca57);">🌅 Günbatımı</button>
+                            <button onclick="setPresetBg('gradient2')" style="background: linear-gradient(45deg, #5f27cd, #341f97);">🌌 Mor</button>
+                            <button onclick="setPresetBg('gradient3')" style="background: linear-gradient(45deg, #00d2d3, #01a3a4);">🏝️ Turkuaz</button>
+                            <button onclick="setPresetBg('dark')" style="background: #000; color: #fff;">⚫ Siyah</button>
+                        </div>
+                        <label class="simple-label" style="margin-top: 20px;">veya Resim Yükle:</label>
+                        <input type="file" id="bgUpload" accept="image/*" style="padding: 15px; font-size: 1.1em;">
+                    </div>
+                </div>
+
+                <!-- İndir -->
+                <div class="simple-section open">
+                    <h3 onclick="toggleSection(this)">💾 Kaydet ve İndir</h3>
+                    <div class="simple-section-content">
+                        <button class="big-button" id="downloadPng">📥 Resim Olarak İndir (PNG)</button>
+                        <button class="big-button secondary" id="downloadGif">🎞️ Hareketli İndir (GIF)</button>
+                        
+                        <div style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                            <label style="display: flex; align-items: center; gap: 10px; font-size: 1.1em; cursor: pointer;">
+                                <input type="checkbox" id="exportTransparent" style="width: 20px; height: 20px;">
+                                <span>🔲 Arka planı şeffaf yap</span>
+                            </label>
+                            <label class="simple-label" style="margin-top: 12px;">Kalite:</label>
+                            <select id="exportScale" class="big-select">
+                                <option value="1">Normal (1x)</option>
+                                <option value="2">Yüksek (2x)</option>
+                                <option value="3">Çok Yüksek (3x)</option>
+                                <option value="4">Ultra (4x)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sağ Panel - Önizleme -->
+            <div class="center-canvas">
+                <h2 style="margin-bottom: 20px; font-size: 1.8em;">👁️ Önizleme</h2>
+                <div style="display: inline-block; padding: 20px; background: rgba(0,0,0,0.3); border-radius: 15px;">
+                    <canvas id="nickCanvas" width="300" height="100" style="border-radius: 10px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);"></canvas>
+                </div>
+                <p style="margin-top: 20px; font-size: 1.2em; color: #ccc;">Yukarıdan bir stil seçin veya ayarları değiştirin</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer style="text-align: center; padding: 30px; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <p style="font-size: 1.1em;">Made with ❤️ for Sesli Chat • Flash Nick Pro v2.0</p>
+        </footer>
+    </div>
+
+    <!-- Toast Bildirimi -->
+    <div id="toast"></div>
+
+    <script src="gif.js"></script>
+    <script src="app.js"></script>
+    <script>
+        // Accordion toggle
+        function toggleSection(header) {
+            const section = header.parentElement;
+            section.classList.toggle('open');
+        }
+
+        // Sayfa yüklendiğinde bazı bölümleri aç
+        window.addEventListener('load', () => {
+            document.querySelectorAll('.simple-section').forEach((section, index) => {
+                if (index < 2) { // İlk 2 bölümü aç
+                    section.classList.add('open');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
