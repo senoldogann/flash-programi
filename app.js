@@ -4090,16 +4090,20 @@ function randomizeWithLocks() {
     if (!maker) return;
 
     const lockFont = document.getElementById('lockFont')?.checked;
+    const lockFontSize = document.getElementById('lockFontSize')?.checked;
     const lockColors = document.getElementById('lockColors')?.checked;
     const lockBackground = document.getElementById('lockBackground')?.checked;
     const lockParticles = document.getElementById('lockParticles')?.checked;
     const lockAnimation = document.getElementById('lockAnimation')?.checked;
+    const lockTextPos = document.getElementById('lockTextPos')?.checked;
 
     // Font ve boyut
     if (!lockFont) {
         const fonts = ['Lobster','Pacifico','Press Start 2P','Orbitron','Bangers','Dancing Script','Great Vibes','Kaushan Script','Permanent Marker','Satisfy','Impact','Russo One'];
         maker.settings.fontFamily = fonts[Math.floor(Math.random() * fonts.length)];
-        maker.settings.fontSize = 30 + Math.floor(Math.random() * 50);
+    }
+    if (!lockFontSize) {
+        maker.settings.fontSize = 28 + Math.floor(Math.random() * 52); // 28-80 px
     }
 
     // Renkler ve efektler
@@ -4136,6 +4140,12 @@ function randomizeWithLocks() {
         const textAnims = ['none','typewriter','fadeIn','slideIn','dropIn','wave','elastic','rotate','scale','colorWave','glitch','neon','matrix'];
         maker.settings.textAnimationType = textAnims[Math.floor(Math.random()*textAnims.length)];
         maker.settings.scrollType = ['none','leftToRight','rightToLeft','bounce'][Math.floor(Math.random()*4)];
+    }
+
+    // Yazı pozisyonu
+    if (!lockTextPos) {
+        maker.settings.textX = 35 + Math.floor(Math.random() * 30); // 35-65
+        maker.settings.textY = 40 + Math.floor(Math.random() * 20); // 40-60
     }
 
     updateUIFromSettings(maker);
@@ -4516,6 +4526,43 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tema butonu
     document.getElementById('darkModeToggle')?.addEventListener('click', toggleDarkMode);
     
+    // Otomatik tasarım resim seçici
+    const autoDesignImage = document.getElementById('autoDesignImage');
+    if (autoDesignImage) {
+        autoDesignImage.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const status = document.getElementById('autoImageStatus');
+            const label = status.parentElement;
+            if (file) {
+                status.textContent = '✅ ' + file.name.substring(0, 15) + (file.name.length > 15 ? '...' : '');
+                label.classList.add('has-image');
+            } else {
+                status.textContent = '📷 Resim Seç';
+                label.classList.remove('has-image');
+            }
+        });
+    }
+    
+    // Sürükle Bırak Sistemi
+    setupDragAndDrop();
+    
+    // Klavye Kısayolları
+    setupKeyboardShortcuts();
+    
+    // Floating Action Button
+    setupFAB();
+    
+    // Canvas Tıkla Kopyala
+    setupCanvasClick();
+    
+    // Drop Zone Input
+    const dropZoneInput = document.getElementById('dropZoneInput');
+    if (dropZoneInput) {
+        dropZoneInput.addEventListener('change', (e) => {
+            handleImageFile(e.target.files[0]);
+        });
+    }
+    
     // Her render'da geçmişe ekle
     const originalRender = window.flashNickMaker.render.bind(window.flashNickMaker);
     let renderTimeout;
@@ -4525,8 +4572,730 @@ document.addEventListener('DOMContentLoaded', () => {
         renderTimeout = setTimeout(() => {
             // Sadece manuel değişikliklerde geçmişe ekle
         }, 1000);
+        updateFloatingPreview();
     };
+
+    // Floating mini önizleme scroll takibi
+    setupFloatingPreviewWatcher();
     
     // İstatistikleri güncelle
     setInterval(updateFakeStats, 30000);
+    
+    // Klavye kısayolları ipucunu 10 saniye sonra gizle
+    setTimeout(() => {
+        const hint = document.getElementById('keyboardHint');
+        if (hint && !localStorage.getItem('keyboardHintDismissed')) {
+            hint.style.opacity = '0';
+            setTimeout(() => hint.style.display = 'none', 500);
+        }
+    }, 10000);
 });
+
+// =============================================
+// KAYDIRIRKEN GÖRÜNÜR MİNİ ÖNİZLEME
+// =============================================
+
+function updateFloatingPreview() {
+    const mainCanvas = document.getElementById('nickCanvas');
+    const floatCanvas = document.getElementById('floatingCanvas');
+    if (!mainCanvas || !floatCanvas) return;
+    floatCanvas.width = mainCanvas.width;
+    floatCanvas.height = mainCanvas.height;
+    const ctx = floatCanvas.getContext('2d');
+    ctx.clearRect(0, 0, floatCanvas.width, floatCanvas.height);
+    ctx.drawImage(mainCanvas, 0, 0, floatCanvas.width, floatCanvas.height);
+}
+
+function setupFloatingPreviewWatcher() {
+    const floating = document.getElementById('floatingPreview');
+    const center = document.querySelector('.center-panel');
+    if (!floating || !center) return;
+    floating.classList.add('show');
+    const sync = () => updateFloatingPreview();
+    window.addEventListener('resize', sync);
+    sync();
+    startFloatingPreviewTicker();
+}
+
+let floatingPreviewTicker;
+function startFloatingPreviewTicker() {
+    const tick = () => {
+        updateFloatingPreview();
+        floatingPreviewTicker = requestAnimationFrame(tick);
+    };
+    cancelAnimationFrame(floatingPreviewTicker);
+    floatingPreviewTicker = requestAnimationFrame(tick);
+}
+
+// =============================================
+// SÜRÜKLE BIRAK SİSTEMİ
+// =============================================
+
+function setupDragAndDrop() {
+    const dropZone = document.getElementById('dropZone');
+    const previewContainer = document.getElementById('previewContainer');
+    
+    // Sayfa genelinde drag-drop engelle
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        document.body.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
+    });
+    
+    // Drop Zone
+    if (dropZone) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('drag-over');
+            });
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('drag-over');
+            });
+        });
+        
+        dropZone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                handleImageFile(files[0]);
+            }
+        });
+        
+        dropZone.addEventListener('click', () => {
+            document.getElementById('dropZoneInput')?.click();
+        });
+    }
+    
+    // Preview Container'a da drop yapılabilsin
+    if (previewContainer) {
+        ['dragenter', 'dragover'].forEach(eventName => {
+            previewContainer.addEventListener(eventName, () => {
+                previewContainer.style.outline = '3px dashed #667eea';
+            });
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            previewContainer.addEventListener(eventName, () => {
+                previewContainer.style.outline = 'none';
+            });
+        });
+        
+        previewContainer.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                handleImageFile(files[0]);
+            }
+        });
+    }
+}
+
+function handleImageFile(file) {
+    if (!file || !file.type.startsWith('image/')) {
+        showToast('Lütfen bir resim dosyası seçin! 🖼️');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const maker = window.flashNickMaker;
+            maker.bgImageOriginal = img;
+            maker.bgImage = img;
+            maker.settings.bgType = 'custom';
+            
+            // Ayarları sıfırla
+            maker.settings.imageSaturation = 100;
+            maker.settings.imageTemperature = 0;
+            maker.settings.imageHue = 0;
+            maker.settings.imageSharpness = 0;
+            maker.settings.imageCropX = 0;
+            maker.settings.imageCropY = 0;
+            maker.settings.imageCropWidth = 100;
+            maker.settings.imageCropHeight = 100;
+            
+            if (maker.updatePhotoEditingUI) {
+                maker.updatePhotoEditingUI();
+            }
+            
+            maker.render();
+            showToast('Arka plan yüklendi! 🖼️');
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// =============================================
+// KLAVYE KISAYOLLARI
+// =============================================
+
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Input alanındaysa işleme
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            return;
+        }
+        
+        // Ctrl/Cmd + tuş kombinasyonları
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key.toLowerCase()) {
+                case 'c':
+                    e.preventDefault();
+                    copyToClipboard();
+                    break;
+                case 's':
+                    e.preventDefault();
+                    downloadPNG();
+                    break;
+                case 'r':
+                    e.preventDefault();
+                    randomStyle();
+                    break;
+                case 'g':
+                    e.preventDefault();
+                    downloadGIF();
+                    break;
+                case 'z':
+                    e.preventDefault();
+                    // Geri al
+                    break;
+            }
+        }
+        
+        // Tek tuş kısayolları
+        switch (e.key) {
+            case 'Escape':
+                // Modalleri kapat
+                document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+                closeFAB();
+                break;
+        }
+    });
+}
+
+// =============================================
+// FLOATING ACTION BUTTON
+// =============================================
+
+function setupFAB() {
+    const fabMain = document.getElementById('fabMain');
+    const floatingActions = document.querySelector('.floating-actions');
+    
+    if (fabMain && floatingActions) {
+        fabMain.addEventListener('click', () => {
+            floatingActions.classList.toggle('open');
+        });
+        
+        // Dışarı tıklayınca kapat
+        document.addEventListener('click', (e) => {
+            if (!floatingActions.contains(e.target)) {
+                floatingActions.classList.remove('open');
+            }
+        });
+    }
+}
+
+function closeFAB() {
+    const floatingActions = document.querySelector('.floating-actions');
+    if (floatingActions) {
+        floatingActions.classList.remove('open');
+    }
+}
+
+// =============================================
+// CANVAS TIKLA KOPYALA
+// =============================================
+
+function setupCanvasClick() {
+    const canvas = document.getElementById('nickCanvas');
+    if (canvas) {
+        canvas.addEventListener('click', (e) => {
+            // Blur fırçası aktifse kopyalama
+            const maker = window.flashNickMaker;
+            if (maker && maker.blurBrushActive) return;
+            
+            copyToClipboard();
+        });
+        
+        canvas.style.cursor = 'pointer';
+    }
+}
+
+// Panoya kopyala
+async function copyToClipboard() {
+    const maker = window.flashNickMaker;
+    if (!maker) return;
+    
+    try {
+        const canvas = maker.canvas;
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        
+        await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+        ]);
+        
+        showToast('Panoya kopyalandı! 📋 Ctrl+V ile yapıştır');
+        
+        // Görsel geri bildirim
+        const container = document.getElementById('previewContainer');
+        if (container) {
+            container.style.outline = '3px solid #27ae60';
+            setTimeout(() => container.style.outline = 'none', 500);
+        }
+    } catch (err) {
+        // Fallback: Data URL olarak kopyala
+        showToast('Kopyalama başarısız, PNG olarak indirin 💾');
+        console.error('Kopyalama hatası:', err);
+    }
+}
+
+// =============================================
+// OTOMATİK TASARIM ÜRETİCİ
+// =============================================
+
+// Tasarım presetleri
+const designPresets = [
+    {
+        name: 'Romantik Glow',
+        style: {
+            fontFamily: 'Great Vibes',
+            fontSize: 42,
+            textColor: '#ff69b4',
+            effectGlow: true,
+            effectOutline: false,
+            effectGradient: false,
+            shadowColor: '#ff1493',
+            shadowBlur: 20,
+            particleType: 'hearts',
+            textAnimationType: 'fadeIn'
+        }
+    },
+    {
+        name: 'Neon Cyber',
+        style: {
+            fontFamily: 'Orbitron',
+            fontSize: 38,
+            textColor: '#00ffff',
+            effectGlow: true,
+            effectOutline: true,
+            outlineColor: '#ff00ff',
+            outlineWidth: 2,
+            shadowColor: '#00ffff',
+            shadowBlur: 25,
+            particleType: 'none',
+            textBlendMode: 'screen'
+        }
+    },
+    {
+        name: 'Altın Lüks',
+        style: {
+            fontFamily: 'Lobster',
+            fontSize: 44,
+            textColor: '#ffd700',
+            effectGradient: true,
+            gradientColor1: '#ffd700',
+            gradientColor2: '#ff8c00',
+            effectOutline: true,
+            outlineColor: '#8b4513',
+            outlineWidth: 3,
+            shadowColor: '#000000',
+            shadowBlur: 10,
+            particleType: 'stars'
+        }
+    },
+    {
+        name: 'Gece Mavisi',
+        style: {
+            fontFamily: 'Dancing Script',
+            fontSize: 42,
+            textColor: '#87ceeb',
+            effectGlow: true,
+            shadowColor: '#4169e1',
+            shadowBlur: 18,
+            effectOutline: true,
+            outlineColor: '#191970',
+            outlineWidth: 2,
+            particleType: 'snow'
+        }
+    },
+    {
+        name: 'Ateş Fırtınası',
+        style: {
+            fontFamily: 'Permanent Marker',
+            fontSize: 40,
+            textColor: '#ff4500',
+            effectGradient: true,
+            gradientColor1: '#ff0000',
+            gradientColor2: '#ffa500',
+            effectGlow: true,
+            shadowColor: '#ff4500',
+            shadowBlur: 20,
+            particleType: 'fire',
+            textAnimationType: 'wave'
+        }
+    },
+    {
+        name: 'Pastel Rüya',
+        style: {
+            fontFamily: 'Pacifico',
+            fontSize: 42,
+            textColor: '#dda0dd',
+            effectGradient: true,
+            gradientColor1: '#ffb6c1',
+            gradientColor2: '#87cefa',
+            effectOutline: false,
+            shadowColor: '#ff69b4',
+            shadowBlur: 15,
+            particleType: 'bubbles'
+        }
+    },
+    {
+        name: 'Matrix Hacker',
+        style: {
+            fontFamily: 'Press Start 2P',
+            fontSize: 28,
+            textColor: '#00ff00',
+            effectGlow: true,
+            shadowColor: '#00ff00',
+            shadowBlur: 15,
+            effectOutline: false,
+            particleType: 'matrix',
+            textAnimationType: 'matrix'
+        }
+    },
+    {
+        name: 'Galaktik',
+        style: {
+            fontFamily: 'Russo One',
+            fontSize: 40,
+            textColor: '#e0e0ff',
+            effectGradient: true,
+            gradientColor1: '#9400d3',
+            gradientColor2: '#00bfff',
+            effectGlow: true,
+            shadowColor: '#8a2be2',
+            shadowBlur: 22,
+            particleType: 'stars',
+            textSparkleType: 'sparkle'
+        }
+    },
+    {
+        name: 'Türk Bayrağı',
+        style: {
+            fontFamily: 'Righteous',
+            fontSize: 40,
+            textColor: '#ffffff',
+            effectOutline: true,
+            outlineColor: '#e30a17',
+            outlineWidth: 3,
+            effectGlow: true,
+            shadowColor: '#e30a17',
+            shadowBlur: 15,
+            leftFlag: 'tr',
+            rightFlag: 'tr',
+            flagAnimation: 'wave'
+        }
+    },
+    {
+        name: 'Vintage Retro',
+        style: {
+            fontFamily: 'Bangers',
+            fontSize: 44,
+            textColor: '#f4a460',
+            effectOutline: true,
+            outlineColor: '#8b4513',
+            outlineWidth: 3,
+            effect3D: true,
+            shadowColor: '#000000',
+            shadowBlur: 5,
+            imageEffect: 'sepia'
+        }
+    },
+    {
+        name: 'Buz Kraliçesi',
+        style: {
+            fontFamily: 'Satisfy',
+            fontSize: 42,
+            textColor: '#e0ffff',
+            effectGradient: true,
+            gradientColor1: '#add8e6',
+            gradientColor2: '#ffffff',
+            effectGlow: true,
+            shadowColor: '#00bfff',
+            shadowBlur: 20,
+            particleType: 'snow',
+            textSparkleType: 'shimmer'
+        }
+    },
+    {
+        name: 'Punk Rock',
+        style: {
+            fontFamily: 'Creepster',
+            fontSize: 40,
+            textColor: '#ff1493',
+            effectOutline: true,
+            outlineColor: '#000000',
+            outlineWidth: 4,
+            effectGlow: false,
+            shadowColor: '#ff1493',
+            shadowBlur: 10,
+            textAnimationType: 'glitch'
+        }
+    }
+];
+
+// Otomatik tasarım üret
+let autoDesignImage = null;
+
+// Otomatik tasarım boyut presetleri
+function setAutoSize(width, height) {
+    document.getElementById('autoDesignWidth').value = width;
+    document.getElementById('autoDesignHeight').value = height;
+    
+    // Aktif butonu güncelle
+    document.querySelectorAll('.auto-size-presets button').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function generateAutoDesign() {
+    const textInput = document.getElementById('autoDesignText');
+    const imageInput = document.getElementById('autoDesignImage');
+    const widthInput = document.getElementById('autoDesignWidth');
+    const heightInput = document.getElementById('autoDesignHeight');
+    const grid = document.getElementById('autoDesignGrid');
+    
+    const text = textInput.value.trim() || 'NickAdı';
+    const canvasWidth = parseInt(widthInput.value) || 350;
+    const canvasHeight = parseInt(heightInput.value) || 120;
+    
+    // Resim yükle (varsa)
+    const imageFile = imageInput.files[0];
+    
+    // Yükleniyor göster
+    grid.innerHTML = `
+        <div class="auto-design-loading" style="grid-column: 1 / -1;">
+            <div class="spinner"></div>
+            <p>Tasarımlar oluşturuluyor...</p>
+        </div>
+    `;
+    
+    // Boyutları sakla
+    window.autoDesignSize = { width: canvasWidth, height: canvasHeight };
+    
+    // Resmi yükle ve tasarımları oluştur
+    if (imageFile) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                autoDesignImage = img;
+                setTimeout(() => createDesignCards(text, img), 500);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(imageFile);
+    } else {
+        autoDesignImage = null;
+        setTimeout(() => createDesignCards(text, null), 500);
+    }
+}
+
+function createDesignCards(text, bgImage) {
+    const grid = document.getElementById('autoDesignGrid');
+    grid.innerHTML = '';
+    
+    const size = window.autoDesignSize || { width: 350, height: 120 };
+    
+    // Rastgele 6 preset seç
+    const shuffled = [...designPresets].sort(() => Math.random() - 0.5);
+    const selectedPresets = shuffled.slice(0, 6);
+    
+    selectedPresets.forEach((preset, index) => {
+        const card = document.createElement('div');
+        card.className = 'auto-design-card';
+        card.innerHTML = `
+            <canvas id="autoCanvas${index}" width="${size.width}" height="${size.height}"></canvas>
+            <div class="auto-design-card-info">
+                <span>${preset.name}</span>
+                <div class="auto-design-card-actions">
+                    <button class="auto-card-use-btn" onclick="useAutoDesign(${index})" title="Bu tasarımı ana editöre aktar">✓ Kullan</button>
+                    <button class="auto-card-download-btn" onclick="downloadAutoDesign(${index})" title="Direkt indir">⬇ İndir</button>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+        
+        // Canvas'a çiz
+        setTimeout(() => {
+            renderAutoDesign(index, text, bgImage, preset);
+        }, 100 * index);
+    });
+    
+    // Preset'leri sakla
+    window.currentAutoPresets = selectedPresets;
+    
+    showToast(`${selectedPresets.length} farklı tasarım oluşturuldu! ✨`);
+}
+
+function renderAutoDesign(index, text, bgImage, preset) {
+    const canvas = document.getElementById(`autoCanvas${index}`);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    const style = preset.style;
+    
+    // Arka plan
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    if (bgImage) {
+        // Resmi çiz
+        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+        
+        // Hafif karartma overlay
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    } else {
+        // Gradient arka plan
+        const bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        bgGrad.addColorStop(0, '#1a1a2e');
+        bgGrad.addColorStop(1, '#16213e');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    // Font ayarla
+    ctx.font = `${style.fontSize || 40}px "${style.fontFamily || 'Lobster'}"`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    const x = canvas.width / 2;
+    const y = canvas.height / 2;
+    
+    // Glow efekti
+    if (style.effectGlow) {
+        ctx.shadowColor = style.shadowColor || style.textColor;
+        ctx.shadowBlur = style.shadowBlur || 15;
+    } else {
+        ctx.shadowColor = style.shadowColor || '#000000';
+        ctx.shadowBlur = style.shadowBlur || 5;
+        ctx.shadowOffsetX = 2;
+        ctx.shadowOffsetY = 2;
+    }
+    
+    // Gradient veya düz renk
+    if (style.effectGradient) {
+        const textWidth = ctx.measureText(text).width;
+        const gradient = ctx.createLinearGradient(x - textWidth/2, 0, x + textWidth/2, 0);
+        gradient.addColorStop(0, style.gradientColor1 || '#ff6b6b');
+        gradient.addColorStop(1, style.gradientColor2 || '#feca57');
+        ctx.fillStyle = gradient;
+    } else {
+        ctx.fillStyle = style.textColor || '#ffffff';
+    }
+    
+    // Outline
+    if (style.effectOutline && style.outlineWidth > 0) {
+        ctx.strokeStyle = style.outlineColor || '#000000';
+        ctx.lineWidth = (style.outlineWidth || 2) * 2;
+        ctx.strokeText(text, x, y);
+    }
+    
+    // Metni çiz
+    ctx.fillText(text, x, y);
+    
+    // Bayraklar (varsa)
+    if (style.leftFlag && style.leftFlag !== 'none') {
+        drawMiniFlag(ctx, style.leftFlag, 15, canvas.height/2 - 15, 30);
+    }
+    if (style.rightFlag && style.rightFlag !== 'none') {
+        drawMiniFlag(ctx, style.rightFlag, canvas.width - 45, canvas.height/2 - 15, 30);
+    }
+}
+
+function drawMiniFlag(ctx, flagCode, x, y, size) {
+    // Basit bayrak çizimi (sadece bazı bayraklar)
+    const flags = {
+        'tr': () => {
+            ctx.fillStyle = '#e30a17';
+            ctx.fillRect(x, y, size, size * 0.67);
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(x + size * 0.35, y + size * 0.33, size * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#e30a17';
+            ctx.beginPath();
+            ctx.arc(x + size * 0.4, y + size * 0.33, size * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    };
+    
+    if (flags[flagCode]) {
+        flags[flagCode]();
+    }
+}
+
+function useAutoDesign(index) {
+    const preset = window.currentAutoPresets[index];
+    if (!preset) return;
+    
+    const maker = window.flashNickMaker;
+    const text = document.getElementById('autoDesignText').value.trim() || 'NickAdı';
+    const size = window.autoDesignSize || { width: 350, height: 120 };
+    
+    // Canvas boyutunu uygula
+    maker.settings.canvasWidth = size.width;
+    maker.settings.canvasHeight = size.height;
+    document.getElementById('canvasWidth').value = size.width;
+    document.getElementById('canvasHeight').value = size.height;
+    
+    // Metni uygula
+    maker.settings.text = text;
+    document.getElementById('nickInput').value = text;
+    
+    // Stili uygula
+    Object.keys(preset.style).forEach(key => {
+        if (maker.settings.hasOwnProperty(key)) {
+            maker.settings[key] = preset.style[key];
+        }
+    });
+    
+    // Resmi uygula (varsa)
+    if (autoDesignImage) {
+        maker.bgImage = autoDesignImage;
+        maker.bgImageOriginal = autoDesignImage;
+        maker.settings.bgType = 'custom';
+    }
+    
+    // Canvas boyutunu güncelle
+    maker.canvas.width = size.width;
+    maker.canvas.height = size.height;
+    
+    // UI güncelle
+    updateUIFromSettings(maker);
+    
+    maker.render();
+    showToast(`"${preset.name}" tasarımı ana editöre aktarıldı! 🎨 Artık düzenlemeye devam edebilirsin.`);
+    
+    // Ana önizlemeye scroll
+    document.querySelector('.center-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function downloadAutoDesign(index) {
+    const canvas = document.getElementById(`autoCanvas${index}`);
+    if (!canvas) return;
+    
+    const preset = window.currentAutoPresets[index];
+    const text = document.getElementById('autoDesignText').value.trim() || 'NickAdı';
+    
+    const link = document.createElement('a');
+    link.download = `${text}-${preset.name}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    
+    showToast('Tasarım indirildi! 📥');
+}
+

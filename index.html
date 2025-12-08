@@ -37,7 +37,6 @@
     <div class="container">
         <header>
             <h1>🎨 Flash Nick Pro</h1>
-            <p>Sesli Chat için Profesyonel Nickler • <span id="visitorCount">12,847</span> kullanıcı</p>
             <div class="header-buttons">
                 <button id="installAppBtn" class="mode-btn" title="Uygulamayı Yükle" style="display: none;">📲</button>
                 <button id="darkModeToggle" class="mode-btn" title="Tema Değiştir">🌙</button>
@@ -55,6 +54,59 @@
             <button onclick="applyQuickStyle('fire')" class="quick-btn">🔥 Ateşli</button>
             <button onclick="applyQuickStyle('turkish')" class="quick-btn">🇹🇷 Türk</button>
             <button onclick="randomStyle()" class="quick-btn rainbow-btn">🎲 Rastgele</button>
+        </div>
+
+        <div class="top-insights">
+            <div class="insight-card">
+                <div class="insight-title">Kısayollar</div>
+                <div class="insight-detail">Ctrl+S: PNG • Ctrl+G: GIF • Ctrl+C: Kopyala</div>
+            </div>
+            <div class="insight-card">
+                <div class="insight-title">Sürükle-Bırak</div>
+                <div class="insight-detail">Resmi önizleme alanına bırak, anında yüklenir</div>
+            </div>
+            <div class="insight-card">
+                <div class="insight-title">Oto Tasarım</div>
+                <div class="insight-detail">Metin + boyut + resim seç, 1 tıkla 6 tasarım</div>
+            </div>
+        </div>
+
+        <!-- Otomatik Tasarım Üretici -->
+        <div class="auto-design-section">
+            <div class="auto-design-header">
+                <h3>✨ Otomatik Tasarım Üretici</h3>
+                <p>Metin, boyut ve resim ver, farklı tasarımlar otomatik oluşsun!</p>
+            </div>
+            <div class="auto-design-controls">
+                <div class="auto-input-group">
+                    <input type="text" id="autoDesignText" placeholder="Nick yazın..." class="auto-input">
+                    <label class="auto-file-label">
+                        <input type="file" id="autoDesignImage" accept="image/*" style="display:none;">
+                        <span id="autoImageStatus">📷 Resim Seç</span>
+                    </label>
+                </div>
+                <div class="auto-size-group">
+                    <div class="auto-size-input">
+                        <label>Genişlik</label>
+                        <input type="number" id="autoDesignWidth" value="350" min="100" max="800" step="10">
+                    </div>
+                    <span class="auto-size-x">×</span>
+                    <div class="auto-size-input">
+                        <label>Yükseklik</label>
+                        <input type="number" id="autoDesignHeight" value="120" min="50" max="400" step="10">
+                    </div>
+                    <div class="auto-size-presets">
+                        <button onclick="setAutoSize(300, 100)" title="Küçük">S</button>
+                        <button onclick="setAutoSize(350, 120)" title="Orta" class="active">M</button>
+                        <button onclick="setAutoSize(450, 150)" title="Büyük">L</button>
+                        <button onclick="setAutoSize(600, 200)" title="Çok Büyük">XL</button>
+                    </div>
+                </div>
+                <button onclick="generateAutoDesign()" class="auto-generate-btn">
+                    🎨 Tasarım Üret
+                </button>
+            </div>
+            <div id="autoDesignGrid" class="auto-design-grid"></div>
         </div>
 
         <div class="main-content">
@@ -561,8 +613,31 @@
             <!-- Orta Panel - Önizleme -->
             <div class="center-panel">
                 <h3>👁️ Önizleme</h3>
-                <div class="preview-container">
+                
+                <!-- Sürükle Bırak Alanı -->
+                <div id="dropZone" class="drop-zone">
+                    <div class="drop-zone-content">
+                        <span class="drop-icon">📷</span>
+                        <span>Resmi buraya sürükle veya</span>
+                        <label class="drop-browse-btn">
+                            <input type="file" id="dropZoneInput" accept="image/*" style="display:none;">
+                            Dosya Seç
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="preview-container" id="previewContainer">
                     <canvas id="nickCanvas" width="300" height="100"></canvas>
+                    
+                    <!-- Canvas Üzeri Hızlı Aksiyonlar -->
+                    <div class="canvas-quick-actions">
+                        <button onclick="copyToClipboard()" class="canvas-action-btn" title="Kopyala (Ctrl+C)">📋</button>
+                        <button onclick="downloadPNG()" class="canvas-action-btn" title="PNG İndir (Ctrl+S)">💾</button>
+                        <button onclick="downloadGIF()" class="canvas-action-btn" title="GIF İndir">🎬</button>
+                    </div>
+                    
+                    <!-- Tıkla Kopyala İpucu -->
+                    <div class="click-to-copy-hint">Tıkla = Kopyala 📋</div>
                 </div>
                 
                 <div class="animation-controls">
@@ -681,10 +756,12 @@
                 <div class="animation-controls">
                     <h4>🎲 Rastgeleleştir (Kilitli)</h4>
                     <div class="checkbox-row"><label><input type="checkbox" id="lockFont"> Fontu kilitle</label></div>
+                    <div class="checkbox-row"><label><input type="checkbox" id="lockFontSize"> Font boyutunu kilitle</label></div>
                     <div class="checkbox-row"><label><input type="checkbox" id="lockColors"> Renkleri kilitle</label></div>
                     <div class="checkbox-row"><label><input type="checkbox" id="lockBackground"> Arka planı kilitle</label></div>
                     <div class="checkbox-row"><label><input type="checkbox" id="lockParticles"> Parçacıkları kilitle</label></div>
                     <div class="checkbox-row"><label><input type="checkbox" id="lockAnimation"> Animasyonları kilitle</label></div>
+                    <div class="checkbox-row"><label><input type="checkbox" id="lockTextPos"> Yazı pozisyonunu kilitle</label></div>
                     <button id="randomizeLocked">Rastgele Karıştır</button>
                 </div>
 
@@ -834,6 +911,50 @@
             </div>
             <button onclick="closeHelpModal()" class="modal-close-btn">Anladım 👍</button>
         </div>
+    </div>
+
+    <!-- Floating Action Buttons -->
+    <div class="floating-actions">
+        <button class="fab fab-main" id="fabMain" title="Hızlı Menü">
+            <span class="fab-icon">⚡</span>
+        </button>
+        <div class="fab-menu" id="fabMenu">
+            <button class="fab-item" onclick="copyToClipboard()" title="Kopyala">
+                <span>📋</span>
+                <span class="fab-label">Kopyala</span>
+            </button>
+            <button class="fab-item" onclick="downloadPNG()" title="PNG İndir">
+                <span>💾</span>
+                <span class="fab-label">PNG</span>
+            </button>
+            <button class="fab-item" onclick="downloadGIF()" title="GIF İndir">
+                <span>🎬</span>
+                <span class="fab-label">GIF</span>
+            </button>
+            <button class="fab-item" onclick="randomStyle()" title="Rastgele Stil">
+                <span>🎲</span>
+                <span class="fab-label">Rastgele</span>
+            </button>
+            <button class="fab-item" onclick="saveDesign()" title="Kaydet">
+                <span>💖</span>
+                <span class="fab-label">Kaydet</span>
+            </button>
+        </div>
+    </div>
+
+        <!-- Kaydırırken hep görünür mini önizleme -->
+        <div id="floatingPreview" class="floating-preview show">
+            <div class="floating-preview-header">Canlı Önizleme</div>
+            <canvas id="floatingCanvas" width="300" height="100"></canvas>
+        </div>
+
+    <!-- Klavye Kısayolları Tooltip -->
+    <div class="keyboard-shortcuts-hint" id="keyboardHint">
+        <span>⌨️ Kısayollar: </span>
+        <kbd>Ctrl+C</kbd> Kopyala &nbsp;
+        <kbd>Ctrl+S</kbd> Kaydet &nbsp;
+        <kbd>Ctrl+R</kbd> Rastgele
+        <button onclick="this.parentElement.style.display='none'" class="close-hint">✕</button>
     </div>
 
     <!-- Toast Notification -->
