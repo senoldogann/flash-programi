@@ -5000,14 +5000,14 @@ FlashNickMaker.prototype.updateLayerList = function() {
         const div = document.createElement('div');
         div.className = 'text-layer-item' + (layer.id === this.activeTextLayer ? ' active' : '');
         div.innerHTML = `
-            <button onclick="maker.toggleLayerVisibility(${layer.id})" class="layer-visibility">
+            <button onclick="window.flashNickMaker.toggleLayerVisibility(${layer.id})" class="layer-visibility">
                 ${layer.visible ? '👁️' : '👁️‍🗨️'}
             </button>
-            <span onclick="maker.selectTextLayer(${layer.id})" class="layer-name">${layer.text || 'Boş'}</span>
+            <span onclick="window.flashNickMaker.selectTextLayer(${layer.id})" class="layer-name">${layer.text || 'Boş'}</span>
             <div class="layer-controls">
-                <button onclick="maker.moveLayerUp(${layer.id})" title="Yukarı">⬆️</button>
-                <button onclick="maker.moveLayerDown(${layer.id})" title="Aşağı">⬇️</button>
-                <button onclick="maker.deleteTextLayer(${layer.id})" title="Sil">🗑️</button>
+                <button onclick="window.flashNickMaker.moveLayerUp(${layer.id})" title="Yukarı">⬆️</button>
+                <button onclick="window.flashNickMaker.moveLayerDown(${layer.id})" title="Aşağı">⬇️</button>
+                <button onclick="window.flashNickMaker.deleteTextLayer(${layer.id})" title="Sil">🗑️</button>
             </div>
         `;
         container.appendChild(div);
