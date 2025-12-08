@@ -3733,16 +3733,19 @@ class FlashNickMaker {
         const scrollType = this.settings.scrollType;
         const hasParticles = this.settings.particleType !== 'none';
         const hasFlags = this.settings.leftFlag !== 'none' || this.settings.rightFlag !== 'none';
+        const hasSplitLayout = this.settings.splitLayout !== 'none';
+        const hasTextSparkles = this.settings.textSparkleType !== 'none';
+        const hasInnerSparkles = this.settings.innerSparkleType !== 'none';
         
-        if (animationType === 'none' && !hasParticles && textAnimationType === 'none' && scrollType === 'none' && !hasFlags) {
-            alert('Lütfen önce bir animasyon türü, parçacık efekti, yazı animasyonu, kayan yazı veya bayrak seçin!');
+        if (animationType === 'none' && !hasParticles && textAnimationType === 'none' && 
+            scrollType === 'none' && !hasFlags && !hasSplitLayout && !hasTextSparkles && !hasInnerSparkles) {
+            alert('Lütfen önce bir animasyon efekti seçin! (parçacık, yazı animasyonu, parıltı vb.)');
             return;
         }
 
         // Check if GIF.js is available
         if (typeof GIF === 'undefined') {
-            alert('GIF kütüphanesi yüklenemedi. PNG olarak indiriliyor...');
-            this.downloadPNG();
+            alert('GIF kütüphanesi yüklenemedi. Lütfen localhost:8080 üzerinden çalıştırın!');
             return;
         }
 
@@ -3756,14 +3759,20 @@ class FlashNickMaker {
             const baseWidth = this.canvas.width;
             const baseHeight = this.canvas.height;
             const gif = new GIF({
-                workers: 2,
-                quality: 10,
+                workers: 4,
+                quality: 8,
                 width: baseWidth * exportScale,
                 height: baseHeight * exportScale,
-                workerScript: 'gif.worker.js'
+                workerScript: 'gif.worker.js',
+                transparent: exportTransparent ? 0x00000000 : null
             });
 
-            const frames = textAnimationType !== 'none' ? 40 : (scrollType !== 'none' ? 50 : 25);
+            // Frame sayısını animasyon tipine göre ayarla
+            let frames = 30;
+            if (textAnimationType !== 'none') frames = 40;
+            if (scrollType !== 'none') frames = 60;
+            if (hasParticles || hasTextSparkles || hasInnerSparkles) frames = Math.max(frames, 30);
+            
             const baseCanvas = document.createElement('canvas');
             baseCanvas.width = baseWidth;
             baseCanvas.height = baseHeight;
@@ -3792,90 +3801,109 @@ class FlashNickMaker {
                 // Geçici canvas'ı temizle
                 baseCtx.clearRect(0, 0, baseCanvas.width, baseCanvas.height);
                 
-                // Arka plan
-                if (!exportTransparent) {
-                    this.drawBackground(baseCtx, baseCanvas, 0);
-                }
-                
-                // Çerçeve
-                if (this.settings.frameStyle !== 'none') {
-                    this.drawFrame(baseCtx, baseCanvas);
-                }
-                
-                // Parçacıkları güncelle ve çiz
-                if (hasParticles) {
-                    this.updateParticles();
-                    this.drawParticles(baseCtx, baseCanvas, i);
-                }
-                
-                // Bayrak fazını güncelle
-                this.flagPhase = i * 2;
-                
-                // Dekorasyonlar (bayraklar dahil)
-                this.drawDecorations(baseCtx, baseCanvas);
-                
-                // Dekoratif çizgiler
-                if (this.settings.lineStyle !== 'none') {
-                    this.drawDecorativeLines(baseCtx, baseCanvas);
-                }
-                
-                let offset = { x: 0, y: 0 };
-                let hueShift = 0;
-
-                // Yazı animasyonu varsa
-                if (textAnimationType !== 'none') {
-                    this.drawAnimatedText(baseCtx, baseCanvas, textAnimationType, i * 3, [...letters]);
-                }
-                // Kayan yazı varsa
-                else if (scrollType !== 'none') {
-                    this.drawScrollingText(baseCtx, baseCanvas, scrollType, i * 2, this.settings.scrollSpeed);
-                }
-                // Temel animasyonlar
-                else {
-                    switch (animationType) {
-                        case 'pulse':
-                            const scale = 1 + Math.sin(i * (Math.PI * 2 / frames)) * 0.08;
-                            baseCtx.save();
-                            baseCtx.translate(baseCanvas.width / 2, baseCanvas.height / 2);
-                            baseCtx.scale(scale, scale);
-                            baseCtx.translate(-baseCanvas.width / 2, -baseCanvas.height / 2);
-                            this.drawText(baseCtx, baseCanvas, offset, hueShift);
-                            baseCtx.restore();
-                            break;
-                        case 'glow':
-                            this.settings.shadowBlur = Math.sin(i * (Math.PI * 2 / frames)) * 15 + 20;
-                            this.drawText(baseCtx, baseCanvas, offset, hueShift);
-                            break;
-                        case 'rainbow':
-                            hueShift = (i * (360 / frames)) % 360;
-                            this.drawText(baseCtx, baseCanvas, offset, hueShift);
-                            break;
-                        case 'shake':
-                            offset.x = Math.sin(i * (Math.PI * 4 / frames)) * 5;
-                            this.drawText(baseCtx, baseCanvas, offset, hueShift);
-                            break;
-                        case 'bounce':
-                            offset.y = -Math.abs(Math.sin(i * (Math.PI * 2 / frames))) * 15;
-                            this.drawText(baseCtx, baseCanvas, offset, hueShift);
-                            break;
-                        default:
-                            this.drawText(baseCtx, baseCanvas, offset, hueShift);
+                // Split layout varsa özel rendering
+                if (hasSplitLayout) {
+                    this.drawSplitLayout(baseCtx, baseCanvas, {x: 0, y: 0}, 0, i, i, exportTransparent);
+                } else {
+                    // Normal rendering
+                    // Arka plan
+                    if (!exportTransparent) {
+                        this.drawBackground(baseCtx, baseCanvas, 0);
                     }
-                }
-                
-                // Parıltılar
-                if (this.settings.textSparkleType !== 'none') {
-                    this.drawTextSparkles(baseCtx, baseCanvas, i);
+                    
+                    // Fotoğraf overlay
+                    if (this.settings.photoOverlay !== 'none' || this.settings.colorOverlayMode !== 'none') {
+                        this.applyPhotoOverlay(baseCtx, baseCanvas);
+                    }
+                    
+                    // Çerçeve
+                    if (this.settings.frameStyle !== 'none') {
+                        this.drawFrame(baseCtx, baseCanvas);
+                    }
+                    
+                    // Parçacıkları güncelle ve çiz
+                    if (hasParticles) {
+                        this.updateParticles();
+                        this.drawParticles(baseCtx, baseCanvas, i);
+                    }
+                    
+                    // Bayrak fazını güncelle
+                    this.flagPhase = i * 2;
+                    
+                    // Dekorasyonlar (bayraklar dahil)
+                    this.drawDecorations(baseCtx, baseCanvas);
+                    
+                    // Dekoratif çizgiler
+                    if (this.settings.lineStyle !== 'none') {
+                        this.drawDecorativeLines(baseCtx, baseCanvas);
+                    }
+                    
+                    let offset = { x: 0, y: 0 };
+                    let hueShift = 0;
+
+                    // Yazı animasyonu varsa
+                    if (textAnimationType !== 'none') {
+                        this.drawAnimatedText(baseCtx, baseCanvas, textAnimationType, i * 3, [...letters]);
+                    }
+                    // Kayan yazı varsa
+                    else if (scrollType !== 'none') {
+                        this.drawScrollingText(baseCtx, baseCanvas, scrollType, i * 2, this.settings.scrollSpeed);
+                    }
+                    // Temel animasyonlar
+                    else {
+                        switch (animationType) {
+                            case 'pulse':
+                                const scale = 1 + Math.sin(i * (Math.PI * 2 / frames)) * 0.08;
+                                baseCtx.save();
+                                baseCtx.translate(baseCanvas.width / 2, baseCanvas.height / 2);
+                                baseCtx.scale(scale, scale);
+                                baseCtx.translate(-baseCanvas.width / 2, -baseCanvas.height / 2);
+                                this.drawText(baseCtx, baseCanvas, offset, hueShift);
+                                baseCtx.restore();
+                                break;
+                            case 'glow':
+                                this.settings.shadowBlur = Math.sin(i * (Math.PI * 2 / frames)) * 15 + 20;
+                                this.drawText(baseCtx, baseCanvas, offset, hueShift);
+                                break;
+                            case 'rainbow':
+                                hueShift = (i * (360 / frames)) % 360;
+                                this.drawText(baseCtx, baseCanvas, offset, hueShift);
+                                break;
+                            case 'shake':
+                                offset.x = Math.sin(i * (Math.PI * 4 / frames)) * 5;
+                                this.drawText(baseCtx, baseCanvas, offset, hueShift);
+                                break;
+                            case 'bounce':
+                                offset.y = -Math.abs(Math.sin(i * (Math.PI * 2 / frames))) * 15;
+                                this.drawText(baseCtx, baseCanvas, offset, hueShift);
+                                break;
+                            default:
+                                this.drawText(baseCtx, baseCanvas, offset, hueShift);
+                        }
+                    }
+                    
+                    // İç parıltılar
+                    if (hasInnerSparkles) {
+                        this.drawInnerSparkles(baseCtx, baseCanvas, i);
+                    }
+                    
+                    // Dış parıltılar
+                    if (hasTextSparkles) {
+                        this.drawTextSparkles(baseCtx, baseCanvas, i);
+                    }
                 }
 
                 // Frame'i GIF'e ekle (gerekirse upscale ederek)
                 if (exportScale > 1 && scaledCtx) {
                     scaledCtx.clearRect(0, 0, scaledCanvas.width, scaledCanvas.height);
                     scaledCtx.drawImage(baseCanvas, 0, 0, scaledCanvas.width, scaledCanvas.height);
-                    gif.addFrame(scaledCtx, { copy: true, delay: 70 });
+                    gif.addFrame(scaledCtx, { copy: true, delay: 60 });
                 } else {
-                    gif.addFrame(baseCtx, { copy: true, delay: 70 });
+                    gif.addFrame(baseCtx, { copy: true, delay: 60 });
                 }
+                
+                // Progress göster
+                downloadBtn.textContent = `⏳ ${Math.round((i / frames) * 100)}%`;
             }
 
             // Orijinal ayarları geri yükle
@@ -3888,8 +3916,11 @@ class FlashNickMaker {
                 link.click();
                 
                 // Butonu eski haline getir
-                downloadBtn.textContent = originalText;
-                downloadBtn.disabled = false;
+                downloadBtn.textContent = '✅ Tamamlandı!';
+                setTimeout(() => {
+                    downloadBtn.textContent = originalText;
+                    downloadBtn.disabled = false;
+                }, 2000);
             });
 
             gif.on('error', (err) => {
