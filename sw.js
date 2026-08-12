@@ -1,4 +1,4 @@
-const CACHE_NAME = 'flash-nick-pro-v1';
+const CACHE_NAME = 'flash-nick-pro-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -6,8 +6,7 @@ const urlsToCache = [
   '/app.js',
   '/gif.js',
   '/gif.worker.js',
-  '/manifest.json',
-  'https://fonts.googleapis.com/css2?family=Lobster&family=Pacifico&family=Dancing+Script&family=Great+Vibes&family=Satisfy&family=Kaushan+Script&family=Permanent+Marker&family=Righteous&family=Russo+One&family=Orbitron&family=Press+Start+2P&family=Creepster&family=Bungee&family=Bangers&family=Fredoka+One&family=Concert+One&family=Luckiest+Guy&family=Titan+One&family=Passion+One&family=Black+Ops+One&display=swap'
+  '/manifest.json'
 ];
 
 // Service Worker Yükleme
@@ -42,38 +41,32 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch İstekleri
+// Fetch İstekleri - stale-while-revalidate: önce cache, arka planda güncelle
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Cache'de varsa döndür
-        if (response) {
-          return response;
-        }
-        
-        // Yoksa network'den al
-        return fetch(event.request).then((response) => {
-          // Geçerli bir yanıt değilse direkt döndür
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-          
-          // Yanıtı cache'e ekle
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then((cache) => {
+    caches.match(event.request).then((cachedResponse) => {
+      const networkFetch = fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
               cache.put(event.request, responseToCache);
             });
-          
-          return response;
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          // Offline durumunda ana sayfayı göster
+          if (event.request.mode === 'navigate') {
+            return caches.match('/index.html');
+          }
+          return cachedResponse;
         });
-      })
-      .catch(() => {
-        // Offline durumunda ana sayfayı göster
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-      })
+
+      // Cache'de varsa hemen döndür, yoksa network yanıtını bekle
+      return cachedResponse || networkFetch;
+    })
   );
 });

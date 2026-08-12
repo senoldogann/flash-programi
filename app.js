@@ -738,6 +738,59 @@ class FlashNickMaker {
             this.downloadGIF();
         });
 
+        // İkon boyutu ön ayarı
+        const iconSizePreset = document.getElementById('iconSizePreset');
+        if (iconSizePreset) {
+            iconSizePreset.addEventListener('change', (e) => {
+                const size = parseInt(e.target.value);
+                if (!size || size <= 0) return;
+
+                this.settings.canvasWidth = size;
+                this.settings.canvasHeight = size;
+                this.canvas.width = size;
+                this.canvas.height = size;
+                document.getElementById('canvasWidth').value = size;
+                document.getElementById('canvasHeight').value = size;
+                document.getElementById('canvasWidthVal').textContent = size;
+                document.getElementById('canvasHeightVal').textContent = size;
+                this.render();
+                showToast(`${size}x${size} ikon boyutu uygulandı! 📐`);
+            });
+        }
+
+        // İkon modu ve profesyonel dışa aktarma kontrolleri
+        const iconModeBtn = document.getElementById('iconModeBtn');
+        if (iconModeBtn) {
+            iconModeBtn.addEventListener('click', () => applyIconMode());
+        }
+
+        const downloadVideoBtn = document.getElementById('downloadVideo');
+        if (downloadVideoBtn) {
+            downloadVideoBtn.addEventListener('click', () => {
+                this.downloadVideo();
+            });
+        }
+
+        const copyDesignLinkBtn = document.getElementById('copyDesignLink');
+        if (copyDesignLinkBtn) {
+            copyDesignLinkBtn.addEventListener('click', () => copyDesignLink());
+        }
+
+        // Canlı dosya boyutu tahmini
+        const estimateSources = [
+            'gifSizePreset', 'canvasWidth', 'canvasHeight', 'animationType',
+            'textAnimationType', 'scrollType', 'particleType', 'textSparkleType',
+            'innerSparkleType', 'leftFlag', 'rightFlag', 'splitLayout', 'photoAnimation'
+        ];
+        estimateSources.forEach((id) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('change', () => this.updateExportEstimate());
+                element.addEventListener('input', () => this.updateExportEstimate());
+            }
+        });
+        this.updateExportEstimate();
+
         // Blend mode controls
         const textBlend = document.getElementById('textBlendMode');
         if (textBlend) {
@@ -3337,8 +3390,6 @@ class FlashNickMaker {
         this.stopAnimation();
         this.isAnimating = true;
 
-        const text = this.settings.text;
-        const letters = text.split('');
         let frame = 0;
         const totalFrames = 120; // 2 saniye
 
@@ -3369,7 +3420,7 @@ class FlashNickMaker {
             }
 
             // Animasyonlu harfleri çiz
-            this.drawAnimatedText(this.ctx, this.canvas, animationType, frame, letters);
+            this.drawAnimatedText(this.ctx, this.canvas, animationType, frame);
 
             if (this.settings.textSparkleType !== 'none') {
                 this.drawTextSparkles(this.ctx, this.canvas, frame);
@@ -3382,161 +3433,174 @@ class FlashNickMaker {
         animate();
     }
 
-    drawAnimatedText(ctx, canvas, animationType, frame, letters) {
-        const x = canvas.width * this.settings.textX / 100;
-        const y = canvas.height * this.settings.textY / 100;
-        
-        ctx.font = `${this.settings.fontSize}px "${this.settings.fontFamily}"`;
-        ctx.textBaseline = 'middle';
-        ctx.textAlign = 'center';
-        
-        // Toplam genişliği hesapla
-        const totalWidth = ctx.measureText(this.settings.text).width;
-        
-        // Her harfin pozisyonunu önceden hesapla
-        const letterPositions = [];
-        let currentX = 0;
-        for (let i = 0; i < letters.length; i++) {
-            const letterWidth = ctx.measureText(letters[i]).width;
-            letterPositions.push({
-                x: currentX + letterWidth / 2,
-                width: letterWidth
-            });
-            currentX += letterWidth;
-        }
-        
-        // Başlangıç X pozisyonu (merkeze hizalı)
-        const startX = x - totalWidth / 2;
-        
-        for (let i = 0; i < letters.length; i++) {
-            const letter = letters[i];
-            const letterInfo = letterPositions[i];
-            const letterX = startX + letterInfo.x; // Harfin merkez X pozisyonu
-            
-            ctx.save();
-            
-            // Animasyon hesaplamaları
-            const delay = i * 5; // Her harf için gecikme
-            const localFrame = Math.max(0, frame - delay);
-            const progress = Math.min(1, localFrame / 30);
-            
-            let offsetX = 0, offsetY = 0, scale = 1, rotation = 0, alpha = 1;
-            let letterColor = this.settings.textColor;
-            
-            switch (animationType) {
-                case 'typewriter':
-                    alpha = localFrame > 0 ? 1 : 0;
-                    break;
-                    
-                case 'fadeIn':
-                    alpha = progress;
-                    break;
-                    
-                case 'slideIn':
-                    // Animasyon sırasında harf sağdan gelir ama hedef pozisyon değişmez
-                    offsetX = (1 - progress) * 50;
-                    alpha = progress;
-                    break;
-                    
-                case 'dropIn':
-                    offsetY = (1 - progress) * -50;
-                    alpha = progress;
-                    break;
-                    
-                case 'wave':
-                    offsetY = Math.sin((frame + i * 10) * 0.1) * 8;
-                    break;
-                    
-                case 'elastic':
-                    if (progress < 1) {
-                        const elasticProgress = 1 - Math.pow(2, -10 * progress) * Math.cos(progress * Math.PI * 3);
-                        scale = elasticProgress;
-                        offsetY = (1 - elasticProgress) * -30;
-                    }
-                    break;
-                    
-                case 'rotate':
-                    rotation = (1 - progress) * Math.PI * 2;
-                    alpha = progress;
-                    break;
-                    
-                case 'scale':
-                    scale = progress;
-                    alpha = progress;
-                    break;
-                    
-                case 'colorWave':
-                    const hue = ((frame * 5) + (i * 30)) % 360;
-                    letterColor = `hsl(${hue}, 100%, 60%)`;
-                    offsetY = Math.sin((frame + i * 8) * 0.1) * 5;
-                    break;
-                    
-                case 'glitch':
-                    if (Math.random() < 0.1) {
-                        offsetX = (Math.random() - 0.5) * 10;
-                        offsetY = (Math.random() - 0.5) * 5;
-                        letterColor = Math.random() < 0.5 ? '#ff0000' : '#00ffff';
-                    }
-                    break;
-                    
-                case 'neon':
-                    const neonIntensity = Math.sin((frame + i * 5) * 0.2) * 0.5 + 0.5;
-                    ctx.shadowColor = this.settings.textColor;
-                    ctx.shadowBlur = 10 + neonIntensity * 20;
-                    alpha = 0.7 + neonIntensity * 0.3;
-                    break;
-                    
-                case 'matrix':
-                    if (progress < 1) {
-                        // Rastgele karakterler göster
-                        const matrixChars = '0123456789ABCDEF@#$%';
-                        if (Math.random() < 0.3) {
-                            letters[i] = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+    drawAnimatedText(ctx, canvas, animationType, frame) {
+        const layers = this.textLayers.filter(layer => layer.visible && layer.text && layer.text.length > 0);
+
+        for (const layer of layers) {
+            const x = canvas.width * layer.textX / 100;
+            const y = canvas.height * layer.textY / 100;
+
+            ctx.font = `${layer.fontSize}px "${layer.fontFamily}"`;
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+
+            // Her katmanın harf pozisyonlarını kendi genişliğine göre hesapla
+            const letters = layer.text.split('');
+            const letterPositions = [];
+            let currentX = 0;
+            for (let i = 0; i < letters.length; i++) {
+                const letterWidth = ctx.measureText(letters[i]).width;
+                letterPositions.push({
+                    x: currentX + letterWidth / 2,
+                    width: letterWidth
+                });
+                currentX += letterWidth;
+            }
+
+            const totalWidth = ctx.measureText(layer.text).width;
+            const startX = x - totalWidth / 2;
+            const layerRotation = (layer.rotation || 0) * Math.PI / 180;
+            const blend = layer.textBlendMode || 'source-over';
+
+            for (let i = 0; i < letters.length; i++) {
+                const letter = letters[i];
+                const letterInfo = letterPositions[i];
+                const letterX = startX + letterInfo.x;
+
+                ctx.save();
+
+                // Animasyon hesaplamaları
+                const delay = i * 5;
+                const localFrame = Math.max(0, frame - delay);
+                const progress = Math.min(1, localFrame / 30);
+
+                let offsetX = 0, offsetY = 0, scale = 1, rotation = 0, alpha = 1;
+                let letterColor = layer.textColor;
+
+                switch (animationType) {
+                    case 'typewriter':
+                        alpha = localFrame > 0 ? 1 : 0;
+                        break;
+
+                    case 'fadeIn':
+                        alpha = progress;
+                        break;
+
+                    case 'slideIn':
+                        // Animasyon sırasında harf sağdan gelir ama hedef pozisyon değişmez
+                        offsetX = (1 - progress) * 50;
+                        alpha = progress;
+                        break;
+
+                    case 'dropIn':
+                        offsetY = (1 - progress) * -50;
+                        alpha = progress;
+                        break;
+
+                    case 'wave':
+                        offsetY = Math.sin((frame + i * 10) * 0.1) * 8;
+                        break;
+
+                    case 'elastic':
+                        if (progress < 1) {
+                            const elasticProgress = 1 - Math.pow(2, -10 * progress) * Math.cos(progress * Math.PI * 3);
+                            scale = elasticProgress;
+                            offsetY = (1 - elasticProgress) * -30;
                         }
-                    } else {
-                        letters[i] = this.settings.text[i];
+                        break;
+
+                    case 'rotate':
+                        rotation = (1 - progress) * Math.PI * 2;
+                        alpha = progress;
+                        break;
+
+                    case 'scale':
+                        scale = progress;
+                        alpha = progress;
+                        break;
+
+                    case 'colorWave':
+                        const hue = ((frame * 5) + (i * 30)) % 360;
+                        letterColor = `hsl(${hue}, 100%, 60%)`;
+                        offsetY = Math.sin((frame + i * 8) * 0.1) * 5;
+                        break;
+
+                    case 'glitch':
+                        if (Math.random() < 0.1) {
+                            offsetX = (Math.random() - 0.5) * 10;
+                            offsetY = (Math.random() - 0.5) * 5;
+                            letterColor = Math.random() < 0.5 ? '#ff0000' : '#00ffff';
+                        }
+                        break;
+
+                    case 'neon':
+                        const neonIntensity = Math.sin((frame + i * 5) * 0.2) * 0.5 + 0.5;
+                        ctx.shadowColor = letterColor;
+                        ctx.shadowBlur = 10 + neonIntensity * 20;
+                        alpha = 0.7 + neonIntensity * 0.3;
+                        break;
+
+                    case 'matrix':
+                        if (progress < 1) {
+                            // Rastgele karakterler göster
+                            const matrixChars = '0123456789ABCDEF@#$%';
+                            if (Math.random() < 0.3) {
+                                letters[i] = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                            }
+                        } else {
+                            letters[i] = layer.text[i];
+                        }
+                        letterColor = `rgb(0, ${Math.floor(200 + Math.random() * 55)}, 0)`;
+                        break;
+                }
+
+                ctx.globalAlpha = alpha * (layer.opacity / 100);
+                ctx.globalCompositeOperation = blend;
+                // Offset'leri translate'e dahil et, böylece animasyon bittikten sonra doğru pozisyonda kalır
+                ctx.translate(letterX + offsetX, y + offsetY);
+                ctx.rotate(rotation + layerRotation);
+                ctx.scale(scale, scale);
+
+                // Gölge
+                if (layer.effectGlow) {
+                    ctx.shadowColor = letterColor;
+                    ctx.shadowBlur = 15;
+                } else {
+                    ctx.shadowColor = layer.shadowColor;
+                    ctx.shadowBlur = layer.shadowBlur;
+                    ctx.shadowOffsetX = 2;
+                    ctx.shadowOffsetY = 2;
+                }
+
+                // 3D efekt
+                if (layer.effect3D) {
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                    for (let d = 5; d > 0; d--) {
+                        ctx.fillText(letter, d, d);
                     }
-                    letterColor = `rgb(0, ${Math.floor(200 + Math.random() * 55)}, 0)`;
-                    break;
+                }
+
+                // Gradient veya düz renk
+                if (layer.effectGradient) {
+                    const gradient = ctx.createLinearGradient(-letterInfo.width/2, 0, letterInfo.width/2, 0);
+                    gradient.addColorStop(0, layer.gradientColor1);
+                    gradient.addColorStop(1, layer.gradientColor2);
+                    ctx.fillStyle = gradient;
+                } else {
+                    ctx.fillStyle = letterColor;
+                }
+
+                // Kenarlık (harfi 0,0'da çiz çünkü translate ile zaten doğru pozisyondayız)
+                if (layer.effectOutline && layer.outlineWidth > 0) {
+                    ctx.strokeStyle = layer.outlineColor;
+                    ctx.lineWidth = layer.outlineWidth * 2;
+                    ctx.strokeText(letter, 0, 0);
+                }
+
+                ctx.fillText(letter, 0, 0);
+
+                ctx.restore();
             }
-            
-            ctx.globalAlpha = alpha;
-            // Offset'leri translate'e dahil et, böylece animasyon bittikten sonra doğru pozisyonda kalır
-            ctx.translate(letterX + offsetX, y + offsetY);
-            ctx.rotate(rotation);
-            ctx.scale(scale, scale);
-            
-            // Gölge
-            if (this.settings.effectGlow) {
-                ctx.shadowColor = letterColor;
-                ctx.shadowBlur = 15;
-            } else {
-                ctx.shadowColor = this.settings.shadowColor;
-                ctx.shadowBlur = this.settings.shadowBlur;
-                ctx.shadowOffsetX = 2;
-                ctx.shadowOffsetY = 2;
-            }
-            
-            // Gradient veya düz renk
-            if (this.settings.effectGradient) {
-                const gradient = ctx.createLinearGradient(-letterInfo.width/2, 0, letterInfo.width/2, 0);
-                gradient.addColorStop(0, this.settings.gradientColor1);
-                gradient.addColorStop(1, this.settings.gradientColor2);
-                ctx.fillStyle = gradient;
-            } else {
-                ctx.fillStyle = letterColor;
-            }
-            
-            // Kenarlık (harfi 0,0'da çiz çünkü translate ile zaten doğru pozisyondayız)
-            if (this.settings.effectOutline && this.settings.outlineWidth > 0) {
-                ctx.strokeStyle = this.settings.outlineColor;
-                ctx.lineWidth = this.settings.outlineWidth * 2;
-                ctx.strokeText(letter, 0, 0);
-            }
-            
-            ctx.fillText(letter, 0, 0);
-            
-            ctx.restore();
         }
     }
 
@@ -3602,92 +3666,109 @@ class FlashNickMaker {
     }
 
     drawScrollingText(ctx, canvas, scrollType, frame, speed) {
-        ctx.font = `${this.settings.fontSize}px "${this.settings.fontFamily}"`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        
-        const text = this.settings.text;
-        const textWidth = ctx.measureText(text).width;
-        const centerX = canvas.width * this.settings.textX / 100;
-        const centerY = canvas.height * this.settings.textY / 100;
-        
-        let x = centerX, y = centerY;
-        
-        switch (scrollType) {
-            case 'leftToRight':
-                x = ((frame * speed) % (canvas.width + textWidth)) - textWidth / 2;
-                break;
-                
-            case 'rightToLeft':
-                x = canvas.width - ((frame * speed) % (canvas.width + textWidth)) + textWidth / 2;
-                break;
-                
-            case 'topToBottom':
-                y = ((frame * speed) % (canvas.height + this.settings.fontSize)) - this.settings.fontSize / 2;
-                break;
-                
-            case 'bottomToTop':
-                y = canvas.height - ((frame * speed) % (canvas.height + this.settings.fontSize)) + this.settings.fontSize / 2;
-                break;
-                
-            case 'bounce':
-                const bounceRange = (canvas.width - textWidth) / 2;
-                x = centerX + Math.sin(frame * speed * 0.02) * bounceRange;
-                break;
-                
-            case 'circular':
-                const radius = Math.min(canvas.width, canvas.height) * 0.2;
-                x = centerX + Math.cos(frame * speed * 0.03) * radius;
-                y = centerY + Math.sin(frame * speed * 0.03) * radius * 0.5;
-                break;
-                
-            case 'zigzag':
-                x = centerX + Math.sin(frame * speed * 0.05) * (canvas.width * 0.3);
-                y = centerY + Math.cos(frame * speed * 0.1) * (canvas.height * 0.2);
-                break;
-        }
-        
-        // Gölge
-        if (this.settings.effectGlow) {
-            ctx.shadowColor = this.settings.textColor;
-            ctx.shadowBlur = 20;
-        } else {
-            ctx.shadowColor = this.settings.shadowColor;
-            ctx.shadowBlur = this.settings.shadowBlur;
-            ctx.shadowOffsetX = 2;
-            ctx.shadowOffsetY = 2;
-        }
-        
-        // 3D efekt
-        if (this.settings.effect3D) {
-            for (let i = 5; i > 0; i--) {
-                ctx.fillStyle = `rgba(0, 0, 0, ${0.1 * i})`;
-                ctx.fillText(text, x + i, y + i);
+        const layers = this.textLayers.filter(layer => layer.visible && layer.text && layer.text.length > 0);
+
+        for (const layer of layers) {
+            const text = layer.text;
+
+            ctx.font = `${layer.fontSize}px "${layer.fontFamily}"`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const textWidth = ctx.measureText(text).width;
+            const centerX = canvas.width * layer.textX / 100;
+            const centerY = canvas.height * layer.textY / 100;
+
+            let x = centerX, y = centerY;
+
+            switch (scrollType) {
+                case 'leftToRight':
+                    x = ((frame * speed) % (canvas.width + textWidth)) - textWidth / 2;
+                    break;
+
+                case 'rightToLeft':
+                    x = canvas.width - ((frame * speed) % (canvas.width + textWidth)) + textWidth / 2;
+                    break;
+
+                case 'topToBottom':
+                    y = ((frame * speed) % (canvas.height + layer.fontSize)) - layer.fontSize / 2;
+                    break;
+
+                case 'bottomToTop':
+                    y = canvas.height - ((frame * speed) % (canvas.height + layer.fontSize)) + layer.fontSize / 2;
+                    break;
+
+                case 'bounce':
+                    const bounceRange = (canvas.width - textWidth) / 2;
+                    x = centerX + Math.sin(frame * speed * 0.02) * bounceRange;
+                    break;
+
+                case 'circular':
+                    const radius = Math.min(canvas.width, canvas.height) * 0.2;
+                    x = centerX + Math.cos(frame * speed * 0.03) * radius;
+                    y = centerY + Math.sin(frame * speed * 0.03) * radius * 0.5;
+                    break;
+
+                case 'zigzag':
+                    x = centerX + Math.sin(frame * speed * 0.05) * (canvas.width * 0.3);
+                    y = centerY + Math.cos(frame * speed * 0.1) * (canvas.height * 0.2);
+                    break;
             }
+
+            ctx.save();
+            ctx.globalAlpha = layer.opacity / 100;
+            ctx.globalCompositeOperation = layer.textBlendMode || 'source-over';
+
+            // Katman rotasyonu
+            if (layer.rotation !== 0) {
+                ctx.translate(x, y);
+                ctx.rotate((layer.rotation * Math.PI) / 180);
+                ctx.translate(-x, -y);
+            }
+
+            // Gölge
+            if (layer.effectGlow) {
+                ctx.shadowColor = layer.textColor;
+                ctx.shadowBlur = 20;
+            } else {
+                ctx.shadowColor = layer.shadowColor;
+                ctx.shadowBlur = layer.shadowBlur;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+            }
+
+            // 3D efekt
+            if (layer.effect3D) {
+                for (let i = 5; i > 0; i--) {
+                    ctx.fillStyle = `rgba(0, 0, 0, ${0.1 * i})`;
+                    ctx.fillText(text, x + i, y + i);
+                }
+            }
+
+            // Gradient veya düz renk
+            if (layer.effectGradient) {
+                const gradient = ctx.createLinearGradient(x - textWidth/2, y, x + textWidth/2, y);
+                gradient.addColorStop(0, layer.gradientColor1);
+                gradient.addColorStop(1, layer.gradientColor2);
+                ctx.fillStyle = gradient;
+            } else {
+                ctx.fillStyle = layer.textColor;
+            }
+
+            // Kenarlık
+            if (layer.effectOutline && layer.outlineWidth > 0) {
+                ctx.strokeStyle = layer.outlineColor;
+                ctx.lineWidth = layer.outlineWidth * 2;
+                ctx.strokeText(text, x, y);
+            }
+
+            ctx.fillText(text, x, y);
+
+            // Gölgeyi sıfırla
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.restore();
         }
-        
-        // Gradient veya düz renk
-        if (this.settings.effectGradient) {
-            const gradient = ctx.createLinearGradient(x - textWidth/2, y, x + textWidth/2, y);
-            gradient.addColorStop(0, this.settings.gradientColor1);
-            gradient.addColorStop(1, this.settings.gradientColor2);
-            ctx.fillStyle = gradient;
-        } else {
-            ctx.fillStyle = this.settings.textColor;
-        }
-        
-        // Kenarlık
-        if (this.settings.effectOutline && this.settings.outlineWidth > 0) {
-            ctx.strokeStyle = this.settings.outlineColor;
-            ctx.lineWidth = this.settings.outlineWidth * 2;
-            ctx.strokeText(text, x, y);
-        }
-        
-        ctx.fillText(text, x, y);
-        
-        // Gölgeyi sıfırla
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
     }
 
     downloadPNG() {
@@ -3723,6 +3804,234 @@ class FlashNickMaker {
         link.click();
     }
 
+    renderExportFrame(ctx, canvas, frameIndex, frameCount, exportTransparent = false) {
+        const textAnimationType = this.settings.textAnimationType;
+        const scrollType = this.settings.scrollType;
+        const hasParticles = this.settings.particleType !== 'none';
+        const hasSplitLayout = this.settings.splitLayout !== 'none';
+        const hasTextSparkles = this.settings.textSparkleType !== 'none';
+        const hasInnerSparkles = this.settings.innerSparkleType !== 'none';
+        const animationType = document.getElementById('animationType').value;
+
+        // Split layout varsa özel rendering
+        if (hasSplitLayout) {
+            this.drawSplitLayout(ctx, canvas, {x: 0, y: 0}, 0, frameIndex, frameIndex, exportTransparent);
+            return;
+        }
+
+        // Arka plan (fotoğraf animasyonu varsa hareketli çiz)
+        this.drawPhotoAnimatedBackground(ctx, canvas, frameIndex * this.settings.photoAnimSpeed * 0.18, exportTransparent);
+
+        // Çerçeve
+        if (this.settings.frameStyle !== 'none') {
+            this.drawFrame(ctx, canvas);
+        }
+
+        // Parçacıkları güncelle ve çiz
+        if (hasParticles) {
+            this.updateParticles();
+            this.drawParticles(ctx, canvas, frameIndex);
+        }
+
+        // Bayrak fazını güncelle
+        this.flagPhase = frameIndex * 2;
+
+        // Dekorasyonlar (bayraklar dahil)
+        this.drawDecorations(ctx, canvas);
+
+        // Dekoratif çizgiler
+        if (this.settings.lineStyle !== 'none') {
+            this.drawDecorativeLines(ctx, canvas);
+        }
+
+        let offset = { x: 0, y: 0 };
+        let hueShift = 0;
+
+        // Yazı animasyonu varsa
+        if (textAnimationType !== 'none') {
+            this.drawAnimatedText(ctx, canvas, textAnimationType, frameIndex * 3);
+        } else if (scrollType !== 'none') {
+            this.drawScrollingText(ctx, canvas, scrollType, frameIndex * 2, this.settings.scrollSpeed);
+        } else {
+            switch (animationType) {
+                case 'pulse':
+                    const scale = 1 + Math.sin(frameIndex * (Math.PI * 2 / frameCount)) * 0.08;
+                    ctx.save();
+                    ctx.translate(canvas.width / 2, canvas.height / 2);
+                    ctx.scale(scale, scale);
+                    ctx.translate(-canvas.width / 2, -canvas.height / 2);
+                    this.drawText(ctx, canvas, offset, hueShift);
+                    ctx.restore();
+                    break;
+                case 'glow':
+                    this.settings.shadowBlur = Math.sin(frameIndex * (Math.PI * 2 / frameCount)) * 15 + 20;
+                    this.drawText(ctx, canvas, offset, hueShift);
+                    break;
+                case 'rainbow':
+                    hueShift = (frameIndex * (360 / frameCount)) % 360;
+                    this.drawText(ctx, canvas, offset, hueShift);
+                    break;
+                case 'shake':
+                    offset.x = Math.sin(frameIndex * (Math.PI * 4 / frameCount)) * 5;
+                    this.drawText(ctx, canvas, offset, hueShift);
+                    break;
+                case 'bounce':
+                    offset.y = -Math.abs(Math.sin(frameIndex * (Math.PI * 2 / frameCount))) * 15;
+                    this.drawText(ctx, canvas, offset, hueShift);
+                    break;
+                default:
+                    this.drawText(ctx, canvas, offset, hueShift);
+            }
+        }
+
+        // İç parıltılar
+        if (hasInnerSparkles) {
+            this.drawInnerSparkles(ctx, canvas, frameIndex);
+        }
+
+        // Dış parıltılar
+        if (hasTextSparkles) {
+            this.drawTextSparkles(ctx, canvas, frameIndex);
+        }
+    }
+
+    estimateGIFSizeKB() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const gifSizePreset = document.getElementById('gifSizePreset')?.value || 'balanced';
+        const textAnimationType = this.settings.textAnimationType;
+        const scrollType = this.settings.scrollType;
+        const hasParticles = this.settings.particleType !== 'none';
+        const hasSparkles = this.settings.textSparkleType !== 'none' || this.settings.innerSparkleType !== 'none';
+        const hasFlags = this.settings.leftFlag !== 'none' || this.settings.rightFlag !== 'none';
+
+        let frames = 24;
+        if (gifSizePreset === 'small') {
+            frames = textAnimationType !== 'none' || scrollType !== 'none' ? 20 : 16;
+            if (hasParticles || hasSparkles) frames = Math.max(frames, 16);
+        } else if (gifSizePreset === 'quality') {
+            frames = 40;
+            if (scrollType !== 'none') frames = 60;
+        } else {
+            if (textAnimationType !== 'none') frames = 30;
+            if (scrollType !== 'none') frames = 36;
+            if (hasParticles || hasSparkles) frames = Math.max(frames, 24);
+        }
+
+        // 100x100 20 kare koyu arka plan ~68 KB ölçümüne dayanan ampirik katsayı
+        const baseBytesPerFrame = 0.42;
+        let bgFactor = 1;
+        if (this.settings.bgType === 'custom') bgFactor = 1.6;
+        else if (this.settings.bgType === 'transparent') bgFactor = 0.9;
+        else if (this.settings.bgType === 'dark') bgFactor = 1;
+        else bgFactor = 1.5;
+
+        let effectFactor = 1;
+        if (hasParticles) effectFactor += 0.25;
+        if (hasSparkles) effectFactor += 0.15;
+        if (hasFlags) effectFactor += 0.1;
+        if (this.textLayers && this.textLayers.length > 1) effectFactor += 0.15;
+
+        const bytes = width * height * frames * baseBytesPerFrame * bgFactor * effectFactor;
+        return Math.max(8, Math.round(bytes / 1024));
+    }
+
+    updateExportEstimate() {
+        const estimate = document.getElementById('exportEstimate');
+        if (!estimate) return;
+        const kb = this.estimateGIFSizeKB();
+        estimate.textContent = `~${kb} KB`;
+        estimate.className = kb <= 100 ? 'estimate-chip estimate-ok' : 'estimate-chip estimate-warn';
+    }
+
+    async downloadVideo() {
+        const animationType = document.getElementById('animationType').value;
+        const hasAnimation = animationType !== 'none' ||
+            this.settings.textAnimationType !== 'none' ||
+            this.settings.scrollType !== 'none' ||
+            this.settings.particleType !== 'none' ||
+            this.settings.leftFlag !== 'none' ||
+            this.settings.rightFlag !== 'none' ||
+            this.settings.splitLayout !== 'none' ||
+            this.settings.textSparkleType !== 'none' ||
+            this.settings.innerSparkleType !== 'none' ||
+            (this.settings.photoAnimation !== 'none' && !!this.bgImage);
+
+        if (!hasAnimation) {
+            alert('Lütfen önce bir animasyon efekti seçin!');
+            return;
+        }
+
+        if (typeof MediaRecorder === 'undefined' || !HTMLCanvasElement.prototype.captureStream) {
+            alert('Tarayıcınız WebM video dışa aktarmayı desteklemiyor. GIF indirmeyi kullanın.');
+            return;
+        }
+
+        const downloadBtn = document.getElementById('downloadVideo');
+        const originalText = downloadBtn.textContent;
+        downloadBtn.textContent = '⏳ Video Oluşturuluyor...';
+        downloadBtn.disabled = true;
+
+        try {
+            const fps = 15;
+            const durationSeconds = 2;
+            const frames = Math.round(fps * durationSeconds);
+            const baseCanvas = document.createElement('canvas');
+            baseCanvas.width = this.canvas.width;
+            baseCanvas.height = this.canvas.height;
+            const baseCtx = baseCanvas.getContext('2d');
+
+            if (this.settings.particleType !== 'none') {
+                this.initParticles();
+            }
+
+            const stream = baseCanvas.captureStream(fps);
+            const mimeType = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm']
+                .find(type => MediaRecorder.isTypeSupported(type)) || '';
+            const recorder = new MediaRecorder(stream, mimeType ? {
+                mimeType,
+                videoBitsPerSecond: 1500000
+            } : undefined);
+
+            const chunks = [];
+            recorder.ondataavailable = (event) => {
+                if (event.data && event.data.size > 0) chunks.push(event.data);
+            };
+            const stopped = new Promise((resolve) => {
+                recorder.onstop = resolve;
+            });
+
+            recorder.start(100);
+            for (let i = 0; i < frames; i++) {
+                baseCtx.clearRect(0, 0, baseCanvas.width, baseCanvas.height);
+                this.renderExportFrame(baseCtx, baseCanvas, i, frames, false);
+                await new Promise(resolve => setTimeout(resolve, Math.round(1000 / fps)));
+                downloadBtn.textContent = `⏳ ${Math.round((i / frames) * 100)}%`;
+            }
+            recorder.stop();
+            await stopped;
+
+            const blob = new Blob(chunks, { type: mimeType || 'video/webm' });
+            const link = document.createElement('a');
+            link.download = `flash-nick-${Date.now()}.webm`;
+            link.href = URL.createObjectURL(blob);
+            link.click();
+
+            const kb = Math.round((blob.size / 1024) * 10) / 10;
+            downloadBtn.textContent = `✅ ${kb} KB`;
+            showToast(`✅ WebM video hazır (${kb} KB).`);
+            setTimeout(() => {
+                downloadBtn.textContent = originalText;
+                downloadBtn.disabled = false;
+            }, 2500);
+        } catch (err) {
+            console.error('Video hatası:', err);
+            alert('Video oluşturulurken hata oluştu: ' + err.message);
+            downloadBtn.textContent = originalText;
+            downloadBtn.disabled = false;
+        }
+    }
+
     async downloadGIF() {
         const scaleSelect = document.getElementById('exportScale');
         const transparentCheckbox = document.getElementById('exportTransparent');
@@ -3736,9 +4045,10 @@ class FlashNickMaker {
         const hasSplitLayout = this.settings.splitLayout !== 'none';
         const hasTextSparkles = this.settings.textSparkleType !== 'none';
         const hasInnerSparkles = this.settings.innerSparkleType !== 'none';
+        const hasPhotoAnimation = this.settings.photoAnimation !== 'none' && !!this.bgImage;
         
         if (animationType === 'none' && !hasParticles && textAnimationType === 'none' && 
-            scrollType === 'none' && !hasFlags && !hasSplitLayout && !hasTextSparkles && !hasInnerSparkles) {
+            scrollType === 'none' && !hasFlags && !hasSplitLayout && !hasTextSparkles && !hasInnerSparkles && !hasPhotoAnimation) {
             alert('Lütfen önce bir animasyon efekti seçin! (parçacık, yazı animasyonu, parıltı vb.)');
             return;
         }
@@ -3767,11 +4077,21 @@ class FlashNickMaker {
                 transparent: exportTransparent ? 0x00000000 : null
             });
 
-            // Frame sayısını animasyon tipine göre ayarla
-            let frames = 30;
-            if (textAnimationType !== 'none') frames = 40;
-            if (scrollType !== 'none') frames = 60;
-            if (hasParticles || hasTextSparkles || hasInnerSparkles) frames = Math.max(frames, 30);
+            // Frame sayısını seçilen dosya boyutu profiline göre ayarla
+            const gifSizePreset = document.getElementById('gifSizePreset')?.value || 'balanced';
+            let frames;
+            if (gifSizePreset === 'small') {
+                frames = textAnimationType !== 'none' || scrollType !== 'none' ? 20 : 16;
+                if (hasParticles || hasTextSparkles || hasInnerSparkles) frames = Math.max(frames, 16);
+            } else if (gifSizePreset === 'quality') {
+                frames = 40;
+                if (scrollType !== 'none') frames = 60;
+            } else {
+                frames = 24;
+                if (textAnimationType !== 'none') frames = 30;
+                if (scrollType !== 'none') frames = 36;
+                if (hasParticles || hasTextSparkles || hasInnerSparkles) frames = Math.max(frames, 24);
+            }
             
             const baseCanvas = document.createElement('canvas');
             baseCanvas.width = baseWidth;
@@ -3790,7 +4110,6 @@ class FlashNickMaker {
 
             // Orijinal ayarları sakla
             const originalShadowBlur = this.settings.shadowBlur;
-            const letters = this.settings.text.split('');
             
             // GIF için parçacıkları başlat
             if (hasParticles) {
@@ -3800,98 +4119,7 @@ class FlashNickMaker {
             for (let i = 0; i < frames; i++) {
                 // Geçici canvas'ı temizle
                 baseCtx.clearRect(0, 0, baseCanvas.width, baseCanvas.height);
-                
-                // Split layout varsa özel rendering
-                if (hasSplitLayout) {
-                    this.drawSplitLayout(baseCtx, baseCanvas, {x: 0, y: 0}, 0, i, i, exportTransparent);
-                } else {
-                    // Normal rendering
-                    // Arka plan
-                    if (!exportTransparent) {
-                        this.drawBackground(baseCtx, baseCanvas, 0);
-                    }
-                    
-                    // Fotoğraf overlay
-                    if (this.settings.photoOverlay !== 'none' || this.settings.colorOverlayMode !== 'none') {
-                        this.applyPhotoOverlay(baseCtx, baseCanvas);
-                    }
-                    
-                    // Çerçeve
-                    if (this.settings.frameStyle !== 'none') {
-                        this.drawFrame(baseCtx, baseCanvas);
-                    }
-                    
-                    // Parçacıkları güncelle ve çiz
-                    if (hasParticles) {
-                        this.updateParticles();
-                        this.drawParticles(baseCtx, baseCanvas, i);
-                    }
-                    
-                    // Bayrak fazını güncelle
-                    this.flagPhase = i * 2;
-                    
-                    // Dekorasyonlar (bayraklar dahil)
-                    this.drawDecorations(baseCtx, baseCanvas);
-                    
-                    // Dekoratif çizgiler
-                    if (this.settings.lineStyle !== 'none') {
-                        this.drawDecorativeLines(baseCtx, baseCanvas);
-                    }
-                    
-                    let offset = { x: 0, y: 0 };
-                    let hueShift = 0;
-
-                    // Yazı animasyonu varsa
-                    if (textAnimationType !== 'none') {
-                        this.drawAnimatedText(baseCtx, baseCanvas, textAnimationType, i * 3, [...letters]);
-                    }
-                    // Kayan yazı varsa
-                    else if (scrollType !== 'none') {
-                        this.drawScrollingText(baseCtx, baseCanvas, scrollType, i * 2, this.settings.scrollSpeed);
-                    }
-                    // Temel animasyonlar
-                    else {
-                        switch (animationType) {
-                            case 'pulse':
-                                const scale = 1 + Math.sin(i * (Math.PI * 2 / frames)) * 0.08;
-                                baseCtx.save();
-                                baseCtx.translate(baseCanvas.width / 2, baseCanvas.height / 2);
-                                baseCtx.scale(scale, scale);
-                                baseCtx.translate(-baseCanvas.width / 2, -baseCanvas.height / 2);
-                                this.drawText(baseCtx, baseCanvas, offset, hueShift);
-                                baseCtx.restore();
-                                break;
-                            case 'glow':
-                                this.settings.shadowBlur = Math.sin(i * (Math.PI * 2 / frames)) * 15 + 20;
-                                this.drawText(baseCtx, baseCanvas, offset, hueShift);
-                                break;
-                            case 'rainbow':
-                                hueShift = (i * (360 / frames)) % 360;
-                                this.drawText(baseCtx, baseCanvas, offset, hueShift);
-                                break;
-                            case 'shake':
-                                offset.x = Math.sin(i * (Math.PI * 4 / frames)) * 5;
-                                this.drawText(baseCtx, baseCanvas, offset, hueShift);
-                                break;
-                            case 'bounce':
-                                offset.y = -Math.abs(Math.sin(i * (Math.PI * 2 / frames))) * 15;
-                                this.drawText(baseCtx, baseCanvas, offset, hueShift);
-                                break;
-                            default:
-                                this.drawText(baseCtx, baseCanvas, offset, hueShift);
-                        }
-                    }
-                    
-                    // İç parıltılar
-                    if (hasInnerSparkles) {
-                        this.drawInnerSparkles(baseCtx, baseCanvas, i);
-                    }
-                    
-                    // Dış parıltılar
-                    if (hasTextSparkles) {
-                        this.drawTextSparkles(baseCtx, baseCanvas, i);
-                    }
-                }
+                this.renderExportFrame(baseCtx, baseCanvas, i, frames, exportTransparent);
 
                 // Frame'i GIF'e ekle (gerekirse upscale ederek)
                 if (exportScale > 1 && scaledCtx) {
@@ -3915,8 +4143,17 @@ class FlashNickMaker {
                 link.href = URL.createObjectURL(blob);
                 link.click();
                 
-                // Butonu eski haline getir
-                downloadBtn.textContent = '✅ Tamamlandı!';
+                // Dosya boyutunu göster
+                const kb = Math.round((blob.size / 1024) * 10) / 10;
+                downloadBtn.textContent = `✅ ${kb} KB`;
+                if (kb > 300) {
+                    showToast(`⚠️ GIF ${kb} KB. Bazı sesli chat siteleri 100-300 KB arası kabul eder; "Küçük Dosya" profili kullanın.`);
+                } else if (kb > 100) {
+                    showToast(`✅ GIF hazır (${kb} KB). 100 KB üstü dosyalar bazı sitelerde kabul edilmeyebilir.`);
+                } else {
+                    showToast(`✅ GIF hazır (${kb} KB), ikon yüklemeye uygun.`);
+                }
+
                 setTimeout(() => {
                     downloadBtn.textContent = originalText;
                     downloadBtn.disabled = false;
@@ -4933,6 +5170,137 @@ FlashNickMaker.prototype.renderWithPhotoAnimation = function() {
     if (this.settings.textSparkleType !== 'none') this.drawTextSparkles(ctx, canvas, this.sparkleFrame);
 };
 
+FlashNickMaker.prototype.drawPhotoAnimatedBackground = function(ctx, canvas, phase, transparent = false) {
+    const anim = this.settings.photoAnimation;
+    const hasOverlay = this.settings.photoOverlay !== 'none' || this.settings.colorOverlayMode !== 'none';
+
+    const drawBackground = () => {
+        if (!transparent) {
+            this.drawBackground(ctx, canvas, 0);
+            if (hasOverlay) {
+                this.applyPhotoOverlay(ctx, canvas);
+            }
+        }
+    };
+
+    if (!this.bgImage || anim === 'none') {
+        drawBackground();
+        return;
+    }
+
+    ctx.save();
+
+    switch (anim) {
+        case 'zoom-in':
+            const scale1 = 1 + Math.sin(phase) * 0.1;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(scale1, scale1);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'zoom-out':
+            const scale2 = 1 - Math.sin(phase) * 0.1;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(scale2, scale2);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'pan-left':
+            ctx.translate(-Math.sin(phase) * 20, 0);
+            break;
+        case 'pan-right':
+            ctx.translate(Math.sin(phase) * 20, 0);
+            break;
+        case 'pan-up':
+            ctx.translate(0, -Math.sin(phase) * 20);
+            break;
+        case 'pan-down':
+            ctx.translate(0, Math.sin(phase) * 20);
+            break;
+        case 'rotate-cw':
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(phase * 0.05);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'rotate-ccw':
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(-phase * 0.05);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'pulse':
+            const pulse = 1 + Math.sin(phase * 2) * 0.05;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(pulse, pulse);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'shake':
+            ctx.translate(
+                Math.sin(phase * 10) * 3,
+                Math.cos(phase * 10) * 3
+            );
+            break;
+        case 'zoom-pulse':
+            const zoomPulse = 1 + Math.sin(phase * 1.5) * 0.15;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(zoomPulse, zoomPulse);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'pan-circle':
+            const radius = 30;
+            ctx.translate(
+                Math.cos(phase * 0.5) * radius,
+                Math.sin(phase * 0.5) * radius
+            );
+            break;
+        case 'rotate-swing':
+            const swingAngle = Math.sin(phase * 0.8) * 0.1;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(swingAngle);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'wave':
+            for (let y = 0; y < canvas.height; y += 5) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(0, y, canvas.width, 5);
+                ctx.clip();
+                ctx.translate(Math.sin(phase + y * 0.05) * 10, 0);
+                drawBackground();
+                ctx.restore();
+            }
+            ctx.restore();
+            return;
+        case 'bounce':
+            const bounceY = Math.abs(Math.sin(phase * 1.5)) * 30;
+            ctx.translate(0, -bounceY);
+            break;
+        case 'float':
+            const floatY = Math.sin(phase * 0.8) * 15;
+            ctx.translate(0, floatY);
+            break;
+        case 'wobble':
+            const wobbleX = Math.sin(phase * 2) * 10;
+            const wobbleRot = Math.sin(phase * 2.5) * 0.05;
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(wobbleRot);
+            ctx.translate(-canvas.width / 2 + wobbleX, -canvas.height / 2);
+            break;
+        case 'flip-h':
+            const flipH = Math.cos(phase * 0.8);
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(flipH, 1);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+        case 'flip-v':
+            const flipV = Math.cos(phase * 0.8);
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.scale(1, flipV);
+            ctx.translate(-canvas.width / 2, -canvas.height / 2);
+            break;
+    }
+
+    drawBackground();
+    ctx.restore();
+};
+
 // ===== TEXT LAYER YÖNETİMİ =====
 
 FlashNickMaker.prototype.addTextLayer = function() {
@@ -5421,9 +5789,233 @@ function shareToWhatsapp() {
 }
 
 function copyShareLink() {
-    navigator.clipboard.writeText(window.location.href).then(() => {
+    const shareUrl = window.flashNickMaker ? getDesignShareUrl() : window.location.href;
+    navigator.clipboard.writeText(shareUrl).then(() => {
         showToast('Link kopyalandı! 🔗');
     });
+}
+
+// Tasarım linki (paylaşılabilir şablon)
+function encodeDesignPayload(maker) {
+    const payload = {
+        settings: maker.settings,
+        layers: maker.textLayers,
+        active: maker.activeTextLayer,
+        animationType: document.getElementById('animationType')?.value || 'none'
+    };
+    const json = JSON.stringify(payload);
+    return btoa(unescape(encodeURIComponent(json)));
+}
+
+function decodeDesignPayload(encoded) {
+    const binary = atob(encoded);
+    const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function getDesignShareUrl() {
+    const maker = window.flashNickMaker;
+    const base = window.location.origin + window.location.pathname;
+    return `${base}#d=${encodeDesignPayload(maker)}`;
+}
+
+function copyDesignLink() {
+    navigator.clipboard.writeText(getDesignShareUrl()).then(() => {
+        showToast('Tasarım linki kopyalandı! 🔗');
+    });
+}
+
+function applyIconMode() {
+    const maker = window.flashNickMaker;
+    if (!maker) return;
+
+    maker.settings.canvasWidth = 100;
+    maker.settings.canvasHeight = 100;
+    maker.canvas.width = 100;
+    maker.canvas.height = 100;
+    if (!maker.bgImage) {
+        maker.settings.bgType = 'dark';
+    }
+
+    document.getElementById('iconSizePreset').value = '100';
+    document.getElementById('gifSizePreset').value = 'small';
+    document.getElementById('exportScale').value = '1';
+    document.getElementById('exportTransparent').checked = false;
+    document.getElementById('canvasWidth').value = 100;
+    document.getElementById('canvasHeight').value = 100;
+    document.getElementById('canvasWidthVal').textContent = '100';
+    document.getElementById('canvasHeightVal').textContent = '100';
+
+    updateUIFromSettings(maker);
+    maker.render();
+    maker.updateExportEstimate();
+    showToast('İkon modu aktif: 100x100 + küçük dosya GIF 📱');
+}
+
+function syncFullUIFromSettings(maker) {
+    const s = maker.settings;
+    const setValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.value = value;
+    };
+    const setChecked = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = !!value;
+    };
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+    };
+
+    setValue('nickInput', s.text || '');
+    setValue('fontFamily', s.fontFamily || 'Lobster');
+    setValue('fontSize', s.fontSize || 40);
+    setText('fontSizeVal', s.fontSize || 40);
+    setValue('textColor', s.textColor || '#ffffff');
+    setValue('shadowColor', s.shadowColor || '#000000');
+    setValue('shadowBlur', s.shadowBlur || 5);
+    setText('shadowBlurVal', s.shadowBlur || 5);
+    setChecked('effectGlow', s.effectGlow);
+    setChecked('effectOutline', s.effectOutline);
+    setChecked('effectGradient', s.effectGradient);
+    setChecked('effect3D', s.effect3D);
+    setValue('outlineColor', s.outlineColor || '#000000');
+    setValue('outlineWidth', s.outlineWidth || 2);
+    setText('outlineWidthVal', s.outlineWidth || 2);
+    setValue('gradientColor1', s.gradientColor1 || '#ff6b6b');
+    setValue('gradientColor2', s.gradientColor2 || '#feca57');
+    setValue('particleType', s.particleType || 'none');
+    setValue('particleDensity', s.particleDensity || 15);
+    setText('particleDensityVal', s.particleDensity || 15);
+    setValue('particleSize', s.particleSize || 12);
+    setText('particleSizeVal', s.particleSize || 12);
+    setValue('particleColor', s.particleColor || '#ffff00');
+    setChecked('particleRainbow', s.particleRainbow);
+    setValue('particleDirection', s.particleDirection || 'down');
+    setValue('canvasWidth', s.canvasWidth || 300);
+    setText('canvasWidthVal', s.canvasWidth || 300);
+    setValue('canvasHeight', s.canvasHeight || 100);
+    setText('canvasHeightVal', s.canvasHeight || 100);
+    setValue('textX', s.textX || 50);
+    setText('textXVal', s.textX || 50);
+    setValue('textY', s.textY || 50);
+    setText('textYVal', s.textY || 50);
+    setValue('textSparkleType', s.textSparkleType || 'none');
+    setValue('sparkleCount', s.sparkleCount || 8);
+    setText('sparkleCountVal', s.sparkleCount || 8);
+    setValue('sparkleColor', s.sparkleColor || '#ffffff');
+    setChecked('sparkleAnimate', s.sparkleAnimate);
+    setValue('innerSparkleType', s.innerSparkleType || 'none');
+    setValue('innerSparkleCount', s.innerSparkleCount || 15);
+    setText('innerSparkleCountVal', s.innerSparkleCount || 15);
+    setValue('innerSparkleColor', s.innerSparkleColor || '#ffffff');
+    setValue('innerSparkleSize', s.innerSparkleSize || 3);
+    setText('innerSparkleSizeVal', s.innerSparkleSize || 3);
+    setChecked('innerSparkleAnimate', s.innerSparkleAnimate);
+    setValue('lineStyle', s.lineStyle || 'none');
+    setValue('linePosition', s.linePosition || 'bottom');
+    setValue('lineColor', s.lineColor || '#000000');
+    setValue('frameStyle', s.frameStyle || 'none');
+    setValue('frameColor', s.frameColor || '#000000');
+    setValue('frameWidth', s.frameWidth || 2);
+    setText('frameWidthVal', s.frameWidth || 2);
+    setValue('framePadding', s.framePadding || 10);
+    setText('framePaddingVal', s.framePadding || 10);
+    setValue('leftFlag', s.leftFlag || 'none');
+    setValue('rightFlag', s.rightFlag || 'none');
+    setValue('flagAnimation', s.flagAnimation || 'wave');
+    setValue('flagSize', s.flagSize || 25);
+    setText('flagSizeVal', s.flagSize || 25);
+    setValue('flagY', s.flagY || 50);
+    setText('flagYVal', s.flagY || 50);
+    setValue('flagLeftX', s.flagLeftX || 5);
+    setText('flagLeftXVal', s.flagLeftX || 5);
+    setValue('flagRightX', s.flagRightX || 95);
+    setText('flagRightXVal', s.flagRightX || 95);
+    setValue('imageEffect', s.imageEffect || 'none');
+    setValue('animationType', document.getElementById('animationType')?.value || 'none');
+    setValue('textAnimationType', s.textAnimationType || 'none');
+    setValue('scrollType', s.scrollType || 'none');
+    setValue('scrollSpeed', s.scrollSpeed || 3);
+    setText('scrollSpeedVal', s.scrollSpeed || 3);
+    setValue('textBlendMode', s.textBlendMode || 'source-over');
+    setValue('particleBlendMode', s.particleBlendMode || 'source-over');
+    setValue('warpType', s.warpType || 'none');
+    setValue('warpAmount', s.warpAmount || 0.35);
+    setText('warpAmountVal', s.warpAmount || 0.35);
+    setValue('photoAnimation', s.photoAnimation || 'none');
+    setValue('photoAnimSpeed', s.photoAnimSpeed || 3);
+    setText('photoAnimSpeedVal', s.photoAnimSpeed || 3);
+    setValue('splitLayout', s.splitLayout || 'none');
+    setValue('splitRatio', s.splitRatio || 50);
+    setText('splitRatioVal', s.splitRatio || 50);
+    setChecked('splitBorder', s.splitBorder);
+    setValue('photoSideEffect', s.photoSideEffect || 'none');
+
+    maker.textLayers = Array.isArray(maker.textLayers) && maker.textLayers.length
+        ? maker.textLayers
+        : [{
+            id: 1,
+            text: s.text || 'SevDa',
+            fontFamily: s.fontFamily || 'Lobster',
+            fontSize: s.fontSize || 40,
+            textColor: s.textColor || '#ffffff',
+            shadowColor: s.shadowColor || '#000000',
+            shadowBlur: s.shadowBlur || 5,
+            outlineColor: s.outlineColor || '#000000',
+            outlineWidth: s.outlineWidth || 2,
+            gradientColor1: s.gradientColor1 || '#ff0000',
+            gradientColor2: s.gradientColor2 || '#ffff00',
+            effectGlow: s.effectGlow || false,
+            effectOutline: s.effectOutline || false,
+            effectGradient: s.effectGradient || false,
+            effect3D: s.effect3D || false,
+            textX: s.textX || 50,
+            textY: s.textY || 50,
+            textBlendMode: s.textBlendMode || 'source-over',
+            warpType: s.warpType || 'none',
+            warpAmount: s.warpAmount || 0.35,
+            textAnimationType: 'none',
+            rotation: 0,
+            opacity: 100,
+            visible: true
+        }];
+    maker.updateLayerList();
+    const active = maker.textLayers.find(layer => layer.id === maker.activeTextLayer) || maker.textLayers[0];
+    if (active) maker.loadLayerToUI(active);
+}
+
+function applyDesignFromHash() {
+    const hash = window.location.hash;
+    if (!hash.startsWith('#d=')) return;
+
+    const maker = window.flashNickMaker;
+    if (!maker) return;
+
+    try {
+        const payload = decodeDesignPayload(hash.slice(3));
+        Object.assign(maker.settings, payload.settings || {});
+        maker.settings.canvasWidth = maker.settings.canvasWidth || 300;
+        maker.settings.canvasHeight = maker.settings.canvasHeight || 100;
+        maker.canvas.width = maker.settings.canvasWidth;
+        maker.canvas.height = maker.settings.canvasHeight;
+        if (Array.isArray(payload.layers) && payload.layers.length > 0) {
+            maker.textLayers = payload.layers;
+        }
+        if (payload.active) {
+            maker.activeTextLayer = payload.active;
+        }
+        const animationSelect = document.getElementById('animationType');
+        if (animationSelect && payload.animationType) {
+            animationSelect.value = payload.animationType;
+        }
+        syncFullUIFromSettings(maker);
+        maker.updateExportEstimate();
+        maker.render();
+        showToast('Paylaşılan tasarım yüklendi! 🎨');
+    } catch (err) {
+        console.error('Tasarım linki okunamadı:', err);
+    }
 }
 
 // Yardım Modal
@@ -5453,6 +6045,9 @@ function updateFakeStats() {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.flashNickMaker = new FlashNickMaker();
+
+    // Paylaşılan tasarım linkini uygula
+    applyDesignFromHash();
     
     // Kayıtlı tasarımları göster
     showSavedDesigns();
@@ -6245,4 +6840,3 @@ function downloadAutoDesign(index) {
     
     showToast('Tasarım indirildi! 📥');
 }
-

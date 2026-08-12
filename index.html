@@ -851,9 +851,33 @@
                             <option value="4">4x</option>
                         </select>
                     </div>
+                    <div class="export-row">
+                        <label for="iconSizePreset">İkon Boyutu:</label>
+                        <select id="iconSizePreset">
+                            <option value="0">Özel (Mevcut)</option>
+                            <option value="64">64x64</option>
+                            <option value="100">100x100</option>
+                            <option value="150">150x150</option>
+                            <option value="200">200x200</option>
+                        </select>
+                    </div>
+                    <div class="export-row">
+                        <label for="gifSizePreset">GIF Boyutu:</label>
+                        <select id="gifSizePreset">
+                            <option value="balanced">Dengeli (24 kare)</option>
+                            <option value="small">Küçük Dosya (16 kare)</option>
+                            <option value="quality">Kaliteli (40 kare)</option>
+                        </select>
+                    </div>
                     <label class="checkbox-inline">
                         <input type="checkbox" id="exportTransparent"> Arka planı şeffaf yap
                     </label>
+                    <div class="export-actions">
+                        <button id="iconModeBtn" class="export-action-btn" type="button">📱 İkon Modu</button>
+                        <button id="downloadVideo" class="export-action-btn" type="button">🎬 WebM Video</button>
+                        <button id="copyDesignLink" class="export-action-btn" type="button">🔗 Tasarım Linki</button>
+                        <span id="exportEstimate" class="estimate-chip">~KB</span>
+                    </div>
                 </div>
 
                 <div class="animation-controls">
@@ -1021,7 +1045,7 @@
                 </div>
                 <div class="help-item">
                     <h4>📱 Sesli Chat Siteleri</h4>
-                    <p>Oluşturduğunuz nickleri tüm popüler sesli chat sitelerinde kullanabilirsiniz.</p>
+                    <p>İkon yüklemek için 100x100 veya 150x150 boyut seçin ve "Küçük Dosya" profiliyle indirin. 100 KB altı dosyalar çoğu siteye uygundur.</p>
                 </div>
             </div>
             <button onclick="closeHelpModal()" class="modal-close-btn">Anladım 👍</button>

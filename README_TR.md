@@ -5,11 +5,13 @@ Flash Nick Pro, sesli chat (Discord, TeamSpeak, Türk sesli sohbet uygulamaları
 
 ## ✨ Özellikler
 
+- Liquid Glass temalı modern arayüz: yarı saydam cam paneller, yumuşak ışık kenarları, koyu/açık tema
+
 ### Yazı Efektleri
 - 20+ Google Font
 - Renk ve gölge kontrolü
 - Parlama (Glow), Kontur (Outline), Gradient ve 3D efektleri
-- Yazı animasyonları (12 çeşit)
+- Yazı animasyonları (12 çeşit, tüm yazı katmanları için)
 
 ### Parçacık Efektleri
 - Yıldız, Kalp, Kar, Ateş, Konfeti, Balon, Çiçek, Kıvılcım
@@ -33,7 +35,14 @@ Flash Nick Pro, sesli chat (Discord, TeamSpeak, Türk sesli sohbet uygulamaları
 ### Kaydetme & İndirme
 - Tasarımları kaydedin ve yükleyin
 - PNG olarak indirin
-- Animasyonlu GIF olarak indirin
+- Çoklu yazı katmanları ve fotoğraf animasyonları dahil animasyonlu GIF olarak indirin
+- İkon boyutu ön ayarları (64x64, 100x100, 150x150, 200x200)
+- GIF dosya boyutu profilleri: Küçük Dosya, Dengeli, Kaliteli
+- İndirme sonrası dosya boyutu gösterimi ve sesli chat siteleri için uyarı
+- Canlı GIF boyut tahmini: indirmeden önce yaklaşık KB değeri gösterilir
+- Tek tıkla İkon Modu: 100x100 + küçük dosya profili
+- WebM video dışa aktarma (MP4 desteklemeyen tarayıcılar için alternatif)
+- Paylaşılabilir tasarım linki: ayarları URL'ye gömerek tek linkle açılabilir şablon
 - Geçmiş takibi
 - Sosyal ağlara paylaşma
 - Aydınlık/Koyu tema
@@ -93,6 +102,10 @@ Flash Nick Pro, sesli chat (Discord, TeamSpeak, Türk sesli sohbet uygulamaları
 ### İndir butonları çalışmıyor
 - JavaScript'in etkin olduğundan emin olun
 - Tarayıcı konsolunda (F12) hata olup olmadığını kontrol edin
+
+### Eski sürüm görünüyorsa (PWA önbelleği)
+- Sayfayı iki kez yenileyin (F5)
+- Yeni sürüm arka planda otomatik olarak önbelleğe alınır; ikinci yenilemede güncel sürüm açılır
 
 ### Animasyonlar yavaş
 - Parçacık yoğunluğunu azaltın
