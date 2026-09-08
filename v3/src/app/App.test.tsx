@@ -1,6 +1,10 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+
+vi.mock('../editor/canvas/EditorCanvas', () => ({
+  EditorCanvas: () => null,
+}));
 
 describe('App', () => {
   it('shows the primary creation actions in Turkish', () => {
