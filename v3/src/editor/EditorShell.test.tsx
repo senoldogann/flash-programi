@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEditorStore } from '../store/editor-store';
 import { EditorShell } from './EditorShell';
@@ -72,6 +72,17 @@ vi.mock('../persistence/project-db', () => ({
   saveCurrentProject: runtime.saveCurrentProject,
 }));
 
+async function renderReadyEditorShell() {
+  const view = render(<EditorShell />);
+  const loadPromise = runtime.loadCurrentProject.mock.results.at(-1)?.value;
+
+  await act(async () => {
+    await loadPromise;
+  });
+
+  return view;
+}
+
 describe('EditorShell', () => {
   beforeEach(() => {
     useEditorStore.getState().reset();
@@ -101,7 +112,7 @@ describe('EditorShell', () => {
     const dispose = vi.fn();
     runtime.loadCurrentProject.mockResolvedValueOnce({ project: savedProject, dispose });
 
-    const { unmount } = render(<EditorShell />);
+    const { unmount } = await renderReadyEditorShell();
 
     await waitFor(() => expect(useEditorStore.getState().project.name).toBe('Kaydedilmiş Nick'));
     await waitFor(
@@ -116,8 +127,7 @@ describe('EditorShell', () => {
   });
 
   it('autosaves project changes after persistence initialization', async () => {
-    render(<EditorShell />);
-    await waitFor(() => expect(runtime.loadCurrentProject).toHaveBeenCalledTimes(1));
+    await renderReadyEditorShell();
 
     fireEvent.click(screen.getByRole('button', { name: 'Yazı Ekle' }));
 
@@ -130,8 +140,8 @@ describe('EditorShell', () => {
     );
   });
 
-  it('adds text, edits it, and undoes the edit from the toolbar', () => {
-    render(<EditorShell />);
+  it('adds text, edits it, and undoes the edit from the toolbar', async () => {
+    await renderReadyEditorShell();
 
     fireEvent.click(screen.getByRole('button', { name: 'Yazı Ekle' }));
 
@@ -156,8 +166,7 @@ describe('EditorShell', () => {
   });
 
   it('connects keyboard undo and redo to editor history', async () => {
-    render(<EditorShell />);
-    await waitFor(() => expect(runtime.loadCurrentProject).toHaveBeenCalledTimes(1));
+    await renderReadyEditorShell();
 
     fireEvent.click(screen.getByRole('button', { name: 'Yazı Ekle' }));
     expect(useEditorStore.getState().project.elements).toHaveLength(1);
@@ -169,8 +178,8 @@ describe('EditorShell', () => {
     expect(useEditorStore.getState().project.elements).toHaveLength(1);
   });
 
-  it('shows real effect and motion controls instead of dead category labels', () => {
-    render(<EditorShell />);
+  it('shows real effect and motion controls instead of dead category labels', async () => {
+    await renderReadyEditorShell();
 
     fireEvent.click(screen.getByRole('button', { name: 'Efekt' }));
     expect(screen.getByLabelText('Parlaklık')).toBeInTheDocument();
@@ -190,8 +199,8 @@ describe('EditorShell', () => {
     expect(screen.getByRole('button', { name: 'Hızlı' })).toBeInTheDocument();
   });
 
-  it('exports the live canvas when PNG İndir is pressed', () => {
-    render(<EditorShell />);
+  it('exports the live canvas when PNG İndir is pressed', async () => {
+    await renderReadyEditorShell();
 
     const exportButton = screen.getByRole('button', { name: 'PNG İndir' });
     expect(exportButton).toBeEnabled();
@@ -202,7 +211,7 @@ describe('EditorShell', () => {
   });
 
   it('exports deterministic GIF frames and downloads the finished file', async () => {
-    render(<EditorShell />);
+    await renderReadyEditorShell();
 
     const gifButton = screen.getByRole('button', { name: 'GIF İndir' });
     expect(gifButton).toBeEnabled();
@@ -223,7 +232,7 @@ describe('EditorShell', () => {
   });
 
   it('shows an actionable image error without discarding the current project', async () => {
-    render(<EditorShell />);
+    await renderReadyEditorShell();
     fireEvent.click(screen.getByRole('button', { name: 'Yazı Ekle' }));
 
     const before = structuredClone(useEditorStore.getState().project);
