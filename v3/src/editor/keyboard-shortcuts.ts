@@ -8,7 +8,13 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
   const tagName = target.tagName.toLowerCase();
   if (tagName === 'input' || tagName === 'textarea' || tagName === 'select') return true;
-  if (target.isContentEditable || target.getAttribute('contenteditable') === 'true') return true;
+  if (
+    target.isContentEditable ||
+    target.contentEditable === 'true' ||
+    target.getAttribute('contenteditable') === 'true'
+  ) {
+    return true;
+  }
 
   return target.closest('[contenteditable="true"]') !== null;
 }
