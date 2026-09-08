@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useEditorStore } from '../../store/editor-store';
 import { TextInspector } from './TextInspector';
@@ -52,7 +52,9 @@ describe('TextInspector', () => {
       text: 'Kraliçe',
     });
 
-    useEditorStore.getState().undo();
+    act(() => {
+      useEditorStore.getState().undo();
+    });
     expect(useEditorStore.getState().project.elements.find((item) => item.id === id)).toMatchObject({
       type: 'text',
       text: 'Kral',
@@ -76,7 +78,9 @@ describe('TextInspector', () => {
       opacity: 0.35,
     });
 
-    useEditorStore.getState().undo();
+    act(() => {
+      useEditorStore.getState().undo();
+    });
     expect(useEditorStore.getState().project.elements.find((item) => item.id === id)).toMatchObject({
       opacity: 1,
     });
