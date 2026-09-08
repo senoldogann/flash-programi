@@ -48,10 +48,17 @@ describe('editor keyboard shortcuts', () => {
     const editable = document.createElement('div');
     editable.contentEditable = 'true';
 
-    for (const target of [input, textarea, select, editable]) {
+    const targets: Array<[string, HTMLElement]> = [
+      ['input', input],
+      ['textarea', textarea],
+      ['select', select],
+      ['contenteditable', editable],
+    ];
+
+    for (const [label, target] of targets) {
       const event = keyboardEvent('z', { ctrlKey: true }, target);
-      expect(handleEditorShortcut(event, { undo, redo })).toBe(false);
-      expect(event.defaultPrevented).toBe(false);
+      expect(handleEditorShortcut(event, { undo, redo }), label).toBe(false);
+      expect(event.defaultPrevented, `${label} defaultPrevented`).toBe(false);
     }
 
     expect(undo).not.toHaveBeenCalled();
