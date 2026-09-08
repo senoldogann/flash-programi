@@ -26,6 +26,8 @@ const runtime = vi.hoisted(() => {
     options.onProgress?.(1);
     return gifBlob;
   });
+  const loadCurrentProject = vi.fn();
+  const saveCurrentProject = vi.fn();
 
   return {
     gifBlob,
@@ -36,6 +38,8 @@ const runtime = vi.hoisted(() => {
     createBrowserGifEncoder,
     downloadBlob,
     encodeGifFrames,
+    loadCurrentProject,
+    saveCurrentProject,
   };
 });
 
@@ -63,6 +67,11 @@ vi.mock('../export/gif-browser', () => ({
   downloadBlob: runtime.downloadBlob,
 }));
 
+vi.mock('../persistence/project-db', () => ({
+  loadCurrentProject: runtime.loadCurrentProject,
+  saveCurrentProject: runtime.saveCurrentProject,
+}));
+
 describe('EditorShell', () => {
   beforeEach(() => {
     useEditorStore.getState().reset();
@@ -74,11 +83,51 @@ describe('EditorShell', () => {
     runtime.createBrowserGifEncoder.mockClear();
     runtime.downloadBlob.mockClear();
     runtime.encodeGifFrames.mockClear();
+    runtime.loadCurrentProject.mockReset();
+    runtime.loadCurrentProject.mockResolvedValue(null);
+    runtime.saveCurrentProject.mockReset();
+    runtime.saveCurrentProject.mockResolvedValue(undefined);
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it('restores the saved project before autosave starts and disposes restored asset URLs', async () => {
+    const savedProject = structuredClone(useEditorStore.getState().project);
+    savedProject.name = 'Kaydedilmiş Nick';
+    savedProject.background = '#220044';
+    const dispose = vi.fn();
+    runtime.loadCurrentProject.mockResolvedValueOnce({ project: savedProject, dispose });
+
+    const { unmount } = render(<EditorShell />);
+
+    await waitFor(() => expect(useEditorStore.getState().project.name).toBe('Kaydedilmiş Nick'));
+    await waitFor(
+      () => expect(runtime.saveCurrentProject).toHaveBeenCalled(),
+      { timeout: 2000 },
+    );
+
+    expect(runtime.saveCurrentProject.mock.calls[0]?.[0]).toEqual(savedProject);
+
+    unmount();
+    expect(dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('autosaves project changes after persistence initialization', async () => {
+    render(<EditorShell />);
+    await waitFor(() => expect(runtime.loadCurrentProject).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yazı Ekle' }));
+
+    await waitFor(
+      () => {
+        const lastProject = runtime.saveCurrentProject.mock.calls.at(-1)?.[0];
+        expect(lastProject?.elements).toHaveLength(1);
+      },
+      { timeout: 2000 },
+    );
   });
 
   it('adds text, edits it, and undoes the edit from the toolbar', () => {
