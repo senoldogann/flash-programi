@@ -20,6 +20,19 @@ vi.mock('react-konva', async () => {
     );
   });
 
+  const MockImage = forwardRef<unknown, Record<string, unknown>>((props, ref) => {
+    useImperativeHandle(ref, () => ({ }));
+    return (
+      <button
+        type="button"
+        data-testid={`image-${String(props.id)}`}
+        onClick={props.onClick as (() => void) | undefined}
+      >
+        Fotoğraf
+      </button>
+    );
+  });
+
   const MockTransformer = forwardRef<unknown>((_props, ref) => {
     useImperativeHandle(ref, () => ({
       nodes: () => undefined,
@@ -35,7 +48,7 @@ vi.mock('react-konva', async () => {
     Layer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     Rect: () => <div data-testid="canvas-background" />,
     Text: MockText,
-    Image: () => <div data-testid="image-element" />,
+    Image: MockImage,
     Transformer: MockTransformer,
   };
 });
@@ -57,5 +70,19 @@ describe('EditorCanvas', () => {
     fireEvent.click(screen.getByText('Merhaba'));
 
     expect(useEditorStore.getState().selectedElementId).toBe(textId);
+  });
+
+  it('renders image elements from the project and selects them when clicked', () => {
+    const imageId = useEditorStore.getState().addImage('blob:fixture', 640, 480);
+    useEditorStore.getState().selectElement(null);
+
+    render(<EditorCanvas />);
+
+    const imageNode = screen.getByTestId(`image-${imageId}`);
+    expect(imageNode).toBeInTheDocument();
+
+    fireEvent.click(imageNode);
+
+    expect(useEditorStore.getState().selectedElementId).toBe(imageId);
   });
 });
