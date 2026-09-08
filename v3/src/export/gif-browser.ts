@@ -52,15 +52,13 @@ export function loadGifConstructor(src = '/gif.js'): Promise<GifConstructor> {
     const handleError = () => {
       cleanup();
       script?.remove();
-      reject(new Error('GIF motoru yüklenemedi. İnternet bağlantınızı kontrol edin.'));
+      reject(new Error('GIF motoru yüklenemedi. Lütfen tekrar deneyin.'));
     };
 
     script?.addEventListener('load', handleLoad, { once: true });
     script?.addEventListener('error', handleError, { once: true });
 
-    if (shouldAppend && script) {
-      document.head.appendChild(script);
-    }
+    if (shouldAppend && script) document.head.appendChild(script);
   });
 }
 
@@ -77,4 +75,14 @@ export function createBrowserGifEncoder(
     height,
     workerScript: '/gif.worker.js',
   });
+}
+
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.rel = 'noopener';
+  link.click();
+  queueMicrotask(() => URL.revokeObjectURL(url));
 }

@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import type Konva from 'konva';
-import { downloadStagePng } from '../export/png';
+import { createBrowserGifEncoder, downloadBlob, loadGifConstructor } from '../export/gif-browser';
+import { encodeGifFrames } from '../export/gif';
+import { captureStageCanvas, downloadStagePng } from '../export/png';
 import { useEditorStore } from '../store/editor-store';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { readImageFile } from './canvas/image-loader';
@@ -9,11 +12,13 @@ import { TextInspector } from './panels/TextInspector';
 import { ToolPanel } from './panels/ToolPanel';
 import { TopToolbar } from './toolbar/TopToolbar';
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
+type ErrorNotice = {
+  title: string;
+  message: string;
+};
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
   return 'İşlem tamamlanamadı. Lütfen tekrar deneyin.';
 }
 
@@ -21,13 +26,15 @@ export function EditorShell() {
   const project = useEditorStore((state) => state.project);
   const addText = useEditorStore((state) => state.addText);
   const addImage = useEditorStore((state) => state.addImage);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorNotice, setErrorNotice] = useState<ErrorNotice | null>(null);
+  const [exportTimeMs, setExportTimeMs] = useState<number | null>(null);
+  const [gifExporting, setGifExporting] = useState(false);
+  const [gifProgress, setGifProgress] = useState(0);
   const assetRevokers = useRef(new Set<() => void>());
   const stageRef = useRef<Konva.Stage | null>(null);
 
   useEffect(() => {
     const revokers = assetRevokers.current;
-
     return () => {
       for (const revoke of revokers) revoke();
       revokers.clear();
@@ -40,18 +47,63 @@ export function EditorShell() {
 
   const handlePngExport = useCallback(() => {
     const stage = stageRef.current;
-    if (!stage) return;
+    if (!stage || gifExporting) return;
 
-    downloadStagePng(stage, 'flash-nick.png');
-  }, []);
+    try {
+      setErrorNotice(null);
+      downloadStagePng(stage, 'flash-nick.png');
+    } catch (error) {
+      setErrorNotice({
+        title: 'PNG oluşturulamadı.',
+        message: getErrorMessage(error),
+      });
+    }
+  }, [gifExporting]);
+
+  const handleGifExport = useCallback(async () => {
+    const stage = stageRef.current;
+    if (!stage || gifExporting) return;
+
+    setGifExporting(true);
+    setGifProgress(0);
+    setErrorNotice(null);
+
+    try {
+      const Gif = await loadGifConstructor();
+      const encoder = createBrowserGifEncoder(Gif, project.width, project.height);
+      const blob = await encodeGifFrames({
+        durationMs: project.durationMs,
+        fps: project.fps,
+        encoder,
+        renderFrame: async (timeMs) => {
+          flushSync(() => setExportTimeMs(timeMs));
+          stage.draw();
+          return captureStageCanvas(stage);
+        },
+        onProgress: setGifProgress,
+      });
+
+      downloadBlob(blob, 'flash-nick.gif');
+    } catch (error) {
+      setErrorNotice({
+        title: 'GIF oluşturulamadı.',
+        message: getErrorMessage(error),
+      });
+    } finally {
+      flushSync(() => setExportTimeMs(null));
+      stage.draw();
+      setGifExporting(false);
+      setGifProgress(0);
+    }
+  }, [gifExporting, project.durationMs, project.fps, project.height, project.width]);
 
   const handleAddText = () => {
-    setErrorMessage(null);
+    setErrorNotice(null);
     addText();
   };
 
   const handleImageFile = async (file: File) => {
-    setErrorMessage(null);
+    setErrorNotice(null);
 
     try {
       const asset = await readImageFile(file);
@@ -64,7 +116,10 @@ export function EditorShell() {
         throw error;
       }
     } catch (error) {
-      setErrorMessage(getErrorMessage(error));
+      setErrorNotice({
+        title: 'Fotoğraf eklenemedi.',
+        message: getErrorMessage(error),
+      });
     }
   };
 
@@ -78,20 +133,25 @@ export function EditorShell() {
             <p>Fotoğrafını seç, nickini yaz, hareket ve efekt ekle.</p>
           </div>
         </div>
-        <TopToolbar onExport={handlePngExport} />
+        <TopToolbar
+          onExport={handlePngExport}
+          onGifExport={handleGifExport}
+          gifExporting={gifExporting}
+          gifProgress={gifProgress}
+        />
       </header>
 
-      {errorMessage ? (
+      {errorNotice ? (
         <div className="error-banner" role="alert">
-          <strong>Fotoğraf eklenemedi.</strong>
-          <span>{errorMessage}</span>
-          <button type="button" aria-label="Hata mesajını kapat" onClick={() => setErrorMessage(null)}>
+          <strong>{errorNotice.title}</strong>
+          <span>{errorNotice.message}</span>
+          <button type="button" aria-label="Hata mesajını kapat" onClick={() => setErrorNotice(null)}>
             Kapat
           </button>
         </div>
       ) : null}
 
-      <section className="editor-layout">
+      <section className="editor-layout" aria-busy={gifExporting}>
         <ToolPanel onAddText={handleAddText} onImageFile={handleImageFile} />
 
         <section className="workspace" aria-label="Tasarım çalışma alanı">
@@ -108,13 +168,13 @@ export function EditorShell() {
               aria-label="Tasarım alanı"
               style={{ aspectRatio: `${project.width} / ${project.height}` }}
             >
-              <EditorCanvas onStageReady={handleStageReady} />
+              <EditorCanvas onStageReady={handleStageReady} timeOverrideMs={exportTimeMs} />
             </div>
           </div>
 
           <footer className="workspace-footer">
             <span>{project.width} × {project.height} px</span>
-            <span>V3 Rich Editor</span>
+            <span>{gifExporting ? `GIF hazırlanıyor %${Math.round(gifProgress * 100)}` : 'V3 Rich Editor'}</span>
           </footer>
         </section>
 
