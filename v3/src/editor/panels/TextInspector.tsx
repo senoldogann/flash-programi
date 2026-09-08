@@ -10,10 +10,10 @@ const FONT_OPTIONS = [
   'Courier New',
 ] as const;
 
-const ALIGN_OPTIONS: Array<{ value: TextAlign; label: string }> = [
-  { value: 'left', label: 'Sola Hizala' },
-  { value: 'center', label: 'Ortala' },
-  { value: 'right', label: 'Sağa Hizala' },
+const ALIGN_OPTIONS: Array<{ value: TextAlign; label: string; shortLabel: string }> = [
+  { value: 'left', label: 'Sola Hizala', shortLabel: 'Sol' },
+  { value: 'center', label: 'Ortala', shortLabel: 'Orta' },
+  { value: 'right', label: 'Sağa Hizala', shortLabel: 'Sağ' },
 ];
 
 type CommonControlsProps = {
@@ -146,7 +146,7 @@ function TextStyleControls({
                 className={element.align === option.value ? 'selected' : ''}
                 onClick={() => updateElement(element.id, { align: option.value })}
               >
-                {option.value === 'left' ? '≡' : option.value === 'center' ? '≣' : '≡'}
+                {option.shortLabel}
               </button>
             ))}
           </div>
