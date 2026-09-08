@@ -32,6 +32,10 @@ type TransformableProps = {
   onSelect: () => void;
 };
 
+export type EditorCanvasProps = {
+  onStageReady?: (stage: Konva.Stage | null) => void;
+};
+
 function snapshotProject(): Project {
   return structuredClone(useEditorStore.getState().project);
 }
@@ -280,7 +284,7 @@ function CanvasTextElement({ element, isSelected, previewScale, timeMs, onSelect
   );
 }
 
-export function EditorCanvas() {
+export function EditorCanvas({ onStageReady }: EditorCanvasProps) {
   const project = useEditorStore((state) => state.project);
   const selectedElementId = useEditorStore((state) => state.selectedElementId);
   const selectElement = useEditorStore((state) => state.selectElement);
@@ -290,7 +294,13 @@ export function EditorCanvas() {
     frameNeedsClock(project.frame);
   const timeMs = useAnimationClock(animationActive);
   const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<Konva.Stage>(null);
   const [viewport, setViewport] = useState<Viewport>({ width: project.width, height: project.height, scale: 1 });
+
+  useEffect(() => {
+    onStageReady?.(stageRef.current);
+    return () => onStageReady?.(null);
+  }, [onStageReady]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -316,6 +326,7 @@ export function EditorCanvas() {
   return (
     <div ref={containerRef} className="editor-canvas" data-testid="editor-canvas">
       <Stage
+        ref={stageRef}
         width={viewport.width}
         height={viewport.height}
         scaleX={viewport.scale}

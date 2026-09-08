@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type Konva from 'konva';
+import { downloadStagePng } from '../export/png';
 import { useEditorStore } from '../store/editor-store';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { readImageFile } from './canvas/image-loader';
@@ -21,6 +23,7 @@ export function EditorShell() {
   const addImage = useEditorStore((state) => state.addImage);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const assetRevokers = useRef(new Set<() => void>());
+  const stageRef = useRef<Konva.Stage | null>(null);
 
   useEffect(() => {
     const revokers = assetRevokers.current;
@@ -29,6 +32,17 @@ export function EditorShell() {
       for (const revoke of revokers) revoke();
       revokers.clear();
     };
+  }, []);
+
+  const handleStageReady = useCallback((stage: Konva.Stage | null) => {
+    stageRef.current = stage;
+  }, []);
+
+  const handlePngExport = useCallback(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+
+    downloadStagePng(stage, 'flash-nick.png');
   }, []);
 
   const handleAddText = () => {
@@ -64,7 +78,7 @@ export function EditorShell() {
             <p>Fotoğrafını seç, nickini yaz, hareket ve efekt ekle.</p>
           </div>
         </div>
-        <TopToolbar />
+        <TopToolbar onExport={handlePngExport} />
       </header>
 
       {errorMessage ? (
@@ -94,7 +108,7 @@ export function EditorShell() {
               aria-label="Tasarım alanı"
               style={{ aspectRatio: `${project.width} / ${project.height}` }}
             >
-              <EditorCanvas />
+              <EditorCanvas onStageReady={handleStageReady} />
             </div>
           </div>
 
