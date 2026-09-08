@@ -5,6 +5,7 @@ import { App } from './App';
 const persistence = vi.hoisted(() => ({
   loadCurrentProject: vi.fn(async () => null),
   saveCurrentProject: vi.fn(async () => undefined),
+  clearCurrentProject: vi.fn(async () => undefined),
 }));
 
 vi.mock('../editor/canvas/EditorCanvas', () => ({
