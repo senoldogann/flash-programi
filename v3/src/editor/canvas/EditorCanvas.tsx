@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
-import type Konva from 'konva';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Konva from 'konva';
 import { Image as KonvaImage, Layer, Rect, Stage, Text, Transformer } from 'react-konva';
-import type { ImageElement, Project, TextElement } from '../../model/project';
+import { animationNeedsClock, evaluateAnimation, type EvaluatedAnimation } from '../../animations/evaluator';
+import { useAnimationClock } from '../../animations/useAnimationClock';
+import type { ImageEffects, ImageElement, Project, TextElement } from '../../model/project';
 import { useEditorStore } from '../../store/editor-store';
 import { normalizeTransform } from './transform';
 
@@ -26,6 +28,7 @@ type GeometryNode = {
 type TransformableProps = {
   isSelected: boolean;
   previewScale: number;
+  timeMs: number;
   onSelect: () => void;
 };
 
@@ -37,6 +40,7 @@ function commitNodeGeometry(
   elementId: string,
   node: GeometryNode,
   beforeProject: Project,
+  animation: EvaluatedAnimation,
 ): void {
   const state = useEditorStore.getState();
   const element = state.project.elements.find((candidate) => candidate.id === elementId);
@@ -45,21 +49,24 @@ function commitNodeGeometry(
     return;
   }
 
+  const safeScaleX = Math.abs(animation.scaleX) < 0.001 ? 1 : animation.scaleX;
+  const safeScaleY = Math.abs(animation.scaleY) < 0.001 ? 1 : animation.scaleY;
+
   const geometry = normalizeTransform(
     {
-      x: node.x(),
-      y: node.y(),
+      x: node.x() - animation.x,
+      y: node.y() - animation.y,
       width: node.width(),
       height: node.height(),
-      rotation: node.rotation(),
-      scaleX: node.scaleX(),
-      scaleY: node.scaleY(),
+      rotation: node.rotation() - animation.rotation,
+      scaleX: node.scaleX() / safeScaleX,
+      scaleY: node.scaleY() / safeScaleY,
     },
     element,
   );
 
-  node.scaleX(1);
-  node.scaleY(1);
+  node.scaleX(animation.scaleX);
+  node.scaleY(animation.scaleY);
 
   const afterProject: Project = {
     ...state.project,
@@ -75,6 +82,19 @@ function transformerSize(previewScale: number, pixels: number): number {
   return pixels / Math.max(previewScale, 0.1);
 }
 
+function buildImageFilters(effects: ImageEffects) {
+  const filters = [];
+
+  if (effects.brightness !== 0) filters.push(Konva.Filters.Brighten);
+  if (effects.contrast !== 0) filters.push(Konva.Filters.Contrast);
+  if (effects.saturation !== 0) filters.push(Konva.Filters.HSL);
+  if (effects.blurRadius > 0) filters.push(Konva.Filters.Blur);
+  if (effects.grayscale) filters.push(Konva.Filters.Grayscale);
+  if (effects.sepia) filters.push(Konva.Filters.Sepia);
+
+  return filters;
+}
+
 type CanvasImageElementProps = TransformableProps & {
   element: ImageElement;
 };
@@ -83,12 +103,17 @@ function CanvasImageElement({
   element,
   isSelected,
   previewScale,
+  timeMs,
   onSelect,
 }: CanvasImageElementProps) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const shapeRef = useRef<Konva.Image>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const beforeProjectRef = useRef<Project | null>(null);
+  const interactionTimeRef = useRef<number | null>(null);
+  const renderTime = interactionTimeRef.current ?? timeMs;
+  const animation = evaluateAnimation(element.animation, renderTime);
+  const filters = useMemo(() => buildImageFilters(element.effects), [element.effects]);
 
   useEffect(() => {
     let active = true;
@@ -114,6 +139,18 @@ function CanvasImageElement({
   }, [element.assetUrl]);
 
   useEffect(() => {
+    const node = shapeRef.current;
+    if (!node || !image) return;
+
+    if (filters.length > 0) {
+      node.cache();
+    } else {
+      node.clearCache();
+    }
+    node.getLayer()?.batchDraw();
+  }, [filters, image]);
+
+  useEffect(() => {
     if (!isSelected || !shapeRef.current || !transformerRef.current) {
       return;
     }
@@ -124,6 +161,7 @@ function CanvasImageElement({
 
   const beginInteraction = () => {
     onSelect();
+    interactionTimeRef.current = timeMs;
     beforeProjectRef.current = snapshotProject();
   };
 
@@ -132,9 +170,14 @@ function CanvasImageElement({
       return;
     }
 
+    const frozenAnimation = evaluateAnimation(
+      element.animation,
+      interactionTimeRef.current ?? timeMs,
+    );
     const beforeProject = beforeProjectRef.current ?? snapshotProject();
-    commitNodeGeometry(element.id, shapeRef.current, beforeProject);
+    commitNodeGeometry(element.id, shapeRef.current, beforeProject, frozenAnimation);
     beforeProjectRef.current = null;
+    interactionTimeRef.current = null;
   };
 
   return (
@@ -143,14 +186,21 @@ function CanvasImageElement({
         ref={shapeRef}
         id={element.id}
         image={image ?? undefined}
-        x={element.x}
-        y={element.y}
+        x={element.x + animation.x}
+        y={element.y + animation.y}
         width={element.width}
         height={element.height}
-        rotation={element.rotation}
-        opacity={element.opacity}
+        scaleX={animation.scaleX}
+        scaleY={animation.scaleY}
+        rotation={element.rotation + animation.rotation}
+        opacity={element.opacity * animation.opacity}
         visible={element.visible}
         draggable={!element.locked}
+        filters={filters}
+        brightness={element.effects.brightness}
+        contrast={element.effects.contrast}
+        saturation={element.effects.saturation}
+        blurRadius={element.effects.blurRadius}
         onClick={onSelect}
         onTap={onSelect}
         onDragStart={beginInteraction}
@@ -161,6 +211,7 @@ function CanvasImageElement({
 
       {isSelected ? (
         <Transformer
+          name="selection-transformer"
           ref={transformerRef}
           flipEnabled={false}
           keepRatio
@@ -190,11 +241,15 @@ function CanvasTextElement({
   element,
   isSelected,
   previewScale,
+  timeMs,
   onSelect,
 }: CanvasTextElementProps) {
   const shapeRef = useRef<Konva.Text>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const beforeProjectRef = useRef<Project | null>(null);
+  const interactionTimeRef = useRef<number | null>(null);
+  const renderTime = interactionTimeRef.current ?? timeMs;
+  const animation = evaluateAnimation(element.animation, renderTime);
 
   useEffect(() => {
     if (!isSelected || !shapeRef.current || !transformerRef.current) {
@@ -207,6 +262,7 @@ function CanvasTextElement({
 
   const beginInteraction = () => {
     onSelect();
+    interactionTimeRef.current = timeMs;
     beforeProjectRef.current = snapshotProject();
   };
 
@@ -215,9 +271,14 @@ function CanvasTextElement({
       return;
     }
 
+    const frozenAnimation = evaluateAnimation(
+      element.animation,
+      interactionTimeRef.current ?? timeMs,
+    );
     const beforeProject = beforeProjectRef.current ?? snapshotProject();
-    commitNodeGeometry(element.id, shapeRef.current, beforeProject);
+    commitNodeGeometry(element.id, shapeRef.current, beforeProject, frozenAnimation);
     beforeProjectRef.current = null;
+    interactionTimeRef.current = null;
   };
 
   return (
@@ -225,12 +286,14 @@ function CanvasTextElement({
       <Text
         ref={shapeRef}
         id={element.id}
-        x={element.x}
-        y={element.y}
+        x={element.x + animation.x}
+        y={element.y + animation.y}
         width={element.width}
         height={element.height}
-        rotation={element.rotation}
-        opacity={element.opacity}
+        scaleX={animation.scaleX}
+        scaleY={animation.scaleY}
+        rotation={element.rotation + animation.rotation}
+        opacity={element.opacity * animation.opacity}
         visible={element.visible}
         draggable={!element.locked}
         text={element.text}
@@ -253,6 +316,7 @@ function CanvasTextElement({
 
       {isSelected ? (
         <Transformer
+          name="selection-transformer"
           ref={transformerRef}
           flipEnabled={false}
           keepRatio={false}
@@ -278,6 +342,8 @@ export function EditorCanvas() {
   const project = useEditorStore((state) => state.project);
   const selectedElementId = useEditorStore((state) => state.selectedElementId);
   const selectElement = useEditorStore((state) => state.selectElement);
+  const animationActive = project.elements.some((element) => animationNeedsClock(element.animation));
+  const timeMs = useAnimationClock(animationActive);
   const containerRef = useRef<HTMLDivElement>(null);
   const [viewport, setViewport] = useState<Viewport>({
     width: project.width,
@@ -353,6 +419,7 @@ export function EditorCanvas() {
                   element={element}
                   isSelected={isSelected}
                   previewScale={viewport.scale}
+                  timeMs={timeMs}
                   onSelect={() => selectElement(element.id)}
                 />
               );
@@ -364,6 +431,7 @@ export function EditorCanvas() {
                 element={element}
                 isSelected={isSelected}
                 previewScale={viewport.scale}
+                timeMs={timeMs}
                 onSelect={() => selectElement(element.id)}
               />
             );
