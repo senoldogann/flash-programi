@@ -3,13 +3,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEditorStore } from '../store/editor-store';
 import { EditorShell } from './EditorShell';
 
+const { exportStage } = vi.hoisted(() => ({
+  exportStage: {
+    scaleX: () => 1,
+    find: vi.fn(() => []),
+    toDataURL: vi.fn(() => 'data:image/png;base64,fixture'),
+  },
+}));
+
 vi.mock('./canvas/EditorCanvas', () => ({
-  EditorCanvas: () => null,
+  EditorCanvas: ({ onStageReady }: { onStageReady?: (stage: typeof exportStage) => void }) => {
+    onStageReady?.(exportStage);
+    return null;
+  },
 }));
 
 describe('EditorShell', () => {
   beforeEach(() => {
     useEditorStore.getState().reset();
+    exportStage.find.mockClear();
+    exportStage.toDataURL.mockClear();
   });
 
   it('adds text, edits it, and undoes the edit from the toolbar', () => {
@@ -56,6 +69,17 @@ describe('EditorShell', () => {
     expect(screen.getByRole('button', { name: 'Yavaş' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Normal' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Hızlı' })).toBeInTheDocument();
+  });
+
+  it('exports the live canvas when PNG İndir is pressed', () => {
+    render(<EditorShell />);
+
+    const exportButton = screen.getByRole('button', { name: 'PNG İndir' });
+    expect(exportButton).toBeEnabled();
+
+    fireEvent.click(exportButton);
+
+    expect(exportStage.toDataURL).toHaveBeenCalledTimes(1);
   });
 
   it('shows an actionable image error without discarding the current project', async () => {
