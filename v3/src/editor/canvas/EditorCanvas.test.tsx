@@ -7,13 +7,41 @@ vi.mock('react-konva', async () => {
   const React = await import('react');
   const { forwardRef, useImperativeHandle } = React;
 
+  const createNode = (props: Record<string, unknown>) => {
+    let scaleX = 1;
+    let scaleY = 1;
+
+    return {
+      x: () => 140,
+      y: () => 150,
+      width: () => Number(props.width ?? 0),
+      height: () => Number(props.height ?? 0),
+      rotation: () => Number(props.rotation ?? 0),
+      scaleX: (value?: number) => {
+        if (value !== undefined) scaleX = value;
+        return scaleX;
+      },
+      scaleY: (value?: number) => {
+        if (value !== undefined) scaleY = value;
+        return scaleY;
+      },
+    };
+  };
+
   const MockText = forwardRef<unknown, Record<string, unknown>>((props, ref) => {
-    useImperativeHandle(ref, () => ({ }));
+    const node = createNode(props);
+    useImperativeHandle(ref, () => node);
+
     return (
       <button
         type="button"
         data-testid={`text-${String(props.id)}`}
         onClick={props.onClick as (() => void) | undefined}
+        onDoubleClick={() => {
+          const event = { target: node };
+          (props.onDragStart as ((event: typeof event) => void) | undefined)?.(event);
+          (props.onDragEnd as ((event: typeof event) => void) | undefined)?.(event);
+        }}
       >
         {String(props.text ?? '')}
       </button>
@@ -21,7 +49,9 @@ vi.mock('react-konva', async () => {
   });
 
   const MockImage = forwardRef<unknown, Record<string, unknown>>((props, ref) => {
-    useImperativeHandle(ref, () => ({ }));
+    const node = createNode(props);
+    useImperativeHandle(ref, () => node);
+
     return (
       <button
         type="button"
@@ -84,5 +114,25 @@ describe('EditorCanvas', () => {
     fireEvent.click(imageNode);
 
     expect(useEditorStore.getState().selectedElementId).toBe(imageId);
+  });
+
+  it('persists a completed drag as one undoable project change', () => {
+    const textId = useEditorStore.getState().addText('Taşı');
+    const before = structuredClone(useEditorStore.getState().project);
+    const historyLength = useEditorStore.getState().past.length;
+
+    render(<EditorCanvas />);
+    fireEvent.doubleClick(screen.getByText('Taşı'));
+
+    const moved = useEditorStore
+      .getState()
+      .project.elements.find((element) => element.id === textId);
+
+    expect(moved).toMatchObject({ x: 140, y: 150 });
+    expect(useEditorStore.getState().past).toHaveLength(historyLength + 1);
+
+    useEditorStore.getState().undo();
+
+    expect(useEditorStore.getState().project).toEqual(before);
   });
 });
