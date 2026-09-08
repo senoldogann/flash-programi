@@ -155,6 +155,20 @@ describe('EditorShell', () => {
     });
   });
 
+  it('connects keyboard undo and redo to editor history', async () => {
+    render(<EditorShell />);
+    await waitFor(() => expect(runtime.loadCurrentProject).toHaveBeenCalledTimes(1));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yazı Ekle' }));
+    expect(useEditorStore.getState().project.elements).toHaveLength(1);
+
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+    expect(useEditorStore.getState().project.elements).toHaveLength(0);
+
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true, shiftKey: true });
+    expect(useEditorStore.getState().project.elements).toHaveLength(1);
+  });
+
   it('shows real effect and motion controls instead of dead category labels', () => {
     render(<EditorShell />);
 
