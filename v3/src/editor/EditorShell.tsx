@@ -9,6 +9,7 @@ import { useEditorStore } from '../store/editor-store';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { readImageFile } from './canvas/image-loader';
 import './editor-controls.css';
+import { handleEditorShortcut } from './keyboard-shortcuts';
 import { TextInspector } from './panels/TextInspector';
 import { ToolPanel } from './panels/ToolPanel';
 import { TopToolbar } from './toolbar/TopToolbar';
@@ -28,6 +29,8 @@ export function EditorShell() {
   const loadProject = useEditorStore((state) => state.loadProject);
   const addText = useEditorStore((state) => state.addText);
   const addImage = useEditorStore((state) => state.addImage);
+  const undo = useEditorStore((state) => state.undo);
+  const redo = useEditorStore((state) => state.redo);
   const [errorNotice, setErrorNotice] = useState<ErrorNotice | null>(null);
   const [persistenceReady, setPersistenceReady] = useState(false);
   const [exportTimeMs, setExportTimeMs] = useState<number | null>(null);
@@ -89,6 +92,17 @@ export function EditorShell() {
 
     return () => window.clearTimeout(timer);
   }, [persistenceReady, project]);
+
+  useEffect(() => {
+    if (gifExporting) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      handleEditorShortcut(event, { undo, redo });
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [gifExporting, redo, undo]);
 
   const handleStageReady = useCallback((stage: Konva.Stage | null) => {
     stageRef.current = stage;
