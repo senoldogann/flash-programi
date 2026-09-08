@@ -37,6 +37,27 @@ describe('EditorShell', () => {
     });
   });
 
+  it('shows real effect and motion controls instead of dead category labels', () => {
+    render(<EditorShell />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Efekt' }));
+    expect(screen.getByLabelText('Parlaklık')).toBeInTheDocument();
+    expect(screen.getByLabelText('Kontrast')).toBeInTheDocument();
+    expect(screen.getByLabelText('Doygunluk')).toBeInTheDocument();
+    expect(screen.getByLabelText('Bulanıklık')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Siyah Beyaz' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sepya' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hareket' }));
+    expect(screen.getByRole('button', { name: 'Nabız' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Süzül' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Titret' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Dalga' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Yavaş' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Normal' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hızlı' })).toBeInTheDocument();
+  });
+
   it('shows an actionable image error without discarding the current project', async () => {
     render(<EditorShell />);
     fireEvent.click(screen.getByRole('button', { name: 'Yazı Ekle' }));
