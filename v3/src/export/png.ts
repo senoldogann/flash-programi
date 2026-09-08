@@ -8,6 +8,7 @@ export type ExportableStage = {
   scaleX(): number;
   find(selector: string): ExportTransformer[];
   toDataURL(options: { mimeType: 'image/png'; pixelRatio: number }): string;
+  toCanvas(options: { pixelRatio: number }): HTMLCanvasElement;
 };
 
 function safePreviewScale(stage: ExportableStage): number {
@@ -15,7 +16,7 @@ function safePreviewScale(stage: ExportableStage): number {
   return Number.isFinite(scale) && scale > 0 ? scale : 1;
 }
 
-export function captureStagePng(stage: ExportableStage): string {
+function withSelectionHidden<T>(stage: ExportableStage, capture: () => T): T {
   const transformers = stage.find('.selection-transformer');
 
   for (const transformer of transformers) {
@@ -23,16 +24,30 @@ export function captureStagePng(stage: ExportableStage): string {
   }
 
   try {
-    return stage.toDataURL({
-      mimeType: 'image/png',
-      pixelRatio: 1 / safePreviewScale(stage),
-    });
+    return capture();
   } finally {
     for (const transformer of transformers) {
       transformer.show();
       transformer.getLayer?.()?.batchDraw?.();
     }
   }
+}
+
+export function captureStagePng(stage: ExportableStage): string {
+  return withSelectionHidden(stage, () =>
+    stage.toDataURL({
+      mimeType: 'image/png',
+      pixelRatio: 1 / safePreviewScale(stage),
+    }),
+  );
+}
+
+export function captureStageCanvas(stage: ExportableStage): HTMLCanvasElement {
+  return withSelectionHidden(stage, () =>
+    stage.toCanvas({
+      pixelRatio: 1 / safePreviewScale(stage),
+    }),
+  );
 }
 
 export function downloadDataUrl(dataUrl: string, filename: string): void {
