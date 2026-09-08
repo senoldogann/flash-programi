@@ -16,13 +16,24 @@ const ALIGN_OPTIONS: Array<{ value: TextAlign; label: string; shortLabel: string
   { value: 'right', label: 'Sağa Hizala', shortLabel: 'Sağ' },
 ];
 
-type CommonControlsProps = {
+type HistoryBatchControls = {
+  beginHistoryBatch: () => void;
+  endHistoryBatch: () => void;
+};
+
+type CommonControlsProps = HistoryBatchControls & {
   element: EditorElement;
   updateElement: ReturnType<typeof useEditorStore.getState>['updateElement'];
   removeElement: ReturnType<typeof useEditorStore.getState>['removeElement'];
 };
 
-function CommonElementControls({ element, updateElement, removeElement }: CommonControlsProps) {
+function CommonElementControls({
+  element,
+  updateElement,
+  removeElement,
+  beginHistoryBatch,
+  endHistoryBatch,
+}: CommonControlsProps) {
   return (
     <section className="inspector-section" aria-label="Öğe ayarları">
       <div className="inspector-section-title">
@@ -40,6 +51,8 @@ function CommonElementControls({ element, updateElement, removeElement }: Common
             max="1"
             step="0.05"
             value={element.opacity}
+            onFocus={beginHistoryBatch}
+            onBlur={endHistoryBatch}
             onChange={(event) =>
               updateElement(element.id, { opacity: Number(event.currentTarget.value) })
             }
@@ -86,7 +99,9 @@ function CommonElementControls({ element, updateElement, removeElement }: Common
 function TextStyleControls({
   element,
   updateElement,
-}: {
+  beginHistoryBatch,
+  endHistoryBatch,
+}: HistoryBatchControls & {
   element: TextElement;
   updateElement: CommonControlsProps['updateElement'];
 }) {
@@ -100,6 +115,8 @@ function TextStyleControls({
             aria-label="Yazı"
             value={element.text}
             maxLength={500}
+            onFocus={beginHistoryBatch}
+            onBlur={endHistoryBatch}
             onChange={(event) => updateElement(element.id, { text: event.currentTarget.value })}
           />
         </label>
@@ -126,6 +143,8 @@ function TextStyleControls({
               min="10"
               max="180"
               value={element.fontSize}
+              onFocus={beginHistoryBatch}
+              onBlur={endHistoryBatch}
               onChange={(event) =>
                 updateElement(element.id, { fontSize: Number(event.currentTarget.value) })
               }
@@ -166,6 +185,8 @@ function TextStyleControls({
               type="color"
               aria-label="Yazı Rengi"
               value={element.fill}
+              onFocus={beginHistoryBatch}
+              onBlur={endHistoryBatch}
               onChange={(event) => updateElement(element.id, { fill: event.currentTarget.value })}
             />
           </label>
@@ -175,6 +196,8 @@ function TextStyleControls({
               type="color"
               aria-label="Kenarlık Rengi"
               value={element.stroke}
+              onFocus={beginHistoryBatch}
+              onBlur={endHistoryBatch}
               onChange={(event) => updateElement(element.id, { stroke: event.currentTarget.value })}
             />
           </label>
@@ -190,6 +213,8 @@ function TextStyleControls({
               max="12"
               step="1"
               value={element.strokeWidth}
+              onFocus={beginHistoryBatch}
+              onBlur={endHistoryBatch}
               onChange={(event) =>
                 updateElement(element.id, { strokeWidth: Number(event.currentTarget.value) })
               }
@@ -205,6 +230,8 @@ function TextStyleControls({
               type="color"
               aria-label="Parlama Rengi"
               value={element.shadowColor}
+              onFocus={beginHistoryBatch}
+              onBlur={endHistoryBatch}
               onChange={(event) => updateElement(element.id, { shadowColor: event.currentTarget.value })}
             />
           </label>
@@ -218,6 +245,8 @@ function TextStyleControls({
                 max="40"
                 step="1"
                 value={element.shadowBlur}
+                onFocus={beginHistoryBatch}
+                onBlur={endHistoryBatch}
                 onChange={(event) =>
                   updateElement(element.id, { shadowBlur: Number(event.currentTarget.value) })
                 }
@@ -238,6 +267,8 @@ export function TextInspector() {
   );
   const updateElement = useEditorStore((state) => state.updateElement);
   const removeElement = useEditorStore((state) => state.removeElement);
+  const beginHistoryBatch = useEditorStore((state) => state.beginHistoryBatch);
+  const endHistoryBatch = useEditorStore((state) => state.endHistoryBatch);
 
   if (!selectedElementId || !selectedElement) {
     return (
@@ -267,7 +298,12 @@ export function TextInspector() {
 
       <div className="inspector-form">
         {isText ? (
-          <TextStyleControls element={selectedElement} updateElement={updateElement} />
+          <TextStyleControls
+            element={selectedElement}
+            updateElement={updateElement}
+            beginHistoryBatch={beginHistoryBatch}
+            endHistoryBatch={endHistoryBatch}
+          />
         ) : (
           <section className="inspector-section inspector-section-first image-inspector-summary">
             <strong>Fotoğraf düzenleme</strong>
@@ -279,6 +315,8 @@ export function TextInspector() {
           element={selectedElement}
           updateElement={updateElement}
           removeElement={removeElement}
+          beginHistoryBatch={beginHistoryBatch}
+          endHistoryBatch={endHistoryBatch}
         />
       </div>
     </aside>
