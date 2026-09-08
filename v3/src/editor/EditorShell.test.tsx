@@ -28,6 +28,7 @@ const runtime = vi.hoisted(() => {
   });
   const loadCurrentProject = vi.fn();
   const saveCurrentProject = vi.fn();
+  const clearCurrentProject = vi.fn();
 
   return {
     gifBlob,
@@ -40,6 +41,7 @@ const runtime = vi.hoisted(() => {
     encodeGifFrames,
     loadCurrentProject,
     saveCurrentProject,
+    clearCurrentProject,
   };
 });
 
@@ -70,6 +72,7 @@ vi.mock('../export/gif-browser', () => ({
 vi.mock('../persistence/project-db', () => ({
   loadCurrentProject: runtime.loadCurrentProject,
   saveCurrentProject: runtime.saveCurrentProject,
+  clearCurrentProject: runtime.clearCurrentProject,
 }));
 
 async function renderReadyEditorShell() {
@@ -98,6 +101,8 @@ describe('EditorShell', () => {
     runtime.loadCurrentProject.mockResolvedValue(null);
     runtime.saveCurrentProject.mockReset();
     runtime.saveCurrentProject.mockResolvedValue(undefined);
+    runtime.clearCurrentProject.mockReset();
+    runtime.clearCurrentProject.mockResolvedValue(undefined);
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
   });
 
@@ -140,6 +145,31 @@ describe('EditorShell', () => {
     );
   });
 
+  it('keeps the current design when Yeni Tasarım confirmation is cancelled', async () => {
+    await renderReadyEditorShell();
+    fireEvent.click(screen.getByRole('button', { name: 'Yazı Ekle' }));
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yeni Tasarım' }));
+
+    expect(runtime.clearCurrentProject).not.toHaveBeenCalled();
+    expect(useEditorStore.getState().project.elements).toHaveLength(1);
+  });
+
+  it('clears saved data before starting a confirmed Yeni Tasarım', async () => {
+    await renderReadyEditorShell();
+    fireEvent.click(screen.getByRole('button', { name: 'Yazı Ekle' }));
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Yeni Tasarım' }));
+
+    await waitFor(() => expect(runtime.clearCurrentProject).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(useEditorStore.getState().project.elements).toHaveLength(0));
+    expect(useEditorStore.getState().selectedElementId).toBeNull();
+    expect(useEditorStore.getState().past).toHaveLength(0);
+    expect(useEditorStore.getState().future).toHaveLength(0);
+  });
+
   it('adds text, edits it, and undoes the edit from the toolbar', async () => {
     await renderReadyEditorShell();
 
@@ -176,6 +206,14 @@ describe('EditorShell', () => {
 
     fireEvent.keyDown(window, { key: 'z', ctrlKey: true, shiftKey: true });
     expect(useEditorStore.getState().project.elements).toHaveLength(1);
+  });
+
+  it('connects Cmd/Ctrl+S to PNG export', async () => {
+    await renderReadyEditorShell();
+
+    fireEvent.keyDown(window, { key: 's', ctrlKey: true });
+
+    expect(runtime.exportStage.toDataURL).toHaveBeenCalledTimes(1);
   });
 
   it('shows real effect and motion controls instead of dead category labels', async () => {
