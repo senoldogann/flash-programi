@@ -59,6 +59,29 @@ describe('TextInspector', () => {
     });
   });
 
+  it('records a continuous slider session as one undoable history step', () => {
+    const id = useEditorStore.getState().addText('Kral');
+    const historyBefore = useEditorStore.getState().past.length;
+    render(<TextInspector />);
+
+    const opacity = screen.getByLabelText('Opaklık');
+    fireEvent.focus(opacity);
+    fireEvent.change(opacity, { target: { value: '0.85' } });
+    fireEvent.change(opacity, { target: { value: '0.6' } });
+    fireEvent.change(opacity, { target: { value: '0.35' } });
+    fireEvent.blur(opacity);
+
+    expect(useEditorStore.getState().past).toHaveLength(historyBefore + 1);
+    expect(useEditorStore.getState().project.elements.find((item) => item.id === id)).toMatchObject({
+      opacity: 0.35,
+    });
+
+    useEditorStore.getState().undo();
+    expect(useEditorStore.getState().project.elements.find((item) => item.id === id)).toMatchObject({
+      opacity: 1,
+    });
+  });
+
   it('shows useful common controls for selected images', () => {
     const id = useEditorStore.getState().addImage('blob:photo', 640, 480);
     render(<TextInspector />);
