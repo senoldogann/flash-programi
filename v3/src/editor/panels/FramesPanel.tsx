@@ -4,6 +4,8 @@ import { useEditorStore } from '../../store/editor-store';
 export function FramesPanel() {
   const frame = useEditorStore((state) => state.project.frame);
   const setFrame = useEditorStore((state) => state.setFrame);
+  const beginHistoryBatch = useEditorStore((state) => state.beginHistoryBatch);
+  const endHistoryBatch = useEditorStore((state) => state.endHistoryBatch);
 
   return (
     <div className="preset-panel" aria-label="Çerçeve ayarları">
@@ -39,6 +41,8 @@ export function FramesPanel() {
             step="1"
             disabled={frame.preset === 'none'}
             value={frame.width}
+            onFocus={beginHistoryBatch}
+            onBlur={endHistoryBatch}
             onChange={(event) => setFrame(frame.preset, Number(event.currentTarget.value))}
           />
           <output>{frame.width}px</output>
