@@ -1,6 +1,7 @@
 import { useEditorStore } from '../../store/editor-store';
 
 type TopToolbarProps = {
+  onNewProject?: () => void;
   onExport?: () => void;
   onGifExport?: () => void;
   gifExporting?: boolean;
@@ -8,6 +9,7 @@ type TopToolbarProps = {
 };
 
 export function TopToolbar({
+  onNewProject,
   onExport,
   onGifExport,
   gifExporting = false,
@@ -21,6 +23,15 @@ export function TopToolbar({
 
   return (
     <div className="header-actions" aria-label="Tasarım işlemleri">
+      <button
+        type="button"
+        className="secondary-action"
+        disabled={!onNewProject || gifExporting}
+        onClick={onNewProject}
+        aria-label="Yeni Tasarım"
+      >
+        Yeni Tasarım
+      </button>
       <button
         type="button"
         className="secondary-action"
