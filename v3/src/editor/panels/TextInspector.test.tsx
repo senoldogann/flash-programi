@@ -33,6 +33,32 @@ describe('TextInspector', () => {
     });
   });
 
+  it('records a typing session as one undoable history step', () => {
+    const id = useEditorStore.getState().addText('Kral');
+    const historyBefore = useEditorStore.getState().past.length;
+    render(<TextInspector />);
+
+    const input = screen.getByLabelText('Yazı');
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: 'K' } });
+    fireEvent.change(input, { target: { value: 'Kr' } });
+    fireEvent.change(input, { target: { value: 'Kra' } });
+    fireEvent.change(input, { target: { value: 'Kraliçe' } });
+    fireEvent.blur(input);
+
+    expect(useEditorStore.getState().past).toHaveLength(historyBefore + 1);
+    expect(useEditorStore.getState().project.elements.find((item) => item.id === id)).toMatchObject({
+      type: 'text',
+      text: 'Kraliçe',
+    });
+
+    useEditorStore.getState().undo();
+    expect(useEditorStore.getState().project.elements.find((item) => item.id === id)).toMatchObject({
+      type: 'text',
+      text: 'Kral',
+    });
+  });
+
   it('shows useful common controls for selected images', () => {
     const id = useEditorStore.getState().addImage('blob:photo', 640, 480);
     render(<TextInspector />);
