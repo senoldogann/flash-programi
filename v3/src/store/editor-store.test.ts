@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { createEmptyProject } from '../model/project';
 import { useEditorStore } from './editor-store';
 
 describe('editor store history', () => {
@@ -106,5 +107,22 @@ describe('editor store history', () => {
       x: beforeTransform.elements[0].x,
       y: beforeTransform.elements[0].y,
     });
+  });
+
+  it('hydrates a saved project as a fresh history root', () => {
+    useEditorStore.getState().addText('Geçici');
+    expect(useEditorStore.getState().past.length).toBeGreaterThan(0);
+
+    const savedProject = createEmptyProject();
+    savedProject.name = 'Geri Yüklenen';
+    savedProject.background = '#330055';
+
+    useEditorStore.getState().loadProject(savedProject);
+
+    const state = useEditorStore.getState();
+    expect(state.project).toEqual(savedProject);
+    expect(state.selectedElementId).toBeNull();
+    expect(state.past).toEqual([]);
+    expect(state.future).toEqual([]);
   });
 });
