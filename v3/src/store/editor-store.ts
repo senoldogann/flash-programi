@@ -1,8 +1,14 @@
 import { create } from 'zustand';
 import {
+  createDefaultAnimation,
+  createDefaultImageEffects,
   createEmptyProject,
   createId,
+  type AnimationDefinition,
+  type DecorationPreset,
   type EditorElement,
+  type FramePreset,
+  type ImageEffects,
   type ImageElement,
   type Project,
   type TextElement,
@@ -29,6 +35,11 @@ export type EditorStore = {
   addText: (text?: string) => string;
   addImage: (assetUrl: string, naturalWidth: number, naturalHeight: number) => string;
   updateElement: (id: string, patch: ElementPatch, options?: UpdateElementOptions) => void;
+  setElementAnimation: (id: string, patch: Partial<AnimationDefinition>) => void;
+  setImageEffects: (id: string, patch: Partial<ImageEffects>) => void;
+  addDecoration: (preset: DecorationPreset) => string;
+  removeDecoration: (id: string) => void;
+  setFrame: (preset: FramePreset, width?: number) => void;
   removeElement: (id: string) => void;
   commitTransform: (beforeProject: Project, afterProject: Project) => void;
   undo: () => void;
@@ -99,6 +110,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       opacity: 1,
       visible: true,
       locked: false,
+      animation: createDefaultAnimation(),
       fontFamily: 'Arial',
       fontSize: 42,
       fill: '#ffffff',
@@ -159,6 +171,8 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       opacity: 1,
       visible: true,
       locked: false,
+      animation: createDefaultAnimation(),
+      effects: createDefaultImageEffects(),
     };
 
     const nextProject: Project = {
@@ -199,6 +213,104 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
     set({
       project: nextProject,
+      past: appendHistory(state.past, state.project),
+      future: [],
+    });
+  },
+
+  setElementAnimation: (id, patch) => {
+    const state = get();
+    const index = state.project.elements.findIndex((element) => element.id === id);
+    if (index < 0) return;
+
+    const nextElements = [...state.project.elements];
+    const element = nextElements[index];
+    nextElements[index] = {
+      ...element,
+      animation: {
+        ...element.animation,
+        ...patch,
+      },
+    } as EditorElement;
+
+    set({
+      project: { ...state.project, elements: nextElements },
+      past: appendHistory(state.past, state.project),
+      future: [],
+    });
+  },
+
+  setImageEffects: (id, patch) => {
+    const state = get();
+    const index = state.project.elements.findIndex((element) => element.id === id);
+    if (index < 0 || state.project.elements[index].type !== 'image') return;
+
+    const nextElements = [...state.project.elements];
+    const element = nextElements[index] as ImageElement;
+    nextElements[index] = {
+      ...element,
+      effects: {
+        ...element.effects,
+        ...patch,
+      },
+    };
+
+    set({
+      project: { ...state.project, elements: nextElements },
+      past: appendHistory(state.past, state.project),
+      future: [],
+    });
+  },
+
+  addDecoration: (preset) => {
+    const state = get();
+    const id = createId();
+    const decoration = {
+      id,
+      preset,
+      count: 18,
+      opacity: 0.8,
+      speed: 'normal' as const,
+    };
+
+    set({
+      project: {
+        ...state.project,
+        decorations: [...state.project.decorations, decoration].slice(-12),
+      },
+      past: appendHistory(state.past, state.project),
+      future: [],
+    });
+
+    return id;
+  },
+
+  removeDecoration: (id) => {
+    const state = get();
+    if (!state.project.decorations.some((layer) => layer.id === id)) return;
+
+    set({
+      project: {
+        ...state.project,
+        decorations: state.project.decorations.filter((layer) => layer.id !== id),
+      },
+      past: appendHistory(state.past, state.project),
+      future: [],
+    });
+  },
+
+  setFrame: (preset, width) => {
+    const state = get();
+    const nextWidth = width ?? state.project.frame.width;
+
+    set({
+      project: {
+        ...state.project,
+        frame: {
+          preset,
+          width: Math.min(32, Math.max(1, nextWidth)),
+        },
+      },
       past: appendHistory(state.past, state.project),
       future: [],
     });
