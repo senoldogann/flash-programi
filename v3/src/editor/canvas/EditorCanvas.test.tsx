@@ -130,6 +130,16 @@ describe('EditorCanvas', () => {
     expect(useEditorStore.getState().selectedElementId).toBe(imageId);
   });
 
+  it('does not expose transform handles for a locked selected element', () => {
+    const textId = useEditorStore.getState().addText('Kilitli');
+    useEditorStore.getState().updateElement(textId, { locked: true });
+
+    render(<EditorCanvas />);
+
+    expect(useEditorStore.getState().selectedElementId).toBe(textId);
+    expect(screen.queryByTestId('transformer')).not.toBeInTheDocument();
+  });
+
   it('applies deterministic animation transforms to rendered text', () => {
     const textId = useEditorStore.getState().addText('Hareketli');
     useEditorStore.getState().setElementAnimation(textId, { preset: 'pulse' });
