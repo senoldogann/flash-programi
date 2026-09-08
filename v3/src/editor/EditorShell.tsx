@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useEditorStore } from '../store/editor-store';
 import { readImageFile } from './canvas/image-loader';
+import './editor-controls.css';
 import { AddPanel } from './panels/AddPanel';
 import { TextInspector } from './panels/TextInspector';
 import { TopToolbar } from './toolbar/TopToolbar';
