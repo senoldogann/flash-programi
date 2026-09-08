@@ -71,6 +71,34 @@ describe('project IndexedDB persistence', () => {
     expect(revokeObjectUrl).toHaveBeenCalledWith('blob:restored-image');
   });
 
+  it('does not let an older in-flight save resurrect a project after clear', async () => {
+    const project = createEmptyProject();
+    project.elements = [createImageElement('blob:slow-image')];
+    const imageBlob = new Blob(['slow-image-bytes'], { type: 'image/png' });
+
+    let signalResolveStarted!: () => void;
+    let releaseAsset!: (blob: Blob) => void;
+    const resolveStarted = new Promise<void>((resolve) => {
+      signalResolveStarted = resolve;
+    });
+    const assetPromise = new Promise<Blob>((resolve) => {
+      releaseAsset = resolve;
+    });
+    const resolveAsset = vi.fn(async () => {
+      signalResolveStarted();
+      return assetPromise;
+    });
+
+    const staleSave = saveCurrentProject(project, { resolveAsset });
+    await resolveStarted;
+
+    await clearCurrentProject();
+    releaseAsset(imageBlob);
+    await staleSave;
+
+    expect(await loadCurrentProject()).toBeNull();
+  });
+
   it('returns null when there is no saved project', async () => {
     expect(await loadCurrentProject()).toBeNull();
   });
