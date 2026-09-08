@@ -34,6 +34,7 @@ type TransformableProps = {
 
 export type EditorCanvasProps = {
   onStageReady?: (stage: Konva.Stage | null) => void;
+  timeOverrideMs?: number | null;
 };
 
 function snapshotProject(): Project {
@@ -284,7 +285,7 @@ function CanvasTextElement({ element, isSelected, previewScale, timeMs, onSelect
   );
 }
 
-export function EditorCanvas({ onStageReady }: EditorCanvasProps) {
+export function EditorCanvas({ onStageReady, timeOverrideMs }: EditorCanvasProps) {
   const project = useEditorStore((state) => state.project);
   const selectedElementId = useEditorStore((state) => state.selectedElementId);
   const selectElement = useEditorStore((state) => state.selectElement);
@@ -292,7 +293,8 @@ export function EditorCanvas({ onStageReady }: EditorCanvasProps) {
     project.elements.some((element) => animationNeedsClock(element.animation)) ||
     project.decorations.some(decorationNeedsClock) ||
     frameNeedsClock(project.frame);
-  const timeMs = useAnimationClock(animationActive);
+  const liveTimeMs = useAnimationClock(animationActive && timeOverrideMs == null);
+  const timeMs = timeOverrideMs ?? liveTimeMs;
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const [viewport, setViewport] = useState<Viewport>({ width: project.width, height: project.height, scale: 1 });
