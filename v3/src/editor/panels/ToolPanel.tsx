@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
+import { DecorationsPanel } from './DecorationsPanel';
 import { EffectsPanel } from './EffectsPanel';
+import { FramesPanel } from './FramesPanel';
 import { MotionPanel } from './MotionPanel';
 
 type ToolSection = 'effects' | 'motion' | 'decorations' | 'frames' | 'templates' | null;
@@ -37,25 +39,13 @@ export function ToolPanel({ onAddText, onImageFile }: ToolPanelProps) {
       />
 
       <div className="primary-tools">
-        <button
-          type="button"
-          className="tool-button tool-button-active"
-          aria-label="Fotoğraf Seç"
-          onClick={() => imageInputRef.current?.click()}
-        >
+        <button type="button" className="tool-button tool-button-active" aria-label="Fotoğraf Seç" onClick={() => imageInputRef.current?.click()}>
           <span className="tool-icon" aria-hidden="true">▧</span>
-          <span>
-            <strong>Fotoğraf Seç</strong>
-            <small>PNG, JPG, WebP veya GIF</small>
-          </span>
+          <span><strong>Fotoğraf Seç</strong><small>PNG, JPG, WebP veya GIF</small></span>
         </button>
-
         <button type="button" className="tool-button" aria-label="Yazı Ekle" onClick={onAddText}>
           <span className="tool-icon" aria-hidden="true">T</span>
-          <span>
-            <strong>Yazı Ekle</strong>
-            <small>Nick veya mesaj ekle</small>
-          </span>
+          <span><strong>Yazı Ekle</strong><small>Nick veya mesaj ekle</small></span>
         </button>
       </div>
 
@@ -76,14 +66,10 @@ export function ToolPanel({ onAddText, onImageFile }: ToolPanelProps) {
 
       {activeSection === 'effects' ? <EffectsPanel /> : null}
       {activeSection === 'motion' ? <MotionPanel /> : null}
-      {activeSection === 'decorations' ? (
-        <div className="preset-panel"><strong>Süsler</strong><small>Süs seçenekleri bu panelde gösterilecek.</small></div>
-      ) : null}
-      {activeSection === 'frames' ? (
-        <div className="preset-panel"><strong>Çerçeveler</strong><small>Çerçeve seçenekleri bu panelde gösterilecek.</small></div>
-      ) : null}
+      {activeSection === 'decorations' ? <DecorationsPanel /> : null}
+      {activeSection === 'frames' ? <FramesPanel /> : null}
       {activeSection === 'templates' ? (
-        <div className="preset-panel"><strong>Hazır Tasarımlar</strong><small>Tek dokunuşluk tasarımlar bu panelde gösterilecek.</small></div>
+        <div className="preset-panel"><strong>Hazır Tasarımlar</strong><small>Tek dokunuşluk tasarımlar bir sonraki görevde bu panelde açılıyor.</small></div>
       ) : null}
     </aside>
   );
