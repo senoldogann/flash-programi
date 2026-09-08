@@ -6,12 +6,19 @@ export function EffectsPanel() {
     state.project.elements.find((element) => element.id === state.selectedElementId) ?? null,
   );
   const setImageEffects = useEditorStore((state) => state.setImageEffects);
+  const beginHistoryBatch = useEditorStore((state) => state.beginHistoryBatch);
+  const endHistoryBatch = useEditorStore((state) => state.endHistoryBatch);
   const image = selectedElement?.type === 'image' ? selectedElement : null;
   const effects = image?.effects ?? createDefaultImageEffects();
   const disabled = image === null;
 
   const update = (patch: Parameters<typeof setImageEffects>[1]) => {
     if (image) setImageEffects(image.id, patch);
+  };
+
+  const continuousEditProps = {
+    onFocus: beginHistoryBatch,
+    onBlur: endHistoryBatch,
   };
 
   return (
@@ -42,6 +49,7 @@ export function EffectsPanel() {
             step="0.05"
             disabled={disabled}
             value={effects.brightness}
+            {...continuousEditProps}
             onChange={(event) => update({ brightness: Number(event.currentTarget.value) })}
           />
           <output>{Math.round(effects.brightness * 100)}</output>
@@ -59,6 +67,7 @@ export function EffectsPanel() {
             step="5"
             disabled={disabled}
             value={effects.contrast}
+            {...continuousEditProps}
             onChange={(event) => update({ contrast: Number(event.currentTarget.value) })}
           />
           <output>{effects.contrast}</output>
@@ -76,6 +85,7 @@ export function EffectsPanel() {
             step="0.1"
             disabled={disabled}
             value={effects.saturation}
+            {...continuousEditProps}
             onChange={(event) => update({ saturation: Number(event.currentTarget.value) })}
           />
           <output>{effects.saturation.toFixed(1)}</output>
@@ -93,6 +103,7 @@ export function EffectsPanel() {
             step="1"
             disabled={disabled}
             value={effects.blurRadius}
+            {...continuousEditProps}
             onChange={(event) => update({ blurRadius: Number(event.currentTarget.value) })}
           />
           <output>{effects.blurRadius}px</output>
