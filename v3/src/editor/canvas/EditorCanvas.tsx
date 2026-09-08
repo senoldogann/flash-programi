@@ -126,10 +126,10 @@ function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelec
   }, [filters, image]);
 
   useEffect(() => {
-    if (!isSelected || !shapeRef.current || !transformerRef.current) return;
+    if (!isSelected || element.locked || !shapeRef.current || !transformerRef.current) return;
     transformerRef.current.nodes([shapeRef.current]);
     transformerRef.current.getLayer()?.batchDraw();
-  }, [isSelected]);
+  }, [element.locked, isSelected]);
 
   const beginInteraction = () => {
     onSelect();
@@ -174,14 +174,12 @@ function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelec
         onTransformStart={beginInteraction}
         onTransformEnd={finishInteraction}
       />
-      {isSelected ? (
+      {isSelected && !element.locked ? (
         <Transformer
           name="selection-transformer"
           ref={transformerRef}
           flipEnabled={false}
           keepRatio
-          rotateEnabled={!element.locked}
-          resizeEnabled={!element.locked}
           borderStroke="#8b7cff"
           borderStrokeWidth={transformerSize(previewScale, 1.5)}
           anchorFill="#ffffff"
@@ -209,10 +207,10 @@ function CanvasTextElement({ element, isSelected, previewScale, timeMs, onSelect
   const animation = evaluateAnimation(element.animation, renderTime);
 
   useEffect(() => {
-    if (!isSelected || !shapeRef.current || !transformerRef.current) return;
+    if (!isSelected || element.locked || !shapeRef.current || !transformerRef.current) return;
     transformerRef.current.nodes([shapeRef.current]);
     transformerRef.current.getLayer()?.batchDraw();
-  }, [isSelected]);
+  }, [element.locked, isSelected]);
 
   const beginInteraction = () => {
     onSelect();
@@ -261,14 +259,12 @@ function CanvasTextElement({ element, isSelected, previewScale, timeMs, onSelect
         onTransformStart={beginInteraction}
         onTransformEnd={finishInteraction}
       />
-      {isSelected ? (
+      {isSelected && !element.locked ? (
         <Transformer
           name="selection-transformer"
           ref={transformerRef}
           flipEnabled={false}
           keepRatio={false}
-          rotateEnabled={!element.locked}
-          resizeEnabled={!element.locked}
           borderStroke="#8b7cff"
           borderStrokeWidth={transformerSize(previewScale, 1.5)}
           anchorFill="#ffffff"
