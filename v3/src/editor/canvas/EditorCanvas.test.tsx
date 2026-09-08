@@ -3,13 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEditorStore } from '../../store/editor-store';
 import { EditorCanvas } from './EditorCanvas';
 
+vi.mock('../../animations/useAnimationClock', () => ({
+  useAnimationClock: () => 375,
+}));
+
 vi.mock('react-konva', async () => {
   const React = await import('react');
   const { forwardRef, useImperativeHandle } = React;
 
   const createNode = (props: Record<string, unknown>) => {
-    let scaleX = 1;
-    let scaleY = 1;
+    let scaleX = Number(props.scaleX ?? 1);
+    let scaleY = Number(props.scaleY ?? 1);
 
     return {
       x: () => 140,
@@ -25,6 +29,9 @@ vi.mock('react-konva', async () => {
         if (value !== undefined) scaleY = value;
         return scaleY;
       },
+      cache: () => undefined,
+      clearCache: () => undefined,
+      getLayer: () => ({ batchDraw: () => undefined }),
     };
   };
 
@@ -39,6 +46,8 @@ vi.mock('react-konva', async () => {
       <button
         type="button"
         data-testid={`text-${String(props.id)}`}
+        data-scale-x={String(props.scaleX ?? 1)}
+        data-rotation={String(props.rotation ?? 0)}
         onClick={props.onClick as (() => void) | undefined}
         onDoubleClick={() => {
           const dragEvent: MockKonvaEvent = { target: node };
@@ -59,6 +68,7 @@ vi.mock('react-konva', async () => {
       <button
         type="button"
         data-testid={`image-${String(props.id)}`}
+        data-filter-count={String(Array.isArray(props.filters) ? props.filters.length : 0)}
         onClick={props.onClick as (() => void) | undefined}
       >
         Fotoğraf
@@ -117,6 +127,24 @@ describe('EditorCanvas', () => {
     fireEvent.click(imageNode);
 
     expect(useEditorStore.getState().selectedElementId).toBe(imageId);
+  });
+
+  it('applies deterministic animation transforms to rendered text', () => {
+    const textId = useEditorStore.getState().addText('Hareketli');
+    useEditorStore.getState().setElementAnimation(textId, { preset: 'pulse' });
+
+    render(<EditorCanvas />);
+
+    expect(screen.getByTestId(`text-${textId}`)).not.toHaveAttribute('data-scale-x', '1');
+  });
+
+  it('passes active image effects to the Konva image filter pipeline', () => {
+    const imageId = useEditorStore.getState().addImage('blob:fixture', 640, 480);
+    useEditorStore.getState().setImageEffects(imageId, { brightness: 0.2, grayscale: true });
+
+    render(<EditorCanvas />);
+
+    expect(Number(screen.getByTestId(`image-${imageId}`).getAttribute('data-filter-count'))).toBeGreaterThan(0);
   });
 
   it('persists a completed drag as one undoable project change', () => {
