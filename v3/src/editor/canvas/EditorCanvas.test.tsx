@@ -46,6 +46,7 @@ vi.mock('react-konva', async () => {
       <button
         type="button"
         data-testid={`text-${String(props.id)}`}
+        data-y={String(props.y ?? 0)}
         data-scale-x={String(props.scaleX ?? 1)}
         data-rotation={String(props.rotation ?? 0)}
         onClick={props.onClick as (() => void) | undefined}
@@ -136,6 +137,19 @@ describe('EditorCanvas', () => {
     render(<EditorCanvas />);
 
     expect(screen.getByTestId(`text-${textId}`)).not.toHaveAttribute('data-scale-x', '1');
+  });
+
+  it('renders the exact requested animation time during export', () => {
+    const textId = useEditorStore.getState().addText('GIF');
+    useEditorStore.getState().setElementAnimation(textId, { preset: 'float', speed: 'normal' });
+    const element = useEditorStore.getState().project.elements.find((item) => item.id === textId);
+    if (!element) throw new Error('fixture text missing');
+
+    const { rerender } = render(<EditorCanvas timeOverrideMs={0} />);
+    expect(Number(screen.getByTestId(`text-${textId}`).getAttribute('data-y'))).toBeCloseTo(element.y, 5);
+
+    rerender(<EditorCanvas timeOverrideMs={400} />);
+    expect(Number(screen.getByTestId(`text-${textId}`).getAttribute('data-y'))).toBeCloseTo(element.y + 10, 5);
   });
 
   it('passes active image effects to the Konva image filter pipeline', () => {
