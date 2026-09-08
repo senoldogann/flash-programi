@@ -6,7 +6,7 @@ describe('editor store history', () => {
     useEditorStore.getState().reset();
   });
 
-  it('adds a text element and selects it', () => {
+  it('adds a text element with a neutral animation and selects it', () => {
     const id = useEditorStore.getState().addText('SevDa');
     const state = useEditorStore.getState();
 
@@ -16,7 +16,52 @@ describe('editor store history', () => {
       id,
       type: 'text',
       text: 'SevDa',
+      animation: { preset: 'none', speed: 'normal', delayMs: 0, loop: true },
     });
+  });
+
+  it('adds an image with neutral effects', () => {
+    const id = useEditorStore.getState().addImage('blob:test-image', 1200, 600);
+    const element = useEditorStore.getState().project.elements.find((item) => item.id === id);
+
+    expect(element).toMatchObject({
+      type: 'image',
+      animation: { preset: 'none' },
+      effects: {
+        brightness: 0,
+        contrast: 0,
+        saturation: 0,
+        blurRadius: 0,
+        grayscale: false,
+        sepia: false,
+      },
+    });
+    expect(element?.width).toBeLessThanOrEqual(270);
+    expect(element?.height).toBeLessThanOrEqual(270);
+    expect((element?.width ?? 0) / (element?.height ?? 1)).toBeCloseTo(2);
+  });
+
+  it('updates rich settings as undoable mutations', () => {
+    const imageId = useEditorStore.getState().addImage('blob:test-image', 300, 300);
+    const historyBefore = useEditorStore.getState().past.length;
+
+    useEditorStore.getState().setElementAnimation(imageId, { preset: 'pulse', speed: 'fast' });
+    useEditorStore.getState().setImageEffects(imageId, { grayscale: true, brightness: 0.25 });
+    const decorationId = useEditorStore.getState().addDecoration('stars');
+    useEditorStore.getState().setFrame('neon', 10);
+
+    const state = useEditorStore.getState();
+    const image = state.project.elements.find((item) => item.id === imageId);
+    expect(image).toMatchObject({
+      animation: { preset: 'pulse', speed: 'fast' },
+      effects: { grayscale: true, brightness: 0.25 },
+    });
+    expect(state.project.decorations[0]).toMatchObject({ id: decorationId, preset: 'stars' });
+    expect(state.project.frame).toEqual({ preset: 'neon', width: 10 });
+    expect(state.past.length).toBe(historyBefore + 4);
+
+    useEditorStore.getState().undo();
+    expect(useEditorStore.getState().project.frame.preset).toBe('none');
   });
 
   it('undoes and redoes a completed text mutation', () => {
@@ -61,15 +106,5 @@ describe('editor store history', () => {
       x: beforeTransform.elements[0].x,
       y: beforeTransform.elements[0].y,
     });
-  });
-
-  it('scales imported images to fit the project while preserving aspect ratio', () => {
-    const id = useEditorStore.getState().addImage('blob:test-image', 1200, 600);
-    const element = useEditorStore.getState().project.elements.find((item) => item.id === id);
-
-    expect(element).toMatchObject({ type: 'image' });
-    expect(element?.width).toBeLessThanOrEqual(270);
-    expect(element?.height).toBeLessThanOrEqual(270);
-    expect((element?.width ?? 0) / (element?.height ?? 1)).toBeCloseTo(2);
   });
 });
