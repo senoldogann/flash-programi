@@ -30,6 +30,7 @@ export type EditorStore = {
   past: Project[];
   future: Project[];
   reset: () => void;
+  loadProject: (project: Project) => void;
   selectElement: (id: string | null) => void;
   addText: (text?: string) => string;
   addImage: (assetUrl: string, naturalWidth: number, naturalHeight: number) => string;
@@ -59,6 +60,11 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   future: [],
 
   reset: () => set({ project: createEmptyProject(), selectedElementId: null, past: [], future: [] }),
+
+  loadProject: (project) => {
+    const validated = parseProject(project);
+    set({ project: cloneProject(validated), selectedElementId: null, past: [], future: [] });
+  },
 
   selectElement: (id) => {
     const { project } = get();
