@@ -1,7 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEditorStore } from '../store/editor-store';
 import { EditorShell } from './EditorShell';
+
+vi.mock('./canvas/EditorCanvas', () => ({
+  EditorCanvas: () => null,
+}));
 
 describe('EditorShell', () => {
   beforeEach(() => {
