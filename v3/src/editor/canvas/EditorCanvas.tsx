@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type Konva from 'konva';
-import { Layer, Rect, Stage, Text } from 'react-konva';
+import { Image as KonvaImage, Layer, Rect, Stage, Text } from 'react-konva';
+import type { ImageElement } from '../../model/project';
 import { useEditorStore } from '../../store/editor-store';
 
 type Viewport = {
@@ -8,6 +9,54 @@ type Viewport = {
   height: number;
   scale: number;
 };
+
+type CanvasImageElementProps = {
+  element: ImageElement;
+  onSelect: () => void;
+};
+
+function CanvasImageElement({ element, onSelect }: CanvasImageElementProps) {
+  const [image, setImage] = useState<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const nextImage = new window.Image();
+
+    nextImage.onload = () => {
+      if (active) {
+        setImage(nextImage);
+      }
+    };
+    nextImage.onerror = () => {
+      if (active) {
+        setImage(null);
+      }
+    };
+    nextImage.src = element.assetUrl;
+
+    return () => {
+      active = false;
+      nextImage.onload = null;
+      nextImage.onerror = null;
+    };
+  }, [element.assetUrl]);
+
+  return (
+    <KonvaImage
+      id={element.id}
+      image={image ?? undefined}
+      x={element.x}
+      y={element.y}
+      width={element.width}
+      height={element.height}
+      rotation={element.rotation}
+      opacity={element.opacity}
+      visible={element.visible}
+      onClick={onSelect}
+      onTap={onSelect}
+    />
+  );
+}
 
 export function EditorCanvas() {
   const project = useEditorStore((state) => state.project);
@@ -60,8 +109,6 @@ export function EditorCanvas() {
     }
   };
 
-  const textElements = project.elements.filter((element) => element.type === 'text');
-
   return (
     <div ref={containerRef} className="editor-canvas" data-testid="editor-canvas">
       <Stage
@@ -80,31 +127,43 @@ export function EditorCanvas() {
             fill={project.background}
           />
 
-          {textElements.map((element) => (
-            <Text
-              key={element.id}
-              id={element.id}
-              x={element.x}
-              y={element.y}
-              width={element.width}
-              height={element.height}
-              rotation={element.rotation}
-              opacity={element.opacity}
-              visible={element.visible}
-              text={element.text}
-              fontFamily={element.fontFamily}
-              fontSize={element.fontSize}
-              fill={element.fill}
-              stroke={element.stroke}
-              strokeWidth={element.strokeWidth}
-              shadowColor={element.shadowColor}
-              shadowBlur={element.shadowBlur}
-              align={element.align}
-              verticalAlign="middle"
-              onClick={() => selectElement(element.id)}
-              onTap={() => selectElement(element.id)}
-            />
-          ))}
+          {project.elements.map((element) => {
+            if (element.type === 'image') {
+              return (
+                <CanvasImageElement
+                  key={element.id}
+                  element={element}
+                  onSelect={() => selectElement(element.id)}
+                />
+              );
+            }
+
+            return (
+              <Text
+                key={element.id}
+                id={element.id}
+                x={element.x}
+                y={element.y}
+                width={element.width}
+                height={element.height}
+                rotation={element.rotation}
+                opacity={element.opacity}
+                visible={element.visible}
+                text={element.text}
+                fontFamily={element.fontFamily}
+                fontSize={element.fontSize}
+                fill={element.fill}
+                stroke={element.stroke}
+                strokeWidth={element.strokeWidth}
+                shadowColor={element.shadowColor}
+                shadowBlur={element.shadowBlur}
+                align={element.align}
+                verticalAlign="middle"
+                onClick={() => selectElement(element.id)}
+                onTap={() => selectElement(element.id)}
+              />
+            );
+          })}
         </Layer>
       </Stage>
 
