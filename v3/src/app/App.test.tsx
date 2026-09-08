@@ -8,6 +8,6 @@ describe('App', () => {
 
     expect(screen.getByRole('button', { name: /fotoğraf seç/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /yazı ekle/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /png indir/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'PNG İndir' })).toBeInTheDocument();
   });
 });
