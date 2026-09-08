@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { captureStagePng } from './png';
+import { captureStageCanvas, captureStagePng } from './png';
 
 function createStage(scale = 0.5) {
   const transformer = {
@@ -7,18 +7,20 @@ function createStage(scale = 0.5) {
     show: vi.fn(),
     getLayer: () => ({ batchDraw: vi.fn() }),
   };
+  const canvas = document.createElement('canvas');
 
   const stage = {
     scaleX: () => scale,
     find: vi.fn(() => [transformer]),
     toDataURL: vi.fn(() => 'data:image/png;base64,fixture'),
+    toCanvas: vi.fn(() => canvas),
   };
 
-  return { stage, transformer };
+  return { stage, transformer, canvas };
 }
 
-describe('PNG export', () => {
-  it('captures at logical project resolution regardless of preview scale', () => {
+describe('PNG and frame capture', () => {
+  it('captures PNG at logical project resolution regardless of preview scale', () => {
     const { stage } = createStage(0.5);
 
     const dataUrl = captureStagePng(stage);
@@ -28,6 +30,13 @@ describe('PNG export', () => {
       mimeType: 'image/png',
       pixelRatio: 2,
     });
+  });
+
+  it('captures a logical-resolution canvas for animation frames', () => {
+    const { stage, canvas } = createStage(0.4);
+
+    expect(captureStageCanvas(stage)).toBe(canvas);
+    expect(stage.toCanvas).toHaveBeenCalledWith({ pixelRatio: 2.5 });
   });
 
   it('hides selection transformers only while the image is captured', () => {
@@ -43,6 +52,18 @@ describe('PNG export', () => {
     );
     expect(stage.toDataURL.mock.invocationCallOrder[0]).toBeLessThan(
       transformer.show.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('hides selection transformers while a GIF frame canvas is captured', () => {
+    const { stage, transformer } = createStage(1);
+
+    captureStageCanvas(stage);
+
+    expect(transformer.hide).toHaveBeenCalledTimes(1);
+    expect(transformer.show).toHaveBeenCalledTimes(1);
+    expect(transformer.hide.mock.invocationCallOrder[0]).toBeLessThan(
+      stage.toCanvas.mock.invocationCallOrder[0],
     );
   });
 
