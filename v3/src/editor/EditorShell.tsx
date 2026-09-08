@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useEditorStore } from '../store/editor-store';
+import { EditorCanvas } from './canvas/EditorCanvas';
 import { readImageFile } from './canvas/image-loader';
 import './editor-controls.css';
 import { AddPanel } from './panels/AddPanel';
@@ -90,20 +91,12 @@ export function EditorShell() {
           </div>
 
           <div className="canvas-zone">
-            <div className="canvas-card" aria-label="Tasarım alanı">
-              <div className="empty-canvas">
-                <div className="empty-icon" aria-hidden="true">
-                  {project.elements.length > 0 ? project.elements.length : '＋'}
-                </div>
-                <strong>
-                  {project.elements.length > 0 ? 'Tasarım hazır' : 'Tasarımına başla'}
-                </strong>
-                <span>
-                  {project.elements.length > 0
-                    ? 'Öğeleri tuval üzerinde düzenleme bir sonraki adımda açılacak.'
-                    : 'Bir fotoğraf seç veya yazı ekle.'}
-                </span>
-              </div>
+            <div
+              className="canvas-card"
+              aria-label="Tasarım alanı"
+              style={{ aspectRatio: `${project.width} / ${project.height}` }}
+            >
+              <EditorCanvas />
             </div>
           </div>
 

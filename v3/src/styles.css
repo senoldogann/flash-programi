@@ -262,13 +262,45 @@ button:disabled {
 }
 
 .canvas-card {
+  position: relative;
   width: min(72vw, 520px);
-  aspect-ratio: 1;
-  display: grid;
-  place-items: center;
+  max-height: min(72vh, 520px);
+  overflow: hidden;
   border: 1px solid #475168;
   background: #0f1724;
   box-shadow: 0 22px 70px rgba(0, 0, 0, 0.36);
+}
+
+.editor-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.editor-canvas > div:first-child,
+.editor-canvas .konvajs-content {
+  display: block;
+}
+
+.canvas-empty-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 7px;
+  padding: 24px;
+  color: #9eabc0;
+  text-align: center;
+  pointer-events: none;
+}
+
+.canvas-empty-overlay strong {
+  color: #f4f6fb;
+  font-size: 18px;
 }
 
 .empty-canvas {
@@ -409,5 +441,6 @@ button:disabled {
 
   .canvas-card {
     width: min(88vw, 460px);
+    max-height: min(62vh, 460px);
   }
 }
