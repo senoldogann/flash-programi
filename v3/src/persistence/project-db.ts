@@ -8,6 +8,8 @@ const ASSET_STORE = 'assets';
 const CURRENT_PROJECT_KEY = 'current';
 const ASSET_URL_PREFIX = 'idb-asset:';
 
+let persistenceEpoch = 0;
+
 type StoredProjectRecord = {
   key: typeof CURRENT_PROJECT_KEY;
   project: Project;
@@ -84,6 +86,7 @@ export async function saveCurrentProject(
   project: Project,
   options: SaveCurrentProjectOptions = {},
 ): Promise<void> {
+  const saveEpoch = persistenceEpoch;
   const validatedProject = parseProject(project);
   const resolveAsset = options.resolveAsset ?? defaultResolveAsset;
   const database = await openDatabase();
@@ -121,6 +124,8 @@ export async function saveCurrentProject(
       });
       element.assetUrl = portableAssetUrl(element.id);
     }
+
+    if (saveEpoch !== persistenceEpoch) return;
 
     const writeTransaction = database.transaction([PROJECT_STORE, ASSET_STORE], 'readwrite');
     writeTransaction.objectStore(PROJECT_STORE).put({
@@ -199,6 +204,7 @@ export async function loadCurrentProject(
 }
 
 export async function clearCurrentProject(): Promise<void> {
+  persistenceEpoch += 1;
   const database = await openDatabase();
 
   try {
