@@ -4,7 +4,7 @@ import type Konva from 'konva';
 import { createBrowserGifEncoder, downloadBlob, loadGifConstructor } from '../export/gif-browser';
 import { encodeGifFrames } from '../export/gif';
 import { captureStageCanvas, downloadStagePng } from '../export/png';
-import { loadCurrentProject, saveCurrentProject } from '../persistence/project-db';
+import { clearCurrentProject, loadCurrentProject, saveCurrentProject } from '../persistence/project-db';
 import { useEditorStore } from '../store/editor-store';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { readImageFile } from './canvas/image-loader';
@@ -26,6 +26,7 @@ function getErrorMessage(error: unknown): string {
 
 export function EditorShell() {
   const project = useEditorStore((state) => state.project);
+  const reset = useEditorStore((state) => state.reset);
   const loadProject = useEditorStore((state) => state.loadProject);
   const addText = useEditorStore((state) => state.addText);
   const addImage = useEditorStore((state) => state.addImage);
@@ -93,17 +94,6 @@ export function EditorShell() {
     return () => window.clearTimeout(timer);
   }, [persistenceReady, project]);
 
-  useEffect(() => {
-    if (gifExporting) return;
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      handleEditorShortcut(event, { undo, redo });
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [gifExporting, redo, undo]);
-
   const handleStageReady = useCallback((stage: Konva.Stage | null) => {
     stageRef.current = stage;
   }, []);
@@ -122,6 +112,40 @@ export function EditorShell() {
       });
     }
   }, [gifExporting]);
+
+  useEffect(() => {
+    if (gifExporting) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      handleEditorShortcut(event, { undo, redo, exportPng: handlePngExport });
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [gifExporting, handlePngExport, redo, undo]);
+
+  const handleNewProject = useCallback(async () => {
+    if (gifExporting) return;
+
+    const confirmed = window.confirm(
+      'Mevcut tasarım silinecek. Yeni bir tasarıma başlamak istiyor musun?',
+    );
+    if (!confirmed) return;
+
+    try {
+      setErrorNotice(null);
+      await clearCurrentProject();
+
+      for (const revoke of assetRevokers.current) revoke();
+      assetRevokers.current.clear();
+      reset();
+    } catch (error) {
+      setErrorNotice({
+        title: 'Yeni tasarım açılamadı.',
+        message: `Mevcut tasarım korunuyor. ${getErrorMessage(error)}`,
+      });
+    }
+  }, [gifExporting, reset]);
 
   const handleGifExport = useCallback(async () => {
     const stage = stageRef.current;
@@ -197,6 +221,7 @@ export function EditorShell() {
           </div>
         </div>
         <TopToolbar
+          onNewProject={handleNewProject}
           onExport={handlePngExport}
           onGifExport={handleGifExport}
           gifExporting={gifExporting}
