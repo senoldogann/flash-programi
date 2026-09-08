@@ -3,8 +3,8 @@ import { useEditorStore } from '../store/editor-store';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { readImageFile } from './canvas/image-loader';
 import './editor-controls.css';
-import { AddPanel } from './panels/AddPanel';
 import { TextInspector } from './panels/TextInspector';
+import { ToolPanel } from './panels/ToolPanel';
 import { TopToolbar } from './toolbar/TopToolbar';
 
 function getErrorMessage(error: unknown): string {
@@ -26,9 +26,7 @@ export function EditorShell() {
     const revokers = assetRevokers.current;
 
     return () => {
-      for (const revoke of revokers) {
-        revoke();
-      }
+      for (const revoke of revokers) revoke();
       revokers.clear();
     };
   }, []);
@@ -63,7 +61,7 @@ export function EditorShell() {
           <div className="brand-mark" aria-hidden="true">✦</div>
           <div>
             <h1>Flash Nick Studio</h1>
-            <p>Fotoğrafını seç, nickini yaz, ikonunu hazırla.</p>
+            <p>Fotoğrafını seç, nickini yaz, hareket ve efekt ekle.</p>
           </div>
         </div>
         <TopToolbar />
@@ -80,7 +78,7 @@ export function EditorShell() {
       ) : null}
 
       <section className="editor-layout">
-        <AddPanel onAddText={handleAddText} onImageFile={handleImageFile} />
+        <ToolPanel onAddText={handleAddText} onImageFile={handleImageFile} />
 
         <section className="workspace" aria-label="Tasarım çalışma alanı">
           <div className="workspace-toolbar">
@@ -102,7 +100,7 @@ export function EditorShell() {
 
           <footer className="workspace-footer">
             <span>{project.width} × {project.height} px</span>
-            <span>V3 Foundation</span>
+            <span>V3 Rich Editor</span>
           </footer>
         </section>
 
