@@ -4,6 +4,7 @@ import type Konva from 'konva';
 import { createBrowserGifEncoder, downloadBlob, loadGifConstructor } from '../export/gif-browser';
 import { encodeGifFrames } from '../export/gif';
 import { captureStageCanvas, downloadStagePng } from '../export/png';
+import { loadCurrentProject, saveCurrentProject } from '../persistence/project-db';
 import { useEditorStore } from '../store/editor-store';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { readImageFile } from './canvas/image-loader';
@@ -24,9 +25,11 @@ function getErrorMessage(error: unknown): string {
 
 export function EditorShell() {
   const project = useEditorStore((state) => state.project);
+  const loadProject = useEditorStore((state) => state.loadProject);
   const addText = useEditorStore((state) => state.addText);
   const addImage = useEditorStore((state) => state.addImage);
   const [errorNotice, setErrorNotice] = useState<ErrorNotice | null>(null);
+  const [persistenceReady, setPersistenceReady] = useState(false);
   const [exportTimeMs, setExportTimeMs] = useState<number | null>(null);
   const [gifExporting, setGifExporting] = useState(false);
   const [gifProgress, setGifProgress] = useState(0);
@@ -40,6 +43,52 @@ export function EditorShell() {
       revokers.clear();
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    void loadCurrentProject()
+      .then((restored) => {
+        if (!active) {
+          restored?.dispose();
+          return;
+        }
+
+        if (restored) {
+          loadProject(restored.project);
+          assetRevokers.current.add(restored.dispose);
+        }
+      })
+      .catch((error) => {
+        if (!active) return;
+        setErrorNotice({
+          title: 'Kayıtlı proje açılamadı.',
+          message: getErrorMessage(error),
+        });
+      })
+      .finally(() => {
+        if (active) setPersistenceReady(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [loadProject]);
+
+  useEffect(() => {
+    if (!persistenceReady) return;
+
+    const timer = window.setTimeout(() => {
+      void saveCurrentProject(project).catch((error) => {
+        setErrorNotice({
+          title: 'Proje kaydedilemedi.',
+          message: getErrorMessage(error),
+        });
+      });
+    }, 500);
+
+    return () => window.clearTimeout(timer);
+  }, [persistenceReady, project]);
 
   const handleStageReady = useCallback((stage: Konva.Stage | null) => {
     stageRef.current = stage;
