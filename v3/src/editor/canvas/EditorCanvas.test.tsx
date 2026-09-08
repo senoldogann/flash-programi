@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEditorStore } from '../../store/editor-store';
 import { EditorCanvas } from './EditorCanvas';
@@ -28,6 +28,9 @@ vi.mock('react-konva', async () => {
     };
   };
 
+  type MockNode = ReturnType<typeof createNode>;
+  type MockKonvaEvent = { target: MockNode };
+
   const MockText = forwardRef<unknown, Record<string, unknown>>((props, ref) => {
     const node = createNode(props);
     useImperativeHandle(ref, () => node);
@@ -38,9 +41,9 @@ vi.mock('react-konva', async () => {
         data-testid={`text-${String(props.id)}`}
         onClick={props.onClick as (() => void) | undefined}
         onDoubleClick={() => {
-          const event = { target: node };
-          (props.onDragStart as ((event: typeof event) => void) | undefined)?.(event);
-          (props.onDragEnd as ((event: typeof event) => void) | undefined)?.(event);
+          const dragEvent: MockKonvaEvent = { target: node };
+          (props.onDragStart as ((event: MockKonvaEvent) => void) | undefined)?.(dragEvent);
+          (props.onDragEnd as ((event: MockKonvaEvent) => void) | undefined)?.(dragEvent);
         }}
       >
         {String(props.text ?? '')}
@@ -131,7 +134,9 @@ describe('EditorCanvas', () => {
     expect(moved).toMatchObject({ x: 140, y: 150 });
     expect(useEditorStore.getState().past).toHaveLength(historyLength + 1);
 
-    useEditorStore.getState().undo();
+    act(() => {
+      useEditorStore.getState().undo();
+    });
 
     expect(useEditorStore.getState().project).toEqual(before);
   });
