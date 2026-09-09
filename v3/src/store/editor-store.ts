@@ -16,6 +16,7 @@ import {
 } from '../model/project';
 import { migrateProject } from '../model/migrate';
 import { parseProject } from '../model/schema';
+import { resizeProjectProportionally } from '../sizing/project-size';
 import { applyDesignTemplate } from '../templates/templates';
 
 const HISTORY_LIMIT = 50;
@@ -46,6 +47,7 @@ export type EditorStore = {
   removeDecoration: (id: string) => void;
   setFrame: (preset: FramePreset, width?: number) => void;
   setExportSettings: (patch: Partial<ExportSettings>) => void;
+  resizeProject: (width: number, height: number) => void;
   applyTemplate: (templateId: string) => void;
   removeElement: (id: string) => void;
   commitTransform: (beforeProject: Project, afterProject: Project) => void;
@@ -335,6 +337,13 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       },
     });
     set({ project: nextProject });
+  },
+
+  resizeProject: (width, height) => {
+    const state = get();
+    if (state.project.width === width && state.project.height === height) return;
+    const nextProject = resizeProjectProportionally(state.project, width, height);
+    set(mutationWithHistory(state, nextProject));
   },
 
   applyTemplate: (templateId) => {
