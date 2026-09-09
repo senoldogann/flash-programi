@@ -40,7 +40,15 @@ export type AnimationPreset =
   | 'shimmer'
   | 'camera-pan'
   | 'micro-vibrate'
-  | 'rise-fade';
+  | 'rise-fade'
+  | 'walk-25d'
+  | 'depth-tilt'
+  | 'dolly-zoom'
+  | 'camera-orbit-25d'
+  | 'parallax-walk'
+  | 'perspective-card'
+  | 'levitate-25d'
+  | 'cinematic-push';
 
 export type AnimationSpeed = 'slow' | 'normal' | 'fast';
 export type AnimationIntensity = 'subtle' | 'normal' | 'strong';
