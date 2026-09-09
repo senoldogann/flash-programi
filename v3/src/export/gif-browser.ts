@@ -1,4 +1,6 @@
+import type { GifProfile } from '../model/project';
 import type { GifEncoderLike } from './gif';
+import { getGifEncoderQuality } from './profiles';
 
 export type GifJsOptions = {
   workers: number;
@@ -66,10 +68,11 @@ export function createBrowserGifEncoder(
   Gif: GifConstructor,
   width: number,
   height: number,
+  profile: GifProfile = 'balanced',
 ): GifEncoderLike {
   return new Gif({
     workers: 2,
-    quality: 10,
+    quality: getGifEncoderQuality(profile),
     repeat: 0,
     width,
     height,

@@ -3,10 +3,13 @@ import type { ExportScale, GifProfile } from '../model/project';
 export const MAX_EXPORT_DIMENSION = 4096;
 const GIF_WORK_BUDGET_LIMIT = 100_000_000;
 
-const GIF_PROFILES: Record<GifProfile, { targetFps: number; maxFrames: number }> = {
-  small: { targetFps: 8, maxFrames: 16 },
-  balanced: { targetFps: 12, maxFrames: 36 },
-  quality: { targetFps: 20, maxFrames: 60 },
+const GIF_PROFILES: Record<
+  GifProfile,
+  { targetFps: number; maxFrames: number; encoderQuality: number }
+> = {
+  small: { targetFps: 10, maxFrames: 20, encoderQuality: 15 },
+  balanced: { targetFps: 15, maxFrames: 36, encoderQuality: 10 },
+  quality: { targetFps: 20, maxFrames: 60, encoderQuality: 8 },
 };
 
 function assertPositiveFinite(value: number, label: string): void {
@@ -49,6 +52,10 @@ export function assertSafeExportDimensions(width: number, height: number): void 
   }
 }
 
+export function getGifEncoderQuality(profile: GifProfile): number {
+  return GIF_PROFILES[profile].encoderQuality;
+}
+
 export function getGifFramePlan(
   durationMs: number,
   profile: GifProfile,
@@ -58,7 +65,7 @@ export function getGifFramePlan(
   const { targetFps, maxFrames } = GIF_PROFILES[profile];
   const frameCount = Math.min(
     maxFrames,
-    Math.max(2, Math.round((durationMs / 1000) * targetFps)),
+    Math.max(2, Math.ceil((durationMs / 1000) * targetFps)),
   );
   const delayMs = durationMs / frameCount;
   const frameTimesMs = Array.from({ length: frameCount }, (_, index) => index * delayMs);
