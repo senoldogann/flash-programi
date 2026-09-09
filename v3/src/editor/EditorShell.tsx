@@ -10,6 +10,7 @@ import { EditorCanvas } from './canvas/EditorCanvas';
 import { readImageFile } from './canvas/image-loader';
 import './editor-controls.css';
 import { handleEditorShortcut } from './keyboard-shortcuts';
+import { CanvasSizePanel } from './panels/CanvasSizePanel';
 import { TextInspector } from './panels/TextInspector';
 import { ToolPanel } from './panels/ToolPanel';
 import { TopToolbar } from './toolbar/TopToolbar';
@@ -249,6 +250,8 @@ export function EditorShell() {
             <span className="workspace-spacer" />
             <span>{project.elements.length} öğe</span>
           </div>
+
+          <CanvasSizePanel />
 
           <div className="canvas-zone">
             <div
