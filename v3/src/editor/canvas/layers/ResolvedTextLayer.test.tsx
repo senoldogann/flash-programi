@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import type { Text3DLayerV3, TextLayerV3 } from '../../../model/v3/project-v3';
+import { createDefaultText3DStyle } from '../../../text3d/material-recipes';
 import type { ResolvedLayerV3 } from '../../../timeline';
 import { ResolvedTextLayer } from './ResolvedTextLayer';
 
@@ -105,6 +106,17 @@ function text3dLayer(alternateFace = false): ResolvedLayerV3 & { source: Text3DL
     materialPreset: 'xara-gold',
     extrusionDepth: 3,
     extrusionColor: '#6b4300',
+    style: {
+      ...createDefaultText3DStyle(),
+      extrusion: { depth: 3, angleDeg: 45 },
+      surfaces: {
+        ...createDefaultText3DStyle().surfaces,
+        side: {
+          ...createDefaultText3DStyle().surfaces.side,
+          color: '#6b4300',
+        },
+      },
+    },
   };
   return {
     ...plainLayer(),
