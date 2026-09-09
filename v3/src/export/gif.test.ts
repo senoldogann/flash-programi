@@ -59,7 +59,7 @@ describe('GIF export', () => {
 
   it('uses caller-supplied deterministic frame times and delay without recomputing them', async () => {
     const encoder = new FakeEncoder();
-    const renderFrame = vi.fn(async () => document.createElement('canvas'));
+    const renderFrame = vi.fn(async (_timeMs: number) => document.createElement('canvas'));
 
     await encodeGifFrames({
       durationMs: 1000,
