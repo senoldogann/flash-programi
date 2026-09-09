@@ -14,7 +14,6 @@ type RasterizerModule = {
 };
 
 type FakeCanvas = HTMLCanvasElement & { label: string };
-
 type RecordingGradient = CanvasGradient & { stops: Array<[number, string]> };
 
 async function loadRasterizerModule(): Promise<RasterizerModule | null> {
@@ -79,6 +78,9 @@ function createRecordingFactory(options: { nullContext?: boolean } = {}) {
     const gradients: RecordingGradient[] = [];
     let fillStyleValue: string | CanvasGradient | CanvasPattern = '#000000';
     let strokeStyleValue: string | CanvasGradient | CanvasPattern = '#000000';
+    let globalAlphaValue = 1;
+    let compositeValue: GlobalCompositeOperation = 'source-over';
+    let lineWidthValue = 1;
     const context = {
       canvas: null,
       save: () => events.push(`${label}:save`),
@@ -93,8 +95,8 @@ function createRecordingFactory(options: { nullContext?: boolean } = {}) {
       lineTo: () => undefined,
       stroke: () => events.push(`${label}:stroke`),
       translate: () => undefined,
-      createLinearGradient: () => {
-        events.push(`${label}:createLinearGradient`);
+      createLinearGradient: (x0: number, y0: number, x1: number, y1: number) => {
+        events.push(`${label}:createLinearGradient:${x0}:${y0}:${x1}:${y1}`);
         const stops: Array<[number, string]> = [];
         const gradient = {
           stops,
@@ -106,8 +108,6 @@ function createRecordingFactory(options: { nullContext?: boolean } = {}) {
         gradients.push(gradient);
         return gradient;
       },
-      globalAlpha: 1,
-      globalCompositeOperation: 'source-over',
       shadowColor: 'transparent',
       shadowBlur: 0,
       shadowOffsetX: 0,
@@ -115,9 +115,29 @@ function createRecordingFactory(options: { nullContext?: boolean } = {}) {
       font: '',
       textAlign: 'left',
       textBaseline: 'alphabetic',
-      lineWidth: 1,
       imageSmoothingEnabled: false,
       imageSmoothingQuality: 'low',
+      get globalAlpha() {
+        return globalAlphaValue;
+      },
+      set globalAlpha(value: number) {
+        globalAlphaValue = value;
+        events.push(`${label}:globalAlpha:${value}`);
+      },
+      get globalCompositeOperation() {
+        return compositeValue;
+      },
+      set globalCompositeOperation(value: GlobalCompositeOperation) {
+        compositeValue = value;
+        events.push(`${label}:composite:${value}`);
+      },
+      get lineWidth() {
+        return lineWidthValue;
+      },
+      set lineWidth(value: number) {
+        lineWidthValue = value;
+        events.push(`${label}:lineWidth:${value}`);
+      },
       get fillStyle() {
         return fillStyleValue;
       },
@@ -147,6 +167,12 @@ function createRecordingFactory(options: { nullContext?: boolean } = {}) {
   };
 
   return { createCanvas, events, canvases };
+}
+
+function firstGlobalAlpha(events: string[]): number {
+  const event = events.find((candidate) => candidate.includes(':globalAlpha:'));
+  if (!event) throw new Error('global alpha event missing');
+  return Number(event.split(':').at(-1));
 }
 
 describe('FlashText3D Canvas2D rasterizer', () => {
@@ -224,6 +250,48 @@ describe('FlashText3D Canvas2D rasterizer', () => {
       + (plan.fontSize * 1.1) / 2
     ) * plan.supersample;
     expect(yPositions[0]).toBeCloseTo(expectedFirstY, 5);
+  });
+
+  it('builds a bevel band, clips face overlays, and keeps face gradients inside logical text bounds', async () => {
+    const module = await loadRasterizerModule();
+    requireModule(module);
+    const recording = createRecordingFactory();
+    const plan = planFixture();
+
+    module.renderText3DToCanvas(plan, recording.createCanvas);
+
+    expect(recording.events.some((event) => event.includes(':composite:destination-out'))).toBe(true);
+    expect(recording.events.filter((event) => event.includes(':composite:destination-in')).length).toBeGreaterThanOrEqual(2);
+
+    const expectedTop = plan.padding * plan.supersample;
+    const expectedBottom = (plan.padding + plan.logicalHeight) * plan.supersample;
+    expect(recording.events.some((event) =>
+      event.includes(`:createLinearGradient:0:${expectedTop}:0:${expectedBottom}`))).toBe(true);
+  });
+
+  it('uses surface metallicity to increase side light/dark contrast without changing geometry', async () => {
+    const module = await loadRasterizerModule();
+    requireModule(module);
+
+    const renderSide = (metallicity: number) => {
+      const recording = createRecordingFactory();
+      const plan: Text3DRenderPlan = {
+        ...planFixture(),
+        passes: [{
+          kind: 'side',
+          offsetX: 3,
+          offsetY: 3,
+          shade: 0.25,
+          surface: { color: '#111111', gradient: [], metallicity },
+        }],
+      };
+      module.renderText3DToCanvas(plan, recording.createCanvas);
+      return firstGlobalAlpha(recording.events);
+    };
+
+    const matteAlpha = renderSide(0);
+    const metallicAlpha = renderSide(1);
+    expect(Math.abs(metallicAlpha - 0.5)).toBeGreaterThan(Math.abs(matteAlpha - 0.5));
   });
 
   it('runs gloss/texture after the face and downsamples with high-quality smoothing', async () => {
