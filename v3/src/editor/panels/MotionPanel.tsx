@@ -38,6 +38,14 @@ const MOTION_PRESETS: Array<{ id: AnimationPreset; label: string; icon: string }
   { id: 'chromatic-shake', label: 'Chromatic Shake', icon: '◈' },
   { id: 'focus-pulse', label: 'Focus Pulse', icon: '◎' },
   { id: 'pixel-pulse', label: 'Pixel Pulse', icon: '▦' },
+  { id: 'soft-sway', label: 'Yumuşak Salınım', icon: '⌁' },
+  { id: 'tilt', label: 'Eğim', icon: '◩' },
+  { id: 'spiral', label: 'Spiral', icon: '◌' },
+  { id: 'pop', label: 'Pop', icon: '✹' },
+  { id: 'shimmer', label: 'Işıltı', icon: '✧' },
+  { id: 'camera-pan', label: 'Kamera Kaydırma', icon: '▣' },
+  { id: 'micro-vibrate', label: 'Mikro Titreşim', icon: '≋' },
+  { id: 'rise-fade', label: 'Yüksel & Sol', icon: '↥' },
 ];
 
 const SPEEDS: Array<{ id: AnimationSpeed; label: string }> = [
@@ -59,7 +67,13 @@ const DIRECTIONS: Array<{ id: AnimationDirection; label: string }> = [
   { id: 'down', label: 'Aşağı' },
 ];
 
-const DIRECTIONAL_PRESETS = new Set<AnimationPreset>(['slide', 'ken-burns', 'slow-pan', 'parallax']);
+const DIRECTIONAL_PRESETS = new Set<AnimationPreset>([
+  'slide',
+  'ken-burns',
+  'slow-pan',
+  'parallax',
+  'camera-pan',
+]);
 
 export function MotionPanel() {
   const selectedElementId = useEditorStore((state) => state.selectedElementId);
