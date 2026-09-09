@@ -327,15 +327,14 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
   setExportSettings: (patch) => {
     const state = get();
-    set({
-      project: {
-        ...state.project,
-        exportSettings: {
-          ...state.project.exportSettings,
-          ...patch,
-        },
+    const nextProject = parseProject({
+      ...state.project,
+      exportSettings: {
+        ...state.project.exportSettings,
+        ...patch,
       },
     });
+    set({ project: nextProject });
   },
 
   applyTemplate: (templateId) => {
