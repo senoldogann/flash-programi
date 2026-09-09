@@ -1,5 +1,6 @@
-import type { EditorElement, TextAlign, TextElement } from '../../model/project';
+import type { EditorElement, TextAlign, TextElement, TextWritingMode } from '../../model/project';
 import { useEditorStore } from '../../store/editor-store';
+import { getWritingModeBox, segmentGraphemes } from '../../text/layout';
 
 const FONT_OPTIONS = [
   'Arial',
@@ -105,6 +106,12 @@ function TextStyleControls({
   element: TextElement;
   updateElement: CommonControlsProps['updateElement'];
 }) {
+  const setWritingMode = (mode: TextWritingMode) => {
+    if (element.writingMode === mode) return;
+    const box = getWritingModeBox(element, mode, segmentGraphemes(element.text).length);
+    updateElement(element.id, { writingMode: mode, ...box });
+  };
+
   return (
     <>
       <section className="inspector-section inspector-section-first" aria-label="Yazı içeriği">
@@ -120,6 +127,30 @@ function TextStyleControls({
             onChange={(event) => updateElement(element.id, { text: event.currentTarget.value })}
           />
         </label>
+
+        <div className="inspector-control-group">
+          <span>Yazım Yönü</span>
+          <div className="segmented-control inspector-align-control">
+            <button
+              type="button"
+              aria-label="Yatay"
+              aria-pressed={element.writingMode === 'horizontal'}
+              className={element.writingMode === 'horizontal' ? 'selected' : ''}
+              onClick={() => setWritingMode('horizontal')}
+            >
+              Yatay
+            </button>
+            <button
+              type="button"
+              aria-label="Dikey"
+              aria-pressed={element.writingMode === 'vertical-stacked'}
+              className={element.writingMode === 'vertical-stacked' ? 'selected' : ''}
+              onClick={() => setWritingMode('vertical-stacked')}
+            >
+              Dikey
+            </button>
+          </div>
+        </div>
 
         <label>
           <span>Yazı Tipi</span>

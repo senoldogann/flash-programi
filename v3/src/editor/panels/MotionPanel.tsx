@@ -1,4 +1,9 @@
-import type { AnimationPreset, AnimationSpeed } from '../../model/project';
+import type {
+  AnimationDirection,
+  AnimationIntensity,
+  AnimationPreset,
+  AnimationSpeed,
+} from '../../model/project';
 import { useEditorStore } from '../../store/editor-store';
 
 const MOTION_PRESETS: Array<{ id: AnimationPreset; label: string; icon: string }> = [
@@ -13,6 +18,26 @@ const MOTION_PRESETS: Array<{ id: AnimationPreset; label: string; icon: string }
   { id: 'slide', label: 'Kaydır', icon: '→' },
   { id: 'bounce', label: 'Zıpla', icon: '↥' },
   { id: 'wave', label: 'Dalga', icon: '∿' },
+  { id: 'ken-burns', label: 'Ken Burns', icon: '⌕' },
+  { id: 'slow-pan', label: 'Slow Pan', icon: '⇢' },
+  { id: 'orbit', label: 'Orbit', icon: '◌' },
+  { id: 'breathing-zoom', label: 'Breathing Zoom', icon: '◍' },
+  { id: 'rubber', label: 'Rubber', icon: '↕' },
+  { id: 'flip-x', label: 'Flip X', icon: '⇆' },
+  { id: 'flip-y', label: 'Flip Y', icon: '⇅' },
+  { id: 'pendulum', label: 'Pendulum', icon: '⌁' },
+  { id: 'drift', label: 'Drift', icon: '≈' },
+  { id: 'parallax', label: 'Parallax', icon: '≡' },
+  { id: 'jello', label: 'Jello', icon: '〰' },
+  { id: 'wobble', label: 'Wobble', icon: '⌇' },
+  { id: 'heartbeat', label: 'Heartbeat', icon: '♥' },
+  { id: 'flash', label: 'Flash', icon: '✦' },
+  { id: 'reveal', label: 'Reveal', icon: '◐' },
+  { id: 'scanline', label: 'Scanline', icon: '▤' },
+  { id: 'glitch-rgb', label: 'Glitch RGB', icon: 'RGB' },
+  { id: 'chromatic-shake', label: 'Chromatic Shake', icon: '◈' },
+  { id: 'focus-pulse', label: 'Focus Pulse', icon: '◎' },
+  { id: 'pixel-pulse', label: 'Pixel Pulse', icon: '▦' },
 ];
 
 const SPEEDS: Array<{ id: AnimationSpeed; label: string }> = [
@@ -21,12 +46,28 @@ const SPEEDS: Array<{ id: AnimationSpeed; label: string }> = [
   { id: 'fast', label: 'Hızlı' },
 ];
 
+const INTENSITIES: Array<{ id: AnimationIntensity; label: string }> = [
+  { id: 'subtle', label: 'Hafif' },
+  { id: 'normal', label: 'Orta' },
+  { id: 'strong', label: 'Güçlü' },
+];
+
+const DIRECTIONS: Array<{ id: AnimationDirection; label: string }> = [
+  { id: 'left', label: 'Sol' },
+  { id: 'right', label: 'Sağ' },
+  { id: 'up', label: 'Yukarı' },
+  { id: 'down', label: 'Aşağı' },
+];
+
+const DIRECTIONAL_PRESETS = new Set<AnimationPreset>(['slide', 'ken-burns', 'slow-pan', 'parallax']);
+
 export function MotionPanel() {
   const selectedElement = useEditorStore((state) =>
     state.project.elements.find((element) => element.id === state.selectedElementId) ?? null,
   );
   const setElementAnimation = useEditorStore((state) => state.setElementAnimation);
   const disabled = selectedElement === null;
+  const showsDirection = selectedElement !== null && DIRECTIONAL_PRESETS.has(selectedElement.animation.preset);
 
   return (
     <div className="preset-panel" aria-label="Hareket ayarları">
@@ -68,6 +109,41 @@ export function MotionPanel() {
           ))}
         </div>
       </div>
+
+      <div className="speed-control" aria-label="Hareket yoğunluğu">
+        <span>Yoğunluk</span>
+        <div className="segmented-control">
+          {INTENSITIES.map((intensity) => (
+            <button
+              key={intensity.id}
+              type="button"
+              className={selectedElement?.animation.intensity === intensity.id ? 'selected' : ''}
+              disabled={disabled}
+              onClick={() => selectedElement && setElementAnimation(selectedElement.id, { intensity: intensity.id })}
+            >
+              {intensity.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {showsDirection ? (
+        <div className="speed-control" aria-label="Hareket yönü">
+          <span>Yön</span>
+          <div className="segmented-control">
+            {DIRECTIONS.map((direction) => (
+              <button
+                key={direction.id}
+                type="button"
+                className={selectedElement?.animation.direction === direction.id ? 'selected' : ''}
+                onClick={() => selectedElement && setElementAnimation(selectedElement.id, { direction: direction.id })}
+              >
+                {direction.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

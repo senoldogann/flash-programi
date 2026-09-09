@@ -32,11 +32,29 @@ describe('PNG and frame capture', () => {
     });
   });
 
+  it('captures PNG at the requested export scale independently of preview scale', () => {
+    const { stage } = createStage(0.5);
+
+    captureStagePng(stage, 2);
+
+    expect(stage.toDataURL).toHaveBeenCalledWith({
+      mimeType: 'image/png',
+      pixelRatio: 4,
+    });
+  });
+
   it('captures a logical-resolution canvas for animation frames', () => {
     const { stage, canvas } = createStage(0.4);
 
     expect(captureStageCanvas(stage)).toBe(canvas);
     expect(stage.toCanvas).toHaveBeenCalledWith({ pixelRatio: 2.5 });
+  });
+
+  it('captures animation frame canvases at the requested export scale', () => {
+    const { stage, canvas } = createStage(0.4);
+
+    expect(captureStageCanvas(stage, 3)).toBe(canvas);
+    expect(stage.toCanvas).toHaveBeenCalledWith({ pixelRatio: 7.5 });
   });
 
   it('hides selection transformers only while the image is captured', () => {

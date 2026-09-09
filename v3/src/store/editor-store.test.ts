@@ -65,6 +65,29 @@ describe('editor store history', () => {
     expect(useEditorStore.getState().project.frame.preset).toBe('none');
   });
 
+  it('updates validated export settings without creating visual history', () => {
+    useEditorStore.getState().addText('Tasarım');
+    const historyBefore = useEditorStore.getState().past.length;
+
+    useEditorStore.getState().setExportSettings({ scale: 3, gifProfile: 'quality' });
+
+    expect(useEditorStore.getState().project.exportSettings).toEqual({
+      scale: 3,
+      gifProfile: 'quality',
+    });
+    expect(useEditorStore.getState().past).toHaveLength(historyBefore);
+
+    const beforeInvalid = structuredClone(useEditorStore.getState().project);
+    const setRuntimeExportSettings = useEditorStore.getState().setExportSettings as (
+      patch: Record<string, unknown>,
+    ) => void;
+
+    expect(() => setRuntimeExportSettings({ scale: 5 })).toThrow();
+    expect(() => setRuntimeExportSettings({ gifProfile: 'turbo' })).toThrow();
+    expect(useEditorStore.getState().project).toEqual(beforeInvalid);
+    expect(useEditorStore.getState().past).toHaveLength(historyBefore);
+  });
+
   it('undoes and redoes a completed text mutation', () => {
     const id = useEditorStore.getState().addText('SevDa');
     const originalX = useEditorStore.getState().project.elements[0].x;
@@ -107,6 +130,20 @@ describe('editor store history', () => {
       x: beforeTransform.elements[0].x,
       y: beforeTransform.elements[0].y,
     });
+  });
+
+  it('records a proportional canvas resize as exactly one undoable project change', () => {
+    useEditorStore.getState().addText('Boyut');
+    const beforeResize = structuredClone(useEditorStore.getState().project);
+    const historyBefore = useEditorStore.getState().past.length;
+
+    useEditorStore.getState().resizeProject(600, 200);
+
+    expect(useEditorStore.getState().project).toMatchObject({ width: 600, height: 200 });
+    expect(useEditorStore.getState().past).toHaveLength(historyBefore + 1);
+
+    useEditorStore.getState().undo();
+    expect(useEditorStore.getState().project).toEqual(beforeResize);
   });
 
   it('hydrates a saved project as a fresh history root', () => {

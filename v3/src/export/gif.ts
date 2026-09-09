@@ -16,6 +16,8 @@ export interface GifEncoderLike {
 export type EncodeGifFramesOptions = {
   durationMs: number;
   fps: number;
+  frameTimesMs?: number[];
+  frameDelayMs?: number;
   encoder: GifEncoderLike;
   renderFrame: (timeMs: number) => Promise<HTMLCanvasElement>;
   onProgress?: (value: number) => void;
@@ -27,6 +29,25 @@ function finitePositive(value: number, label: string): number {
   }
 
   return value;
+}
+
+function resolveFramePlan(options: EncodeGifFramesOptions): { times: number[]; frameDelayMs: number } {
+  if (options.frameTimesMs && options.frameDelayMs !== undefined) {
+    const frameDelayMs = finitePositive(options.frameDelayMs, 'GIF kare gecikmesi');
+    if (options.frameTimesMs.length === 0) {
+      throw new Error('GIF en az bir kare zamanı içermelidir.');
+    }
+    const times = options.frameTimesMs.map((timeMs) => {
+      if (!Number.isFinite(timeMs) || timeMs < 0) {
+        throw new Error('GIF kare zamanları sıfır veya pozitif sonlu sayılar olmalıdır.');
+      }
+      return timeMs;
+    });
+    return { times, frameDelayMs };
+  }
+
+  const plan = createGifPlan(options.durationMs, options.fps);
+  return { times: plan.times, frameDelayMs: plan.frameDelayMs };
 }
 
 export function createGifPlan(
@@ -52,14 +73,9 @@ export function createGifPlan(
   return { fps, frameDelayMs, times };
 }
 
-export async function encodeGifFrames({
-  durationMs,
-  fps,
-  encoder,
-  renderFrame,
-  onProgress,
-}: EncodeGifFramesOptions): Promise<Blob> {
-  const plan = createGifPlan(durationMs, fps);
+export async function encodeGifFrames(options: EncodeGifFramesOptions): Promise<Blob> {
+  const { encoder, renderFrame, onProgress } = options;
+  const plan = resolveFramePlan(options);
 
   for (const timeMs of plan.times) {
     const frame = await renderFrame(timeMs);

@@ -17,11 +17,33 @@ export const animationSchema = z.object({
     'slide',
     'bounce',
     'wave',
+    'ken-burns',
+    'slow-pan',
+    'orbit',
+    'breathing-zoom',
+    'rubber',
+    'flip-x',
+    'flip-y',
+    'pendulum',
+    'drift',
+    'parallax',
+    'jello',
+    'wobble',
+    'heartbeat',
+    'flash',
+    'reveal',
+    'scanline',
+    'glitch-rgb',
+    'chromatic-shake',
+    'focus-pulse',
+    'pixel-pulse',
   ]),
   speed: z.enum(['slow', 'normal', 'fast']),
+  intensity: z.enum(['subtle', 'normal', 'strong']),
   delayMs: z.number().finite().min(0).max(30_000),
   loop: z.boolean(),
-});
+  direction: z.enum(['left', 'right', 'up', 'down']).optional(),
+}).strict();
 
 export const imageEffectsSchema = z.object({
   brightness: z.number().finite().min(-1).max(1),
@@ -30,7 +52,18 @@ export const imageEffectsSchema = z.object({
   blurRadius: z.number().finite().min(0).max(40),
   grayscale: z.boolean(),
   sepia: z.boolean(),
-});
+  hue: z.number().finite().min(-180).max(180),
+  temperature: z.number().finite().min(-100).max(100),
+  tint: z.number().finite().min(-100).max(100),
+  enhance: z.number().finite().min(-1).max(1),
+  emboss: z.number().finite().min(0).max(1),
+  invert: z.boolean(),
+  noise: z.number().finite().min(0).max(1),
+  pixelate: z.number().finite().min(0).max(64),
+  posterize: z.number().finite().min(0).max(1),
+  solarize: z.boolean(),
+  threshold: z.number().finite().min(0).max(1),
+}).strict();
 
 const elementBaseShape = {
   id: z.string().min(1).max(120),
@@ -50,6 +83,7 @@ export const textElementSchema = z.object({
   ...elementBaseShape,
   type: z.literal('text'),
   text: z.string().max(500),
+  writingMode: z.enum(['horizontal', 'vertical-stacked']),
   fontFamily: z.string().min(1).max(120),
   fontSize: z.number().finite().min(6).max(512),
   fill: z.string().min(1).max(120),
@@ -58,14 +92,14 @@ export const textElementSchema = z.object({
   shadowColor: z.string().min(1).max(120),
   shadowBlur: z.number().finite().min(0).max(128),
   align: z.enum(['left', 'center', 'right']),
-});
+}).strict();
 
 export const imageElementSchema = z.object({
   ...elementBaseShape,
   type: z.literal('image'),
   assetUrl: z.string().min(1),
   effects: imageEffectsSchema,
-});
+}).strict();
 
 export const editorElementSchema = z.discriminatedUnion('type', [
   textElementSchema,
@@ -90,7 +124,7 @@ export const decorationLayerSchema = z.object({
   count: z.number().int().min(1).max(60),
   opacity: z.number().finite().min(0).max(1),
   speed: z.enum(['slow', 'normal', 'fast']),
-});
+}).strict();
 
 export const frameDefinitionSchema = z.object({
   preset: z.enum([
@@ -106,10 +140,15 @@ export const frameDefinitionSchema = z.object({
     'turkish',
   ]),
   width: z.number().finite().min(1).max(32),
-});
+}).strict();
+
+export const exportSettingsSchema = z.object({
+  scale: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+  gifProfile: z.enum(['small', 'balanced', 'quality']),
+}).strict();
 
 export const projectSchema = z.object({
-  version: z.literal(1),
+  version: z.literal(2),
   id: z.string().min(1).max(120),
   name: z.string().min(1).max(120),
   width: z.number().int().min(32).max(4096),
@@ -120,7 +159,8 @@ export const projectSchema = z.object({
   elements: z.array(editorElementSchema).max(200),
   decorations: z.array(decorationLayerSchema).max(12),
   frame: frameDefinitionSchema,
-});
+  exportSettings: exportSettingsSchema,
+}).strict();
 
 export function parseProject(input: unknown): Project {
   return projectSchema.parse(input) as Project;

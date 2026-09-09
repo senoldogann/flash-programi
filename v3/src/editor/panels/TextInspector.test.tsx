@@ -86,6 +86,41 @@ describe('TextInspector', () => {
     });
   });
 
+  it('switches writing mode without mutating source text and keeps the box center in one undo step', () => {
+    const id = useEditorStore.getState().addText('A👨‍👩‍👧‍👦B');
+    const before = structuredClone(
+      useEditorStore.getState().project.elements.find((item) => item.id === id),
+    );
+    if (!before || before.type !== 'text') throw new Error('text fixture missing');
+    const historyBefore = useEditorStore.getState().past.length;
+
+    render(<TextInspector />);
+    fireEvent.click(screen.getByRole('button', { name: 'Dikey' }));
+
+    const vertical = useEditorStore.getState().project.elements.find((item) => item.id === id);
+    if (!vertical || vertical.type !== 'text') throw new Error('vertical text missing');
+
+    expect(vertical.writingMode).toBe('vertical-stacked');
+    expect(vertical.text).toBe('A👨‍👩‍👧‍👦B');
+    expect(vertical.x + vertical.width / 2).toBeCloseTo(before.x + before.width / 2, 5);
+    expect(vertical.y + vertical.height / 2).toBeCloseTo(before.y + before.height / 2, 5);
+    expect(useEditorStore.getState().past).toHaveLength(historyBefore + 1);
+
+    act(() => {
+      useEditorStore.getState().undo();
+    });
+
+    expect(useEditorStore.getState().project.elements.find((item) => item.id === id)).toMatchObject({
+      type: 'text',
+      text: before.text,
+      writingMode: before.writingMode,
+      x: before.x,
+      y: before.y,
+      width: before.width,
+      height: before.height,
+    });
+  });
+
   it('shows useful common controls for selected images', () => {
     const id = useEditorStore.getState().addImage('blob:photo', 640, 480);
     render(<TextInspector />);

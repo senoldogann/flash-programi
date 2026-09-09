@@ -5,10 +5,12 @@ import { animationNeedsClock, evaluateAnimation, type EvaluatedAnimation } from 
 import { useAnimationClock } from '../../animations/useAnimationClock';
 import { decorationNeedsClock } from '../../decorations/presets';
 import { DecorationRenderer } from '../../decorations/renderer';
+import { buildImageEffectRenderPlan } from '../../effects/image-effects';
 import { frameNeedsClock } from '../../frames/presets';
 import { FrameRenderer } from '../../frames/renderer';
-import type { ImageEffects, ImageElement, Project, TextElement } from '../../model/project';
+import type { ImageElement, Project, TextElement } from '../../model/project';
 import { useEditorStore } from '../../store/editor-store';
+import { getDisplayText } from '../../text/layout';
 import { normalizeTransform } from './transform';
 
 type Viewport = { width: number; height: number; scale: number };
@@ -82,17 +84,6 @@ function transformerSize(previewScale: number, pixels: number): number {
   return pixels / Math.max(previewScale, 0.1);
 }
 
-function buildImageFilters(effects: ImageEffects) {
-  const filters = [];
-  if (effects.brightness !== 0) filters.push(Konva.Filters.Brighten);
-  if (effects.contrast !== 0) filters.push(Konva.Filters.Contrast);
-  if (effects.saturation !== 0) filters.push(Konva.Filters.HSL);
-  if (effects.blurRadius > 0) filters.push(Konva.Filters.Blur);
-  if (effects.grayscale) filters.push(Konva.Filters.Grayscale);
-  if (effects.sepia) filters.push(Konva.Filters.Sepia);
-  return filters;
-}
-
 type CanvasImageElementProps = TransformableProps & { element: ImageElement };
 
 function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelect }: CanvasImageElementProps) {
@@ -103,7 +94,34 @@ function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelec
   const interactionTimeRef = useRef<number | null>(null);
   const renderTime = interactionTimeRef.current ?? timeMs;
   const animation = evaluateAnimation(element.animation, renderTime);
-  const filters = useMemo(() => buildImageFilters(element.effects), [element.effects]);
+  const effectPlan = useMemo(
+    () => buildImageEffectRenderPlan(element.effects, {
+      hueShift: animation.hueShift,
+      blurAmount: animation.blurAmount,
+      pixelateAmount: animation.pixelateAmount,
+    }),
+    [element.effects, animation.blurAmount, animation.hueShift, animation.pixelateAmount],
+  );
+  const effectAttrs = effectPlan.attrs as {
+    brightness?: number;
+    contrast?: number;
+    saturation?: number;
+    hue?: number;
+    luminance?: number;
+    blurRadius?: number;
+    enhance?: number;
+    embossStrength?: number;
+    embossWhiteLevel?: number;
+    embossDirection?: string;
+    embossBlend?: boolean;
+    noise?: number;
+    pixelSize?: number;
+    levels?: number;
+    threshold?: number;
+  };
+  const x = element.x + animation.x;
+  const y = element.y + animation.y;
+  const opacity = element.opacity * animation.opacity * animation.revealProgress;
 
   useEffect(() => {
     let active = true;
@@ -121,9 +139,14 @@ function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelec
   useEffect(() => {
     const node = shapeRef.current;
     if (!node || !image) return;
-    if (filters.length > 0) node.cache(); else node.clearCache();
+
+    if (effectPlan.requiresCache) {
+      node.cache();
+    } else {
+      node.clearCache();
+    }
     node.getLayer()?.batchDraw();
-  }, [filters, image]);
+  }, [effectPlan.cacheKey, effectPlan.requiresCache, image]);
 
   useEffect(() => {
     if (!isSelected || element.locked || !shapeRef.current || !transformerRef.current) return;
@@ -146,27 +169,67 @@ function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelec
     interactionTimeRef.current = null;
   };
 
+  const chromaticGhost = (offset: number) => (
+    <KonvaImage
+      key={`${element.id}-chromatic-${offset}`}
+      name="animation-chromatic-ghost"
+      image={image ?? undefined}
+      x={x + offset}
+      y={y}
+      width={element.width}
+      height={element.height}
+      scaleX={animation.scaleX}
+      scaleY={animation.scaleY}
+      rotation={element.rotation + animation.rotation}
+      skewX={animation.skewX}
+      skewY={animation.skewY}
+      opacity={Math.min(0.28, opacity * 0.22)}
+      visible={element.visible}
+      listening={false}
+      globalCompositeOperation="screen"
+    />
+  );
+
   return (
     <>
+      {animation.chromaticOffset > 0 ? (
+        <>
+          {chromaticGhost(-animation.chromaticOffset)}
+          {chromaticGhost(animation.chromaticOffset)}
+        </>
+      ) : null}
       <KonvaImage
         ref={shapeRef}
         id={element.id}
         image={image ?? undefined}
-        x={element.x + animation.x}
-        y={element.y + animation.y}
+        x={x}
+        y={y}
         width={element.width}
         height={element.height}
         scaleX={animation.scaleX}
         scaleY={animation.scaleY}
         rotation={element.rotation + animation.rotation}
-        opacity={element.opacity * animation.opacity}
+        skewX={animation.skewX}
+        skewY={animation.skewY}
+        opacity={opacity}
         visible={element.visible}
         draggable={!element.locked}
-        filters={filters}
-        brightness={element.effects.brightness}
-        contrast={element.effects.contrast}
-        saturation={element.effects.saturation}
-        blurRadius={element.effects.blurRadius}
+        filters={effectPlan.filters}
+        brightness={effectAttrs.brightness}
+        contrast={effectAttrs.contrast}
+        saturation={effectAttrs.saturation}
+        hue={effectAttrs.hue}
+        luminance={effectAttrs.luminance}
+        blurRadius={effectAttrs.blurRadius}
+        enhance={effectAttrs.enhance}
+        embossStrength={effectAttrs.embossStrength}
+        embossWhiteLevel={effectAttrs.embossWhiteLevel}
+        embossDirection={effectAttrs.embossDirection}
+        embossBlend={effectAttrs.embossBlend}
+        noise={effectAttrs.noise}
+        pixelSize={effectAttrs.pixelSize}
+        levels={effectAttrs.levels}
+        threshold={effectAttrs.threshold}
         onClick={onSelect}
         onTap={onSelect}
         onDragStart={beginInteraction}
@@ -239,10 +302,12 @@ function CanvasTextElement({ element, isSelected, previewScale, timeMs, onSelect
         scaleX={animation.scaleX}
         scaleY={animation.scaleY}
         rotation={element.rotation + animation.rotation}
-        opacity={element.opacity * animation.opacity}
+        skewX={animation.skewX}
+        skewY={animation.skewY}
+        opacity={element.opacity * animation.opacity * animation.revealProgress}
         visible={element.visible}
         draggable={!element.locked}
-        text={element.text}
+        text={getDisplayText(element.text, element.writingMode)}
         fontFamily={element.fontFamily}
         fontSize={element.fontSize}
         fill={element.fill}

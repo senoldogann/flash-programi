@@ -1,3 +1,5 @@
+import type { ExportScale } from '../model/project';
+
 export type ExportTransformer = {
   hide(): void;
   show(): void;
@@ -33,19 +35,19 @@ function withSelectionHidden<T>(stage: ExportableStage, capture: () => T): T {
   }
 }
 
-export function captureStagePng(stage: ExportableStage): string {
+export function captureStagePng(stage: ExportableStage, exportScale: ExportScale = 1): string {
   return withSelectionHidden(stage, () =>
     stage.toDataURL({
       mimeType: 'image/png',
-      pixelRatio: 1 / safePreviewScale(stage),
+      pixelRatio: exportScale / safePreviewScale(stage),
     }),
   );
 }
 
-export function captureStageCanvas(stage: ExportableStage): HTMLCanvasElement {
+export function captureStageCanvas(stage: ExportableStage, exportScale: ExportScale = 1): HTMLCanvasElement {
   return withSelectionHidden(stage, () =>
     stage.toCanvas({
-      pixelRatio: 1 / safePreviewScale(stage),
+      pixelRatio: exportScale / safePreviewScale(stage),
     }),
   );
 }
@@ -61,8 +63,9 @@ export function downloadDataUrl(dataUrl: string, filename: string): void {
 export function downloadStagePng(
   stage: ExportableStage,
   filename = 'flash-nick.png',
+  exportScale: ExportScale = 1,
 ): string {
-  const dataUrl = captureStagePng(stage);
+  const dataUrl = captureStagePng(stage, exportScale);
   downloadDataUrl(dataUrl, filename);
   return dataUrl;
 }
