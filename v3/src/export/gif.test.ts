@@ -56,4 +56,22 @@ describe('GIF export', () => {
     expect(blob.size).toBeGreaterThan(0);
     expect(progress).toHaveBeenCalledWith(1);
   });
+
+  it('uses caller-supplied deterministic frame times and delay without recomputing them', async () => {
+    const encoder = new FakeEncoder();
+    const renderFrame = vi.fn(async () => document.createElement('canvas'));
+
+    await encodeGifFrames({
+      durationMs: 1000,
+      fps: 4,
+      frameTimesMs: [0, 125, 875],
+      frameDelayMs: 125,
+      encoder,
+      renderFrame,
+    });
+
+    expect(renderFrame.mock.calls.map(([time]) => time)).toEqual([0, 125, 875]);
+    expect(encoder.frames).toHaveLength(3);
+    expect(encoder.frames.every(({ delay }) => delay === 125)).toBe(true);
+  });
 });
