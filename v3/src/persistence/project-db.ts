@@ -10,6 +10,7 @@ const CURRENT_PROJECT_KEY = 'current';
 const ASSET_URL_PREFIX = 'idb-asset:';
 
 let persistenceEpoch = 0;
+let latestSaveSequence = 0;
 
 type StoredProjectRecord = {
   key: typeof CURRENT_PROJECT_KEY;
@@ -87,8 +88,9 @@ export async function saveCurrentProject(
   project: Project,
   options: SaveCurrentProjectOptions = {},
 ): Promise<void> {
-  const saveEpoch = persistenceEpoch;
   const validatedProject = parseProject(project);
+  const saveEpoch = persistenceEpoch;
+  const saveSequence = ++latestSaveSequence;
   const resolveAsset = options.resolveAsset ?? defaultResolveAsset;
   const database = await openDatabase();
 
@@ -126,7 +128,7 @@ export async function saveCurrentProject(
       element.assetUrl = portableAssetUrl(element.id);
     }
 
-    if (saveEpoch !== persistenceEpoch) return;
+    if (saveEpoch !== persistenceEpoch || saveSequence !== latestSaveSequence) return;
 
     const writeTransaction = database.transaction([PROJECT_STORE, ASSET_STORE], 'readwrite');
     writeTransaction.objectStore(PROJECT_STORE).put({
