@@ -3,6 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultImageEffects } from '../model/project';
 import { buildImageEffectRenderPlan } from './image-effects';
 
+function onePixel(r = 100, g = 100, b = 100): ImageData {
+  return {
+    data: new Uint8ClampedArray([r, g, b, 255]),
+    width: 1,
+    height: 1,
+    colorSpace: 'srgb',
+  } as ImageData;
+}
+
 describe('image effect render plan', () => {
   it('keeps neutral effects uncached and filter-free', () => {
     const plan = buildImageEffectRenderPlan(createDefaultImageEffects());
@@ -47,7 +56,8 @@ describe('image effect render plan', () => {
 
     const plan = buildImageEffectRenderPlan(effects);
 
-    expect(plan.filters).toEqual([
+    expect(plan.filters).toHaveLength(14);
+    expect(plan.filters.slice(0, 9)).toEqual([
       Konva.Filters.Brightness,
       Konva.Filters.Contrast,
       Konva.Filters.HSL,
@@ -57,7 +67,9 @@ describe('image effect render plan', () => {
       Konva.Filters.Enhance,
       Konva.Filters.Emboss,
       Konva.Filters.Invert,
-      Konva.Filters.Noise,
+    ]);
+    expect(plan.filters[9]).not.toBe(Konva.Filters.Noise);
+    expect(plan.filters.slice(10)).toEqual([
       Konva.Filters.Pixelate,
       Konva.Filters.Posterize,
       Konva.Filters.Solarize,
@@ -75,7 +87,6 @@ describe('image effect render plan', () => {
       embossWhiteLevel: 0.5,
       embossDirection: 'top-left',
       embossBlend: true,
-      noise: 0.2,
       pixelSize: 5,
       levels: 0.6,
       threshold: 0.5,
@@ -89,12 +100,7 @@ describe('image effect render plan', () => {
       tint: 40,
     };
     const plan = buildImageEffectRenderPlan(effects);
-    const imageData = {
-      data: new Uint8ClampedArray([100, 100, 100, 255]),
-      width: 1,
-      height: 1,
-      colorSpace: 'srgb',
-    } as ImageData;
+    const imageData = onePixel();
 
     expect(plan.filters).toHaveLength(1);
     plan.filters[0](imageData);
@@ -104,6 +110,26 @@ describe('image effect render plan', () => {
     expect(imageData.data[1]).toBeLessThan(100);
     expect(imageData.data[2]).toBeGreaterThan(0);
     expect(imageData.data[3]).toBe(255);
+  });
+
+  it('uses deterministic noise instead of Konva random noise', () => {
+    const effects = {
+      ...createDefaultImageEffects(),
+      noise: 0.5,
+    };
+    const firstPlan = buildImageEffectRenderPlan(effects);
+    const secondPlan = buildImageEffectRenderPlan(effects);
+    const first = onePixel(120, 90, 70);
+    const second = onePixel(120, 90, 70);
+
+    expect(firstPlan.filters).toHaveLength(1);
+    expect(firstPlan.filters[0]).not.toBe(Konva.Filters.Noise);
+
+    firstPlan.filters[0](first);
+    secondPlan.filters[0](second);
+
+    expect(Array.from(first.data)).toEqual(Array.from(second.data));
+    expect(Array.from(first.data)).not.toEqual([120, 90, 70, 255]);
   });
 
   it('changes cacheKey when a pixel-affecting setting changes', () => {
