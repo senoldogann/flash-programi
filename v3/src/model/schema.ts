@@ -43,7 +43,7 @@ export const animationSchema = z.object({
   delayMs: z.number().finite().min(0).max(30_000),
   loop: z.boolean(),
   direction: z.enum(['left', 'right', 'up', 'down']).optional(),
-});
+}).strict();
 
 export const imageEffectsSchema = z.object({
   brightness: z.number().finite().min(-1).max(1),
@@ -63,7 +63,7 @@ export const imageEffectsSchema = z.object({
   posterize: z.number().finite().min(0).max(1),
   solarize: z.boolean(),
   threshold: z.number().finite().min(0).max(1),
-});
+}).strict();
 
 const elementBaseShape = {
   id: z.string().min(1).max(120),
@@ -92,14 +92,14 @@ export const textElementSchema = z.object({
   shadowColor: z.string().min(1).max(120),
   shadowBlur: z.number().finite().min(0).max(128),
   align: z.enum(['left', 'center', 'right']),
-});
+}).strict();
 
 export const imageElementSchema = z.object({
   ...elementBaseShape,
   type: z.literal('image'),
   assetUrl: z.string().min(1),
   effects: imageEffectsSchema,
-});
+}).strict();
 
 export const editorElementSchema = z.discriminatedUnion('type', [
   textElementSchema,
@@ -124,7 +124,7 @@ export const decorationLayerSchema = z.object({
   count: z.number().int().min(1).max(60),
   opacity: z.number().finite().min(0).max(1),
   speed: z.enum(['slow', 'normal', 'fast']),
-});
+}).strict();
 
 export const frameDefinitionSchema = z.object({
   preset: z.enum([
@@ -140,12 +140,12 @@ export const frameDefinitionSchema = z.object({
     'turkish',
   ]),
   width: z.number().finite().min(1).max(32),
-});
+}).strict();
 
 export const exportSettingsSchema = z.object({
   scale: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
   gifProfile: z.enum(['small', 'balanced', 'quality']),
-});
+}).strict();
 
 export const projectSchema = z.object({
   version: z.literal(2),
@@ -160,7 +160,7 @@ export const projectSchema = z.object({
   decorations: z.array(decorationLayerSchema).max(12),
   frame: frameDefinitionSchema,
   exportSettings: exportSettingsSchema,
-});
+}).strict();
 
 export function parseProject(input: unknown): Project {
   return projectSchema.parse(input) as Project;
