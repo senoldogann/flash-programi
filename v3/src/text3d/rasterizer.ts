@@ -1,4 +1,5 @@
 import type { Text3DSurfaceV3 } from '../model/v3/project-v3';
+import { getDisplayText } from '../text/layout';
 import type {
   Text3DPass,
   Text3DRenderPlan,
@@ -68,19 +69,25 @@ function drawTextShape(
   const draw = mode === 'fill'
     ? context.fillText.bind(context)
     : context.strokeText.bind(context);
+  const displayText = getDisplayText(plan.text, plan.writingMode);
 
   if (plan.writingMode !== 'vertical-stacked') {
-    draw(plan.text, origin.x + offsetX * scale, origin.y + offsetY * scale);
+    draw(displayText, origin.x + offsetX * scale, origin.y + offsetY * scale);
     return;
   }
 
-  const characters = Array.from(plan.text);
-  if (characters.length === 0) return;
-  const lineHeight = (plan.logicalHeight * scale) / characters.length;
-  const startY = plan.padding * scale + lineHeight / 2;
-  for (let index = 0; index < characters.length; index += 1) {
+  if (!displayText) return;
+  const lines = displayText.split('\n');
+  const lineHeight = plan.fontSize * 1.1 * scale;
+  const blockHeight = lineHeight * lines.length;
+  const logicalTop = plan.padding * scale;
+  const startY = logicalTop
+    + (plan.logicalHeight * scale - blockHeight) / 2
+    + lineHeight / 2;
+
+  for (let index = 0; index < lines.length; index += 1) {
     draw(
-      characters[index],
+      lines[index],
       origin.x + offsetX * scale,
       startY + index * lineHeight + offsetY * scale,
     );
