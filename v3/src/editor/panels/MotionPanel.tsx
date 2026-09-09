@@ -48,7 +48,7 @@ const SPEEDS: Array<{ id: AnimationSpeed; label: string }> = [
 
 const INTENSITIES: Array<{ id: AnimationIntensity; label: string }> = [
   { id: 'subtle', label: 'Hafif' },
-  { id: 'normal', label: 'Normal' },
+  { id: 'normal', label: 'Orta' },
   { id: 'strong', label: 'Güçlü' },
 ];
 
