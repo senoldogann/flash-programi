@@ -9,7 +9,6 @@ import {
   type FramePreset,
   type ImageEffects,
   type TextAlign,
-  type TextMaterialPreset,
   type TextWritingMode,
 } from '../project';
 
@@ -129,15 +128,7 @@ export type Text3DLayerV3 = SceneLayerBaseV3 & {
   writingMode: TextWritingMode;
   fontFamily: string;
   fontSize: number;
-  fill: string;
-  stroke: string;
-  strokeWidth: number;
-  shadowColor: string;
-  shadowBlur: number;
   align: TextAlign;
-  materialPreset?: TextMaterialPreset;
-  extrusionDepth?: number;
-  extrusionColor?: string;
   style: Text3DStyleV3;
 };
 
