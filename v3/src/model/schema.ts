@@ -101,7 +101,7 @@ export const textElementSchema = z.object({
   ...elementBaseShape,
   type: z.literal('text'),
   text: z.string().max(500),
-  backText: z.string().max(500).default(''),
+  backText: z.string().max(500).optional(),
   writingMode: z.enum(['horizontal', 'vertical-stacked']),
   fontFamily: z.string().min(1).max(120),
   fontSize: z.number().finite().min(6).max(512),
@@ -120,9 +120,9 @@ export const textElementSchema = z.object({
     'xara-purple-glass',
     'xara-emerald',
     'xara-fire',
-  ]).default('flat'),
-  extrusionDepth: z.number().int().min(0).max(16).default(0),
-  extrusionColor: z.string().min(1).max(120).default('#000000'),
+  ]).optional(),
+  extrusionDepth: z.number().int().min(0).max(16).optional(),
+  extrusionColor: z.string().min(1).max(120).optional(),
 }).strict();
 
 export const imageElementSchema = z.object({
