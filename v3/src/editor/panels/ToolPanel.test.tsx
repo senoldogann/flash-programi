@@ -41,4 +41,20 @@ describe('ToolPanel', () => {
     expect(within(content).getByLabelText('Hazır tasarımlar')).toBeInTheDocument();
     expect(within(nav).queryByLabelText('Hazır tasarımlar')).not.toBeInTheDocument();
   });
+
+  it('resets the independently scrollable content when switching categories', () => {
+    render(<ToolPanel onAddText={vi.fn()} onImageFile={vi.fn()} />);
+
+    const nav = screen.getByTestId('tool-panel-nav');
+    const content = screen.getByTestId('tool-panel-content');
+
+    fireEvent.click(within(nav).getByRole('button', { name: 'Hazır Tasarımlar' }));
+    content.scrollTop = 180;
+    expect(content.scrollTop).toBe(180);
+
+    fireEvent.click(within(nav).getByRole('button', { name: 'Efekt' }));
+
+    expect(content.scrollTop).toBe(0);
+    expect(within(content).getByLabelText('Fotoğraf efektleri')).toBeInTheDocument();
+  });
 });
