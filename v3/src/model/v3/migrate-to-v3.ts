@@ -7,6 +7,7 @@ import type {
   Project,
   TextElement,
 } from '../project';
+import { createText3DStyleFromLegacy } from '../../text3d/material-recipes';
 import type {
   AnimationClipV3,
   FrameLayerV3,
@@ -130,6 +131,7 @@ function migrateTextToLayer(
     ...(element.materialPreset !== undefined ? { materialPreset: element.materialPreset } : {}),
     ...(element.extrusionDepth !== undefined ? { extrusionDepth: element.extrusionDepth } : {}),
     ...(element.extrusionColor !== undefined ? { extrusionColor: element.extrusionColor } : {}),
+    style: createText3DStyleFromLegacy(element),
   };
 }
 
