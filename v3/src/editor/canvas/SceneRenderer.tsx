@@ -29,7 +29,6 @@ export function SceneRenderer({
     layer: ResolvedImageLayerState | ResolvedTextLayerState,
   ) => {
     const common = {
-      key: resolvedLayerKey(layer),
       isSelected: layer.id === selectedElementId,
       previewScale,
       onSelect: () => onSelectElement(layer.id),
@@ -37,10 +36,11 @@ export function SceneRenderer({
       onInteractionFinish: (resolved: ResolvedLayerV3, node: GeometryNode) =>
         onInteractionFinish(resolved, node),
     };
+    const key = resolvedLayerKey(layer);
 
     return layer.source.type === 'image'
-      ? <ResolvedImageLayer {...common} layer={layer as ResolvedImageLayerState} />
-      : <ResolvedTextLayer {...common} layer={layer as ResolvedTextLayerState} />;
+      ? <ResolvedImageLayer key={key} {...common} layer={layer as ResolvedImageLayerState} />
+      : <ResolvedTextLayer key={key} {...common} layer={layer as ResolvedTextLayerState} />;
   };
 
   return (
