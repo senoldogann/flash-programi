@@ -3,6 +3,7 @@ import {
   getExportDimensions,
   getGifFramePlan,
   getGifWorkBudget,
+  isSafeExportDimensions,
 } from '../../export/profiles';
 import { useEditorStore } from '../../store/editor-store';
 
@@ -20,6 +21,7 @@ export function ExportPanel() {
   const dimensions = getExportDimensions(project.width, project.height, scale);
   const gifPlan = getGifFramePlan(project.durationMs, gifProfile);
   const gifWork = getGifWorkBudget(dimensions.width, dimensions.height, gifPlan.frameCount);
+  const exceedsDimensionLimit = !isSafeExportDimensions(dimensions.width, dimensions.height);
   const exceedsGifBudget = gifWork > 100_000_000;
 
   return (
@@ -71,9 +73,14 @@ export function ExportPanel() {
         <span>GIF: {gifPlan.frameCount} kare · {Math.round(gifPlan.delayMs)} ms/kare</span>
       </div>
 
-      {exceedsGifBudget ? (
+      {exceedsDimensionLimit || exceedsGifBudget ? (
         <div className="export-budget-warning" role="alert">
-          GIF ayarları 100 milyon pixel-frame güvenlik bütçesini aşıyor. Ölçeği veya kalite profilini düşür.
+          {exceedsDimensionLimit ? (
+            <span>PNG/GIF çıktı genişliği ve yüksekliği en fazla 4096 px olabilir. Ölçeği düşür.</span>
+          ) : null}
+          {exceedsGifBudget ? (
+            <span>GIF ayarları 100 milyon pixel-frame güvenlik bütçesini aşıyor. Ölçeği veya kalite profilini düşür.</span>
+          ) : null}
         </div>
       ) : null}
     </section>

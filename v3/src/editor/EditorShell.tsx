@@ -5,6 +5,7 @@ import { createBrowserGifEncoder, downloadBlob, loadGifConstructor } from '../ex
 import { encodeGifFrames } from '../export/gif';
 import { captureStageCanvas, downloadStagePng } from '../export/png';
 import {
+  assertSafeExportDimensions,
   assertSafeGifWorkBudget,
   getExportDimensions,
   getGifFramePlan,
@@ -112,6 +113,12 @@ export function EditorShell() {
 
     try {
       setErrorNotice(null);
+      const dimensions = getExportDimensions(
+        project.width,
+        project.height,
+        project.exportSettings.scale,
+      );
+      assertSafeExportDimensions(dimensions.width, dimensions.height);
       downloadStagePng(stage, 'flash-nick.png', project.exportSettings.scale);
     } catch (error) {
       setErrorNotice({
@@ -119,7 +126,12 @@ export function EditorShell() {
         message: getErrorMessage(error),
       });
     }
-  }, [gifExporting, project.exportSettings.scale]);
+  }, [
+    gifExporting,
+    project.exportSettings.scale,
+    project.height,
+    project.width,
+  ]);
 
   useEffect(() => {
     if (gifExporting) return;
@@ -169,6 +181,7 @@ export function EditorShell() {
       const framePlan = getGifFramePlan(project.durationMs, gifProfile);
       const work = getGifWorkBudget(dimensions.width, dimensions.height, framePlan.frameCount);
       assertSafeGifWorkBudget(work);
+      assertSafeExportDimensions(dimensions.width, dimensions.height);
 
       const Gif = await loadGifConstructor();
       const encoder = createBrowserGifEncoder(Gif, dimensions.width, dimensions.height);

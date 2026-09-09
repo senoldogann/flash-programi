@@ -1,5 +1,6 @@
 import type { ExportScale, GifProfile } from '../model/project';
 
+export const MAX_EXPORT_DIMENSION = 4096;
 const GIF_WORK_BUDGET_LIMIT = 100_000_000;
 
 const GIF_PROFILES: Record<GifProfile, { targetFps: number; maxFrames: number }> = {
@@ -26,6 +27,26 @@ export function getExportDimensions(
     width: projectWidth * scale,
     height: projectHeight * scale,
   };
+}
+
+export function isSafeExportDimensions(width: number, height: number): boolean {
+  return (
+    Number.isFinite(width) &&
+    Number.isFinite(height) &&
+    width > 0 &&
+    height > 0 &&
+    width <= MAX_EXPORT_DIMENSION &&
+    height <= MAX_EXPORT_DIMENSION
+  );
+}
+
+export function assertSafeExportDimensions(width: number, height: number): void {
+  assertPositiveFinite(width, 'Çıktı genişliği');
+  assertPositiveFinite(height, 'Çıktı yüksekliği');
+
+  if (!isSafeExportDimensions(width, height)) {
+    throw new Error(`Çıktı genişliği ve yüksekliği en fazla ${MAX_EXPORT_DIMENSION} px olabilir.`);
+  }
 }
 
 export function getGifFramePlan(
