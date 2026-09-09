@@ -44,10 +44,10 @@ export function captureStagePng(stage: ExportableStage, exportScale: ExportScale
   );
 }
 
-export function captureStageCanvas(stage: ExportableStage): HTMLCanvasElement {
+export function captureStageCanvas(stage: ExportableStage, exportScale: ExportScale = 1): HTMLCanvasElement {
   return withSelectionHidden(stage, () =>
     stage.toCanvas({
-      pixelRatio: 1 / safePreviewScale(stage),
+      pixelRatio: exportScale / safePreviewScale(stage),
     }),
   );
 }
