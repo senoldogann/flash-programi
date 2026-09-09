@@ -122,6 +122,17 @@ describe('EditorShell export settings integration', () => {
     });
   });
 
+  it('blocks PNG export when scaled output exceeds the 4096px dimension limit', async () => {
+    useEditorStore.getState().resizeProject(1200, 50);
+    useEditorStore.getState().setExportSettings({ scale: 4 });
+    await renderReadyEditorShell();
+
+    fireEvent.click(screen.getByRole('button', { name: 'PNG İndir' }));
+
+    expect(await screen.findByText(/4096/i)).toBeInTheDocument();
+    expect(runtime.stage.toDataURL).not.toHaveBeenCalled();
+  });
+
   it('uses scaled GIF dimensions and the exact selected profile frame plan', async () => {
     useEditorStore.getState().setExportSettings({ scale: 2, gifProfile: 'quality' });
     await renderReadyEditorShell();
@@ -141,6 +152,19 @@ describe('EditorShell export settings integration', () => {
       frameDelayMs: expectedPlan.delayMs,
     }));
     expect(runtime.stage.toCanvas).toHaveBeenCalledWith({ pixelRatio: 2 });
+  });
+
+  it('blocks GIF export on unsafe dimensions even when pixel-frame work is below its ceiling', async () => {
+    useEditorStore.getState().resizeProject(1200, 50);
+    useEditorStore.getState().setExportSettings({ scale: 4, gifProfile: 'small' });
+    await renderReadyEditorShell();
+
+    fireEvent.click(screen.getByRole('button', { name: 'GIF İndir' }));
+
+    expect(await screen.findByText(/4096/i)).toBeInTheDocument();
+    expect(runtime.loadGifConstructor).not.toHaveBeenCalled();
+    expect(runtime.createBrowserGifEncoder).not.toHaveBeenCalled();
+    expect(runtime.encodeGifFrames).not.toHaveBeenCalled();
   });
 
   it('stops unsafe GIF exports before loading the GIF engine', async () => {

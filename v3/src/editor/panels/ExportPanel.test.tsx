@@ -32,6 +32,15 @@ describe('ExportPanel', () => {
     expect(screen.getByLabelText('Dışa aktarma ayarları')).toHaveTextContent('600 × 600 px');
   });
 
+  it('shows an output-dimension warning when a selected scale exceeds 4096px', () => {
+    useEditorStore.getState().resizeProject(1200, 50);
+    useEditorStore.getState().setExportSettings({ scale: 4, gifProfile: 'small' });
+
+    render(<ExportPanel />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/4096/i);
+  });
+
   it('shows a GIF work-budget warning when selected output settings exceed the safe ceiling', () => {
     useEditorStore.getState().resizeProject(4096, 4096);
     useEditorStore.getState().setExportSettings({ scale: 4, gifProfile: 'quality' });

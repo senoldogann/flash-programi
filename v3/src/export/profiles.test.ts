@@ -1,15 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import {
+  assertSafeExportDimensions,
   assertSafeGifWorkBudget,
   getExportDimensions,
   getGifFramePlan,
   getGifWorkBudget,
+  isSafeExportDimensions,
 } from './profiles';
 
 describe('export profiles', () => {
   it('computes final export pixels from logical project dimensions and scale', () => {
     expect(getExportDimensions(300, 100, 2)).toEqual({ width: 600, height: 200 });
     expect(getExportDimensions(450, 150, 4)).toEqual({ width: 1800, height: 600 });
+  });
+
+  it('rejects PNG/GIF output dimensions above the 4096px hard limit', () => {
+    expect(isSafeExportDimensions(4096, 4096)).toBe(true);
+    expect(isSafeExportDimensions(4097, 200)).toBe(false);
+    expect(isSafeExportDimensions(200, 4097)).toBe(false);
+    expect(() => assertSafeExportDimensions(4096, 4096)).not.toThrow();
+    expect(() => assertSafeExportDimensions(4800, 200)).toThrow(/4096/i);
   });
 
   it('builds a deterministic balanced plan with evenly spaced frame times', () => {
