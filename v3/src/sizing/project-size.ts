@@ -2,6 +2,17 @@ import type { EditorElement, Project, TextElement } from '../model/project';
 
 const MIN_CANVAS_SIZE = 32;
 const MAX_CANVAS_SIZE = 4096;
+const MAX_ELEMENT_SIZE = 8192;
+const MIN_TEXT_FONT_SIZE = 6;
+const MAX_TEXT_FONT_SIZE = 512;
+const MAX_TEXT_STROKE_WIDTH = 64;
+const MAX_TEXT_SHADOW_BLUR = 128;
+const MIN_FRAME_WIDTH = 1;
+const MAX_FRAME_WIDTH = 32;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
 
 function assertCanvasDimension(value: number, label: string): void {
   if (!Number.isFinite(value) || !Number.isInteger(value) || value < MIN_CANVAS_SIZE || value > MAX_CANVAS_SIZE) {
@@ -21,8 +32,8 @@ function resizeElement(
   const oldCenterY = element.y + element.height / 2;
   const relativeX = oldCenterX - oldWidth / 2;
   const relativeY = oldCenterY - oldHeight / 2;
-  const width = element.width * scale;
-  const height = element.height * scale;
+  const width = Math.min(MAX_ELEMENT_SIZE, element.width * scale);
+  const height = Math.min(MAX_ELEMENT_SIZE, element.height * scale);
   const centerX = newWidth / 2 + relativeX * scale;
   const centerY = newHeight / 2 + relativeY * scale;
 
@@ -38,9 +49,9 @@ function resizeElement(
 
   return {
     ...geometry,
-    fontSize: geometry.fontSize * scale,
-    strokeWidth: geometry.strokeWidth * scale,
-    shadowBlur: geometry.shadowBlur * scale,
+    fontSize: clamp(geometry.fontSize * scale, MIN_TEXT_FONT_SIZE, MAX_TEXT_FONT_SIZE),
+    strokeWidth: clamp(geometry.strokeWidth * scale, 0, MAX_TEXT_STROKE_WIDTH),
+    shadowBlur: clamp(geometry.shadowBlur * scale, 0, MAX_TEXT_SHADOW_BLUR),
   } satisfies TextElement;
 }
 
@@ -67,7 +78,7 @@ export function resizeProjectProportionally(
     ),
     frame: {
       ...project.frame,
-      width: project.frame.width * scale,
+      width: clamp(project.frame.width * scale, MIN_FRAME_WIDTH, MAX_FRAME_WIDTH),
     },
   };
 }
