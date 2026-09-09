@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { DecorationsPanel } from './DecorationsPanel';
 import { EffectsPanel } from './EffectsPanel';
+import { FlashNickPanel } from './FlashNickPanel';
 import { FramesPanel } from './FramesPanel';
 import { MotionPanel } from './MotionPanel';
 import { TemplatesPanel } from './TemplatesPanel';
 import './rich-panels.css';
 
-type ToolSection = 'effects' | 'motion' | 'decorations' | 'frames' | 'templates' | null;
+type ToolSection = 'flashnick' | 'effects' | 'motion' | 'decorations' | 'frames' | 'templates' | null;
 type ToolPanelProps = { onAddText: () => void; onImageFile: (file: File) => void };
 
 const TOOL_SECTIONS: Array<{ id: Exclude<ToolSection, null>; label: string; icon: string }> = [
+  { id: 'flashnick', label: 'Flash Nick', icon: '✧' },
   { id: 'effects', label: 'Efekt', icon: '✦' },
   { id: 'motion', label: 'Hareket', icon: '▶' },
   { id: 'decorations', label: 'Süsler', icon: '♥' },
@@ -75,6 +77,7 @@ export function ToolPanel({ onAddText, onImageFile }: ToolPanelProps) {
       </div>
 
       <div ref={contentRef} className="tool-panel-content" data-testid="tool-panel-content">
+        {activeSection === 'flashnick' ? <FlashNickPanel /> : null}
         {activeSection === 'effects' ? <EffectsPanel /> : null}
         {activeSection === 'motion' ? <MotionPanel /> : null}
         {activeSection === 'decorations' ? <DecorationsPanel /> : null}
