@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Konva from 'konva';
 import { Image as KonvaImage, Layer, Rect, Stage, Text, Transformer } from 'react-konva';
-import { animationNeedsClock, evaluateAnimation, type EvaluatedAnimation } from '../../animations/evaluator';
+import { animationNeedsClock, animationShowsAlternateFace, evaluateAnimation, type EvaluatedAnimation } from '../../animations/evaluator';
 import { useAnimationClock } from '../../animations/useAnimationClock';
 import { decorationNeedsClock } from '../../decorations/presets';
 import { DecorationRenderer } from '../../decorations/renderer';
@@ -273,7 +273,9 @@ function CanvasTextElement({ element, isSelected, previewScale, timeMs, onSelect
   const material = getFlashTextMaterial(element.materialPreset);
   const depth = Math.max(0, Math.min(16, Math.round(element.extrusionDepth ?? material.extrusionDepth)));
   const extrusionColor = element.extrusionColor ?? material.extrusionColor;
-  const rawText = animation.alternateFace && element.backText?.trim() ? element.backText : element.text;
+  const rawText = animationShowsAlternateFace(element.animation, renderTime) && element.backText?.trim()
+    ? element.backText
+    : element.text;
   const displayText = getDisplayText(rawText, element.writingMode);
   const opacity = element.opacity * animation.opacity * animation.revealProgress;
   const usesMaterialGradient = element.materialPreset !== undefined && element.materialPreset !== 'flat' && material.gradientStops.length > 0;
