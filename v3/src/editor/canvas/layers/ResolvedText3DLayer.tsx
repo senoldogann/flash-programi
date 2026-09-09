@@ -32,12 +32,25 @@ export function ResolvedText3DLayer({
   const transformerRef = useRef<Konva.Transformer>(null);
   const frozenLayerRef = useRef<ResolvedText3DLayerState | null>(null);
   const renderLayer = frozenLayerRef.current ?? layer;
+  const source = renderLayer.source;
   const { transform } = renderLayer;
   const opacity = renderLayer.opacity * renderLayer.animation.revealProgress;
 
   const renderPlan = useMemo(
     () => buildText3DRenderPlan(renderLayer),
-    [renderLayer],
+    [
+      source.id,
+      source.text,
+      source.backText,
+      source.writingMode,
+      source.fontFamily,
+      source.fontSize,
+      source.align,
+      source.style,
+      transform.width,
+      transform.height,
+      renderLayer.animation.alternateFace,
+    ],
   );
   const raster = useMemo(
     () => renderText3DToCanvas(renderPlan),
@@ -67,7 +80,7 @@ export function ResolvedText3DLayer({
     <>
       <Group
         ref={groupRef}
-        id={renderLayer.source.id}
+        id={source.id}
         name="resolved-text3d-layer"
         x={transform.x}
         y={transform.y}
