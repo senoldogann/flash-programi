@@ -159,6 +159,7 @@ describe('EditorShell export settings integration', () => {
       runtime.fakeConstructor,
       600,
       600,
+      'quality',
     );
     expect(runtime.encodeGifFrames).toHaveBeenCalledWith(expect.objectContaining({
       frameTimesMs: expectedPlan.frameTimesMs,
