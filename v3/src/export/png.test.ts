@@ -50,6 +50,13 @@ describe('PNG and frame capture', () => {
     expect(stage.toCanvas).toHaveBeenCalledWith({ pixelRatio: 2.5 });
   });
 
+  it('captures animation frame canvases at the requested export scale', () => {
+    const { stage, canvas } = createStage(0.4);
+
+    expect(captureStageCanvas(stage, 3)).toBe(canvas);
+    expect(stage.toCanvas).toHaveBeenCalledWith({ pixelRatio: 7.5 });
+  });
+
   it('hides selection transformers only while the image is captured', () => {
     const { stage, transformer } = createStage(1);
 
