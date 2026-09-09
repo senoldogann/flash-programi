@@ -184,7 +184,7 @@ export function EditorShell() {
       assertSafeExportDimensions(dimensions.width, dimensions.height);
 
       const Gif = await loadGifConstructor();
-      const encoder = createBrowserGifEncoder(Gif, dimensions.width, dimensions.height);
+      const encoder = createBrowserGifEncoder(Gif, dimensions.width, dimensions.height, gifProfile);
       const blob = await encodeGifFrames({
         durationMs: project.durationMs,
         fps: project.fps,
