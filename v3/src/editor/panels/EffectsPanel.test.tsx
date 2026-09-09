@@ -47,6 +47,36 @@ describe('EffectsPanel', () => {
     });
   });
 
+  it('keeps image effects usable when the canvas selection is cleared', () => {
+    const id = useEditorStore.getState().addImage('blob:photo', 640, 480);
+    useEditorStore.getState().selectElement(null);
+    render(<EffectsPanel />);
+
+    const brightness = screen.getByLabelText('Parlaklık');
+    expect(brightness).toBeEnabled();
+    fireEvent.change(brightness, { target: { value: '0.35' } });
+
+    expect(useEditorStore.getState().project.elements.find((element) => element.id === id)).toMatchObject({
+      type: 'image',
+      effects: { brightness: 0.35 },
+    });
+  });
+
+  it('targets the latest image even while a text element is selected', () => {
+    const imageId = useEditorStore.getState().addImage('blob:photo', 640, 480);
+    useEditorStore.getState().addText('Nick');
+    render(<EffectsPanel />);
+
+    const contrast = screen.getByLabelText('Kontrast');
+    expect(contrast).toBeEnabled();
+    fireEvent.change(contrast, { target: { value: '30' } });
+
+    expect(useEditorStore.getState().project.elements.find((element) => element.id === imageId)).toMatchObject({
+      type: 'image',
+      effects: { contrast: 30 },
+    });
+  });
+
   it('records one continuous effect slider session as one undoable history step', () => {
     const id = useEditorStore.getState().addImage('blob:photo', 640, 480);
     const historyBefore = useEditorStore.getState().past.length;

@@ -57,15 +57,24 @@ function effectValue(effects: ImageEffects, definition: SliderDefinition): numbe
 }
 
 export function EffectsPanel() {
-  const selectedElement = useEditorStore((state) =>
-    state.project.elements.find((element) => element.id === state.selectedElementId) ?? null,
-  );
+  const selectedElementId = useEditorStore((state) => state.selectedElementId);
+  const image = useEditorStore((state) => {
+    const selected = state.project.elements.find((element) => element.id === state.selectedElementId);
+    if (selected?.type === 'image') return selected;
+
+    for (let index = state.project.elements.length - 1; index >= 0; index -= 1) {
+      const element = state.project.elements[index];
+      if (element.type === 'image') return element;
+    }
+
+    return null;
+  });
   const setImageEffects = useEditorStore((state) => state.setImageEffects);
   const beginHistoryBatch = useEditorStore((state) => state.beginHistoryBatch);
   const endHistoryBatch = useEditorStore((state) => state.endHistoryBatch);
-  const image = selectedElement?.type === 'image' ? selectedElement : null;
   const effects = image?.effects ?? createDefaultImageEffects();
   const disabled = image === null;
+  const isAutomaticTarget = image !== null && image.id !== selectedElementId;
 
   const update = (patch: Partial<ImageEffects>) => {
     if (image) setImageEffects(image.id, patch);
@@ -117,7 +126,13 @@ export function EffectsPanel() {
       <div className="panel-title-row">
         <div>
           <strong>Fotoğraf Efektleri</strong>
-          <small>{image ? 'Değişiklikler anında tuvalde görünür.' : 'Önce tuvalde bir fotoğraf seç.'}</small>
+          <small>
+            {image
+              ? isAutomaticTarget
+                ? 'Son fotoğraf otomatik hedefleniyor. Tuvalde seçim yapman gerekmez.'
+                : 'Değişiklikler seçili fotoğrafta anında görünür.'
+              : 'Efektleri kullanmak için bir fotoğraf ekle.'}
+          </small>
         </div>
         <button
           type="button"

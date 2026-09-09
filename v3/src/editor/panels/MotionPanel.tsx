@@ -62,11 +62,14 @@ const DIRECTIONS: Array<{ id: AnimationDirection; label: string }> = [
 const DIRECTIONAL_PRESETS = new Set<AnimationPreset>(['slide', 'ken-burns', 'slow-pan', 'parallax']);
 
 export function MotionPanel() {
-  const selectedElement = useEditorStore((state) =>
-    state.project.elements.find((element) => element.id === state.selectedElementId) ?? null,
-  );
+  const selectedElementId = useEditorStore((state) => state.selectedElementId);
+  const selectedElement = useEditorStore((state) => {
+    const selected = state.project.elements.find((element) => element.id === state.selectedElementId);
+    return selected ?? state.project.elements.at(-1) ?? null;
+  });
   const setElementAnimation = useEditorStore((state) => state.setElementAnimation);
   const disabled = selectedElement === null;
+  const isAutomaticTarget = selectedElement !== null && selectedElement.id !== selectedElementId;
   const showsDirection = selectedElement !== null && DIRECTIONAL_PRESETS.has(selectedElement.animation.preset);
 
   return (
@@ -74,7 +77,13 @@ export function MotionPanel() {
       <div className="panel-title-row">
         <div>
           <strong>Hareket</strong>
-          <small>{selectedElement ? 'Seçili öğeye tek dokunuşla hareket ver.' : 'Önce fotoğraf veya yazı seç.'}</small>
+          <small>
+            {selectedElement
+              ? isAutomaticTarget
+                ? 'Son öğe otomatik hedefleniyor. Tuvalde seçim yapman gerekmez.'
+                : 'Seçili öğeye tek dokunuşla hareket ver.'
+              : 'Hareket vermek için fotoğraf veya yazı ekle.'}
+          </small>
         </div>
       </div>
 
