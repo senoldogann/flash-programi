@@ -57,6 +57,14 @@ const animatedPresets = [
   'camera-pan',
   'micro-vibrate',
   'rise-fade',
+  'walk-25d',
+  'depth-tilt',
+  'dolly-zoom',
+  'camera-orbit-25d',
+  'parallax-walk',
+  'perspective-card',
+  'levitate-25d',
+  'cinematic-push',
 ] as const;
 
 describe('animation evaluator', () => {
