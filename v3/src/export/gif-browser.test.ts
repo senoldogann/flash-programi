@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { GifProfile } from '../model/project';
 import { createBrowserGifEncoder, loadGifConstructor, type GifConstructor } from './gif-browser';
 
 class FakeGif {
@@ -42,12 +43,16 @@ describe('browser GIF runtime', () => {
     await expect(loading).resolves.toBe(FakeGif);
   });
 
-  it('creates gif.js with worker and project dimensions', () => {
-    createBrowserGifEncoder(FakeGif as unknown as GifConstructor, 300, 220);
+  it.each([
+    ['small', 15],
+    ['balanced', 10],
+    ['quality', 8],
+  ] as const)('creates gif.js with the %s profile encoder quality', (profile: GifProfile, quality) => {
+    createBrowserGifEncoder(FakeGif as unknown as GifConstructor, 300, 220, profile);
 
     expect(FakeGif.options).toEqual({
       workers: 2,
-      quality: 10,
+      quality,
       repeat: 0,
       width: 300,
       height: 220,

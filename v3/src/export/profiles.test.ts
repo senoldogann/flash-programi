@@ -25,18 +25,18 @@ describe('export profiles', () => {
   it('builds a deterministic balanced plan with evenly spaced frame times', () => {
     const plan = getGifFramePlan(1000, 'balanced');
 
-    expect(plan.frameCount).toBe(12);
-    expect(plan.delayMs).toBeCloseTo(1000 / 12, 8);
-    expect(plan.frameTimesMs).toHaveLength(12);
+    expect(plan.frameCount).toBe(15);
+    expect(plan.delayMs).toBeCloseTo(1000 / 15, 8);
+    expect(plan.frameTimesMs).toHaveLength(15);
     expect(plan.frameTimesMs[0]).toBe(0);
-    expect(plan.frameTimesMs[1]).toBeCloseTo(1000 / 12, 8);
-    expect(plan.frameTimesMs.at(-1)).toBeCloseTo((11 * 1000) / 12, 8);
+    expect(plan.frameTimesMs[1]).toBeCloseTo(1000 / 15, 8);
+    expect(plan.frameTimesMs.at(-1)).toBeCloseTo((14 * 1000) / 15, 8);
     expect(getGifFramePlan(1000, 'balanced')).toEqual(plan);
   });
 
   it.each([
-    ['small', 8, 16],
-    ['balanced', 12, 36],
+    ['small', 10, 20],
+    ['balanced', 15, 36],
     ['quality', 20, 60],
   ] as const)('uses the %s profile target fps and max-frame clamp', (profile, targetFps, maxFrames) => {
     const oneSecond = getGifFramePlan(1000, profile);
@@ -44,6 +44,11 @@ describe('export profiles', () => {
 
     expect(oneSecond.frameCount).toBe(targetFps);
     expect(tenSeconds.frameCount).toBe(maxFrames);
+  });
+
+  it('uses ceil sampling so partial frame intervals are not silently dropped', () => {
+    expect(getGifFramePlan(1010, 'small').frameCount).toBe(11);
+    expect(getGifFramePlan(1010, 'balanced').frameCount).toBe(16);
   });
 
   it('keeps at least two frames for very short GIFs', () => {
