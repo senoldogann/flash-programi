@@ -224,6 +224,7 @@ describe('migrateProjectToV3', () => {
         speed: 'fast',
         intensity: 'strong',
         direction: 'left',
+        easing: 'linear',
       }],
     });
   });
@@ -263,6 +264,7 @@ describe('migrateProjectToV3', () => {
         loop: true,
         speed: 'slow',
         intensity: 'normal',
+        easing: 'linear',
       }],
     });
   });
