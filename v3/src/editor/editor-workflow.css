@@ -1,0 +1,160 @@
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.editor-layout {
+  align-items: start;
+  overflow: visible;
+}
+
+.tool-panel {
+  position: sticky;
+  top: 78px;
+  height: calc(100dvh - 78px);
+  max-height: calc(100dvh - 78px);
+  align-self: start;
+}
+
+.tool-panel-content {
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.workspace {
+  position: sticky;
+  top: 78px;
+  height: calc(100dvh - 78px);
+  max-height: calc(100dvh - 78px);
+  align-self: start;
+  overflow: hidden;
+}
+
+.inspector {
+  position: sticky;
+  top: 78px;
+  height: calc(100dvh - 78px);
+  max-height: calc(100dvh - 78px);
+  align-self: start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.canvas-zone {
+  min-height: 0;
+}
+
+.canvas-empty-overlay {
+  pointer-events: auto;
+}
+
+.canvas-empty-action {
+  width: min(82%, 250px);
+  min-height: 0;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 18px 20px;
+  border: 1px solid rgba(139, 124, 255, 0.42);
+  border-radius: 18px;
+  color: #eef2ff;
+  background: rgba(12, 20, 36, 0.76);
+  box-shadow: 0 16px 34px rgba(4, 9, 20, 0.24);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  text-align: center;
+}
+
+.canvas-empty-action:not(:disabled):hover {
+  border-color: rgba(159, 145, 255, 0.76);
+  background: rgba(18, 28, 49, 0.88);
+  transform: translateY(-2px);
+}
+
+.canvas-empty-action .empty-icon {
+  margin: 0 0 2px;
+}
+
+.canvas-empty-action strong {
+  color: #ffffff;
+  font-size: 17px;
+}
+
+.canvas-empty-action > span:last-child {
+  color: #c9d2e2;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.quick-look-grid {
+  gap: 7px;
+}
+
+.quick-look-card {
+  min-height: 52px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  place-items: center start;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.quick-look-card span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: linear-gradient(145deg, #f3efff, #edf5ff);
+}
+
+.quick-look-card strong {
+  font-size: 11px;
+}
+
+@media (max-width: 980px) {
+  .editor-layout {
+    overflow-y: auto;
+  }
+
+  .tool-panel,
+  .workspace,
+  .inspector {
+    position: static;
+    top: auto;
+    height: auto;
+    max-height: none;
+  }
+
+  .tool-panel-content {
+    max-height: min(52vh, 520px);
+  }
+
+  .workspace {
+    min-height: 620px;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-header {
+    position: sticky;
+    top: 0;
+  }
+
+  .workspace {
+    min-height: 64vh;
+  }
+
+  .tool-panel-content {
+    max-height: min(58vh, 520px);
+  }
+
+  .canvas-empty-action {
+    width: min(86%, 240px);
+    padding: 16px 18px;
+  }
+}
