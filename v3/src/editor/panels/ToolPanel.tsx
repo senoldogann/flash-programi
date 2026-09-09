@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DecorationsPanel } from './DecorationsPanel';
 import { EffectsPanel } from './EffectsPanel';
 import { FramesPanel } from './FramesPanel';
@@ -19,7 +19,12 @@ const TOOL_SECTIONS: Array<{ id: Exclude<ToolSection, null>; label: string; icon
 
 export function ToolPanel({ onAddText, onImageFile }: ToolPanelProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [activeSection, setActiveSection] = useState<ToolSection>(null);
+
+  useEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0;
+  }, [activeSection]);
 
   return (
     <aside className="tool-panel" aria-label="Tasarım araçları">
@@ -69,7 +74,7 @@ export function ToolPanel({ onAddText, onImageFile }: ToolPanelProps) {
         </div>
       </div>
 
-      <div className="tool-panel-content" data-testid="tool-panel-content">
+      <div ref={contentRef} className="tool-panel-content" data-testid="tool-panel-content">
         {activeSection === 'effects' ? <EffectsPanel /> : null}
         {activeSection === 'motion' ? <MotionPanel /> : null}
         {activeSection === 'decorations' ? <DecorationsPanel /> : null}
