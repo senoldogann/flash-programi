@@ -104,6 +104,49 @@ describe('Project V3 schema', () => {
     expect(parseProjectV3(project).layers).toEqual(project.layers);
   });
 
+  it('accepts supported clip easing values and rejects unsupported easing', () => {
+    const project = createDefaultProjectV3();
+    const [textLayer] = sampleLayers().filter((layer) => layer.type === 'text');
+
+    for (const easing of ['linear', 'ease-in', 'ease-out', 'ease-in-out'] as const) {
+      const parsed = parseProjectV3({
+        ...project,
+        layers: [{
+          ...textLayer,
+          clips: [{
+            id: `clip-${easing}`,
+            effect: 'pulse',
+            startMs: 0,
+            durationMs: 1000,
+            loop: true,
+            speed: 'normal',
+            intensity: 'normal',
+            easing,
+          }],
+        }],
+      });
+
+      expect(parsed.layers[0].clips[0].easing).toBe(easing);
+    }
+
+    expect(() => parseProjectV3({
+      ...project,
+      layers: [{
+        ...textLayer,
+        clips: [{
+          id: 'clip-invalid-easing',
+          effect: 'pulse',
+          startMs: 0,
+          durationMs: 1000,
+          loop: true,
+          speed: 'normal',
+          intensity: 'normal',
+          easing: 'elastic-chaos',
+        }],
+      }],
+    })).toThrow();
+  });
+
   it('rejects unknown root and canvas fields', () => {
     const project = createDefaultProjectV3();
 
