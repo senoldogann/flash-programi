@@ -1,16 +1,15 @@
 import { useEffect, useRef } from 'react';
 import Konva from 'konva';
 import { Text } from 'react-konva';
-import type { Text3DLayerV3, TextLayerV3 } from '../../../model/v3/project-v3';
-import { getFlashTextMaterial } from '../../../text/flash-materials';
+import type { TextLayerV3 } from '../../../model/v3/project-v3';
 import { getDisplayText } from '../../../text/layout';
 import type { ResolvedLayerV3 } from '../../../timeline';
 import type { ResolvedLayerInteractionProps } from '../layer-interaction';
 import { SelectionTransformer } from '../selection-transformer';
 
 export type ResolvedTextLayerState = ResolvedLayerV3 & {
-  source: TextLayerV3 | Text3DLayerV3;
-  type: 'text' | 'text3d';
+  source: TextLayerV3;
+  type: 'text';
 };
 
 type ResolvedTextLayerProps = ResolvedLayerInteractionProps & {
@@ -34,21 +33,8 @@ export function ResolvedTextLayer({
   const renderLayer = frozenLayerRef.current ?? layer;
   const source = renderLayer.source;
   const { transform } = renderLayer;
-
-  const isText3d = source.type === 'text3d';
-  const material = getFlashTextMaterial(isText3d ? source.materialPreset : undefined);
-  const depth = isText3d
-    ? Math.max(0, Math.min(16, Math.round(source.extrusionDepth ?? material.extrusionDepth)))
-    : 0;
-  const extrusionColor = isText3d
-    ? source.extrusionColor ?? material.extrusionColor
-    : source.stroke;
-  const rawText = isText3d && renderLayer.animation.alternateFace && source.backText?.trim()
-    ? source.backText
-    : source.text;
-  const displayText = getDisplayText(rawText, source.writingMode);
+  const displayText = getDisplayText(source.text, source.writingMode);
   const opacity = renderLayer.opacity * renderLayer.animation.revealProgress;
-  const usesMaterialGradient = isText3d && source.materialPreset !== undefined && source.materialPreset !== 'flat' && material.gradientStops.length > 0;
 
   useEffect(() => {
     if (!isSelected || renderLayer.locked || !shapeRef.current || !transformerRef.current) return;
@@ -69,53 +55,29 @@ export function ResolvedTextLayer({
     frozenLayerRef.current = null;
   };
 
-  const commonTextProps = {
-    width: transform.width,
-    height: transform.height,
-    scaleX: transform.scaleX,
-    scaleY: transform.scaleY,
-    rotation: transform.rotation,
-    skewX: transform.skewX,
-    skewY: transform.skewY,
-    opacity,
-    visible: renderLayer.visible,
-    text: displayText,
-    fontFamily: source.fontFamily,
-    fontSize: source.fontSize,
-    align: source.align,
-    verticalAlign: 'middle' as const,
-  };
-
   return (
     <>
-      {Array.from({ length: depth }, (_, index) => {
-        const offset = depth - index;
-        return (
-          <Text
-            key={`${source.id}-extrusion-${offset}`}
-            name="flash-text-extrusion"
-            {...commonTextProps}
-            x={transform.x + offset * 0.72}
-            y={transform.y + offset * 0.72}
-            fill={extrusionColor}
-            stroke={extrusionColor}
-            strokeWidth={Math.max(1, source.strokeWidth)}
-            listening={false}
-          />
-        );
-      })}
       <Text
         ref={shapeRef}
         id={source.id}
-        {...commonTextProps}
         x={transform.x}
         y={transform.y}
+        width={transform.width}
+        height={transform.height}
+        scaleX={transform.scaleX}
+        scaleY={transform.scaleY}
+        rotation={transform.rotation}
+        skewX={transform.skewX}
+        skewY={transform.skewY}
+        opacity={opacity}
+        visible={renderLayer.visible}
+        text={displayText}
+        fontFamily={source.fontFamily}
+        fontSize={source.fontSize}
+        align={source.align}
+        verticalAlign="middle"
         draggable={!renderLayer.locked}
         fill={source.fill}
-        fillPriority={usesMaterialGradient ? 'linear-gradient' : 'color'}
-        fillLinearGradientStartPoint={{ x: 0, y: 0 }}
-        fillLinearGradientEndPoint={{ x: 0, y: transform.height }}
-        fillLinearGradientColorStops={usesMaterialGradient ? material.gradientStops : undefined}
         stroke={source.stroke}
         strokeWidth={source.strokeWidth}
         shadowColor={source.shadowColor}
