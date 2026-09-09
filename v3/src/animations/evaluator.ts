@@ -274,6 +274,95 @@ export function evaluateAnimation(
         y: -withIntensity(Math.abs(sin) * 12, intensity),
         opacity: Math.min(1, 0.65 + Math.abs(sin) * 0.35),
       };
+    case 'walk-25d': {
+      const step = Math.sin(theta * 2);
+      const stride = Math.sin(theta);
+      return {
+        ...IDENTITY,
+        x: direction.x * withIntensity(stride * 10, intensity),
+        y: -withIntensity(Math.abs(step) * 4, intensity),
+        rotation: withIntensity(step * 1.4, intensity),
+        scaleX: 1 + withIntensity(Math.cos(theta * 2) * 0.018, intensity),
+        scaleY: 1 - withIntensity(Math.cos(theta * 2) * 0.012, intensity),
+        skewX: withIntensity(step * 1.2, intensity),
+      };
+    }
+    case 'depth-tilt':
+      return {
+        ...IDENTITY,
+        rotation: withIntensity(sin * 2.2, intensity),
+        skewX: withIntensity(sin * 5, intensity),
+        skewY: withIntensity(cos * 2.5, intensity),
+        scaleX: 1 + withIntensity(cos * 0.025, intensity),
+        scaleY: 1 + withIntensity(sin * 0.018, intensity),
+      };
+    case 'dolly-zoom': {
+      const dolly = (sin + 1) / 2;
+      const scale = 1 + dolly * 0.13 * intensity;
+      const travel = withIntensity((0.5 - dolly) * 8, intensity);
+      return {
+        ...IDENTITY,
+        x: direction.x * travel,
+        y: direction.y * travel,
+        scaleX: scale,
+        scaleY: scale,
+      };
+    }
+    case 'camera-orbit-25d': {
+      const scale = 1.025 + withIntensity(cos * 0.012, intensity);
+      return {
+        ...IDENTITY,
+        x: withIntensity(cos * 14, intensity),
+        y: withIntensity(sin * 8, intensity),
+        scaleX: scale,
+        scaleY: scale,
+        rotation: withIntensity(sin * 2.5, intensity),
+        skewX: withIntensity(sin * 3.5, intensity),
+      };
+    }
+    case 'parallax-walk': {
+      const step = Math.sin(theta * 2);
+      const travel = withIntensity(sin * 18, intensity);
+      return {
+        ...IDENTITY,
+        x: direction.x * travel,
+        y: direction.y * travel - withIntensity(Math.abs(step) * 3.5, intensity),
+        scaleX: 1.025 + withIntensity(cos * 0.015, intensity),
+        scaleY: 1.025 - withIntensity(cos * 0.008, intensity),
+        skewX: withIntensity(step * 2.5, intensity),
+      };
+    }
+    case 'perspective-card':
+      return {
+        ...IDENTITY,
+        scaleX: 0.76 + Math.abs(cos) * 0.24,
+        scaleY: 1 + withIntensity(sin * 0.025, intensity),
+        rotation: withIntensity(sin * 2, intensity),
+        skewY: withIntensity(sin * 7, intensity),
+      };
+    case 'levitate-25d': {
+      const scale = 1.03 + withIntensity(cos * 0.025, intensity);
+      return {
+        ...IDENTITY,
+        x: withIntensity(cos * 4, intensity),
+        y: withIntensity(sin * 12, intensity),
+        scaleX: scale,
+        scaleY: scale,
+        rotation: withIntensity(sin * 2, intensity),
+      };
+    }
+    case 'cinematic-push': {
+      const eased = 0.5 - 0.5 * Math.cos(theta);
+      const travel = withIntensity((eased - 0.5) * 10, intensity);
+      const scale = 1 + eased * 0.11 * intensity;
+      return {
+        ...IDENTITY,
+        x: direction.x * travel,
+        y: direction.y * travel,
+        scaleX: scale,
+        scaleY: scale,
+      };
+    }
     default:
       return { ...IDENTITY };
   }
