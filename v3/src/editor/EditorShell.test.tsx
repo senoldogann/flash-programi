@@ -263,6 +263,7 @@ describe('EditorShell', () => {
       runtime.fakeConstructor,
       300,
       300,
+      'balanced',
     );
     expect(runtime.exportStage.toCanvas).toHaveBeenCalledTimes(2);
     expect(runtime.exportStage.draw).toHaveBeenCalled();
