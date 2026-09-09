@@ -37,6 +37,7 @@ type TransformableProps = {
 export type EditorCanvasProps = {
   onStageReady?: (stage: Konva.Stage | null) => void;
   timeOverrideMs?: number | null;
+  onRequestImage?: () => void;
 };
 
 function snapshotProject(): Project {
@@ -346,7 +347,7 @@ function CanvasTextElement({ element, isSelected, previewScale, timeMs, onSelect
   );
 }
 
-export function EditorCanvas({ onStageReady, timeOverrideMs }: EditorCanvasProps) {
+export function EditorCanvas({ onStageReady, timeOverrideMs, onRequestImage }: EditorCanvasProps) {
   const project = useEditorStore((state) => state.project);
   const selectedElementId = useEditorStore((state) => state.selectedElementId);
   const selectElement = useEditorStore((state) => state.selectElement);
@@ -430,10 +431,18 @@ export function EditorCanvas({ onStageReady, timeOverrideMs }: EditorCanvasProps
       </Stage>
 
       {project.elements.length === 0 && project.decorations.length === 0 ? (
-        <div className="canvas-empty-overlay" aria-hidden="true">
-          <div className="empty-icon">＋</div>
-          <strong>Tasarımına başla</strong>
-          <span>Bir fotoğraf seç veya yazı ekle.</span>
+        <div className="canvas-empty-overlay">
+          <button
+            type="button"
+            className="canvas-empty-action"
+            aria-label="Fotoğraf seç ve başla"
+            onClick={onRequestImage}
+            disabled={!onRequestImage}
+          >
+            <span className="empty-icon" aria-hidden="true">＋</span>
+            <strong>Tasarımına başla</strong>
+            <span>Fotoğraf seç ve düzenlemeye hemen başla.</span>
+          </button>
         </div>
       ) : null}
       <span className="visually-hidden" aria-live="polite">
