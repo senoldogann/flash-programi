@@ -63,8 +63,9 @@ export function downloadDataUrl(dataUrl: string, filename: string): void {
 export function downloadStagePng(
   stage: ExportableStage,
   filename = 'flash-nick.png',
+  exportScale: ExportScale = 1,
 ): string {
-  const dataUrl = captureStagePng(stage);
+  const dataUrl = captureStagePng(stage, exportScale);
   downloadDataUrl(dataUrl, filename);
   return dataUrl;
 }
