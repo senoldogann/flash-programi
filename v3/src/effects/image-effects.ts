@@ -3,6 +3,12 @@ import type { ImageEffects } from '../model/project';
 
 type ImageFilter = (imageData: ImageData) => void;
 
+export type ImageEffectRenderOverrides = {
+  hueShift?: number;
+  blurAmount?: number;
+  pixelateAmount?: number;
+};
+
 export type ImageEffectRenderPlan = {
   filters: ImageFilter[];
   attrs: Record<string, number | boolean | string>;
@@ -36,9 +42,15 @@ function asImageFilter(filter: unknown): ImageFilter {
   return filter as ImageFilter;
 }
 
-export function buildImageEffectRenderPlan(effects: ImageEffects): ImageEffectRenderPlan {
+export function buildImageEffectRenderPlan(
+  effects: ImageEffects,
+  overrides: ImageEffectRenderOverrides = {},
+): ImageEffectRenderPlan {
   const filters: ImageFilter[] = [];
   const attrs: Record<string, number | boolean | string> = {};
+  const effectiveHue = effects.hue + (overrides.hueShift ?? 0);
+  const effectiveBlur = Math.max(0, effects.blurRadius + (overrides.blurAmount ?? 0));
+  const effectivePixelate = Math.max(0, effects.pixelate + (overrides.pixelateAmount ?? 0));
 
   if (effects.brightness !== 0) {
     filters.push(asImageFilter(Konva.Filters.Brightness));
@@ -50,9 +62,9 @@ export function buildImageEffectRenderPlan(effects: ImageEffects): ImageEffectRe
     attrs.contrast = effects.contrast;
   }
 
-  if (effects.hue !== 0 || effects.saturation !== 0) {
+  if (effectiveHue !== 0 || effects.saturation !== 0) {
     filters.push(asImageFilter(Konva.Filters.HSL));
-    attrs.hue = normalizeHue(effects.hue);
+    attrs.hue = normalizeHue(effectiveHue);
     attrs.saturation = effects.saturation;
     attrs.luminance = 0;
   }
@@ -61,9 +73,9 @@ export function buildImageEffectRenderPlan(effects: ImageEffects): ImageEffectRe
     filters.push(createTemperatureTintFilter(effects.temperature, effects.tint));
   }
 
-  if (effects.blurRadius > 0) {
+  if (effectiveBlur > 0) {
     filters.push(asImageFilter(Konva.Filters.Blur));
-    attrs.blurRadius = effects.blurRadius;
+    attrs.blurRadius = effectiveBlur;
   }
 
   if (effects.grayscale) filters.push(asImageFilter(Konva.Filters.Grayscale));
@@ -89,9 +101,9 @@ export function buildImageEffectRenderPlan(effects: ImageEffects): ImageEffectRe
     attrs.noise = effects.noise;
   }
 
-  if (effects.pixelate > 0) {
+  if (effectivePixelate > 0) {
     filters.push(asImageFilter(Konva.Filters.Pixelate));
-    attrs.pixelSize = Math.max(1, Math.round(effects.pixelate));
+    attrs.pixelSize = Math.max(1, Math.round(effectivePixelate));
   }
 
   if (effects.posterize > 0) {
@@ -110,17 +122,17 @@ export function buildImageEffectRenderPlan(effects: ImageEffects): ImageEffectRe
     effects.brightness,
     effects.contrast,
     effects.saturation,
-    effects.blurRadius,
+    effectiveBlur,
     effects.grayscale,
     effects.sepia,
-    effects.hue,
+    effectiveHue,
     effects.temperature,
     effects.tint,
     effects.enhance,
     effects.emboss,
     effects.invert,
     effects.noise,
-    effects.pixelate,
+    effectivePixelate,
     effects.posterize,
     effects.solarize,
     effects.threshold,

@@ -94,7 +94,14 @@ function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelec
   const interactionTimeRef = useRef<number | null>(null);
   const renderTime = interactionTimeRef.current ?? timeMs;
   const animation = evaluateAnimation(element.animation, renderTime);
-  const effectPlan = useMemo(() => buildImageEffectRenderPlan(element.effects), [element.effects]);
+  const effectPlan = useMemo(
+    () => buildImageEffectRenderPlan(element.effects, {
+      hueShift: animation.hueShift,
+      blurAmount: animation.blurAmount,
+      pixelateAmount: animation.pixelateAmount,
+    }),
+    [element.effects, animation.blurAmount, animation.hueShift, animation.pixelateAmount],
+  );
   const effectAttrs = effectPlan.attrs as {
     brightness?: number;
     contrast?: number;
@@ -112,6 +119,9 @@ function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelec
     levels?: number;
     threshold?: number;
   };
+  const x = element.x + animation.x;
+  const y = element.y + animation.y;
+  const opacity = element.opacity * animation.opacity * animation.revealProgress;
 
   useEffect(() => {
     let active = true;
@@ -159,20 +169,49 @@ function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelec
     interactionTimeRef.current = null;
   };
 
+  const chromaticGhost = (offset: number) => (
+    <KonvaImage
+      key={`${element.id}-chromatic-${offset}`}
+      name="animation-chromatic-ghost"
+      image={image ?? undefined}
+      x={x + offset}
+      y={y}
+      width={element.width}
+      height={element.height}
+      scaleX={animation.scaleX}
+      scaleY={animation.scaleY}
+      rotation={element.rotation + animation.rotation}
+      skewX={animation.skewX}
+      skewY={animation.skewY}
+      opacity={Math.min(0.28, opacity * 0.22)}
+      visible={element.visible}
+      listening={false}
+      globalCompositeOperation="screen"
+    />
+  );
+
   return (
     <>
+      {animation.chromaticOffset > 0 ? (
+        <>
+          {chromaticGhost(-animation.chromaticOffset)}
+          {chromaticGhost(animation.chromaticOffset)}
+        </>
+      ) : null}
       <KonvaImage
         ref={shapeRef}
         id={element.id}
         image={image ?? undefined}
-        x={element.x + animation.x}
-        y={element.y + animation.y}
+        x={x}
+        y={y}
         width={element.width}
         height={element.height}
         scaleX={animation.scaleX}
         scaleY={animation.scaleY}
         rotation={element.rotation + animation.rotation}
-        opacity={element.opacity * animation.opacity}
+        skewX={animation.skewX}
+        skewY={animation.skewY}
+        opacity={opacity}
         visible={element.visible}
         draggable={!element.locked}
         filters={effectPlan.filters}
@@ -263,7 +302,9 @@ function CanvasTextElement({ element, isSelected, previewScale, timeMs, onSelect
         scaleX={animation.scaleX}
         scaleY={animation.scaleY}
         rotation={element.rotation + animation.rotation}
-        opacity={element.opacity * animation.opacity}
+        skewX={animation.skewX}
+        skewY={animation.skewY}
+        opacity={element.opacity * animation.opacity * animation.revealProgress}
         visible={element.visible}
         draggable={!element.locked}
         text={getDisplayText(element.text, element.writingMode)}
