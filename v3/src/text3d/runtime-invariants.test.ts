@@ -3,12 +3,6 @@
 import { describe, expect, it } from 'vitest';
 import packageJson from '../../package.json';
 
-const rawGlobOptions = {
-  eager: true,
-  query: '?raw',
-  import: 'default',
-} as const;
-
 const text3dSources = import.meta.glob(
   [
     './**/*.ts',
@@ -16,12 +10,12 @@ const text3dSources = import.meta.glob(
     '!./**/*.test.ts',
     '!./**/*.test.tsx',
   ],
-  rawGlobOptions,
+  { eager: true, query: '?raw', import: 'default' },
 ) as Record<string, string>;
 
 const resolvedRendererSources = import.meta.glob(
   '../editor/canvas/layers/ResolvedText3DLayer.tsx',
-  rawGlobOptions,
+  { eager: true, query: '?raw', import: 'default' },
 ) as Record<string, string>;
 
 const exportSources = import.meta.glob(
@@ -31,7 +25,7 @@ const exportSources = import.meta.glob(
     '!../export/**/*.test.ts',
     '!../export/**/*.test.tsx',
   ],
-  rawGlobOptions,
+  { eager: true, query: '?raw', import: 'default' },
 ) as Record<string, string>;
 
 function joinedSource(sources: Record<string, string>): string {
