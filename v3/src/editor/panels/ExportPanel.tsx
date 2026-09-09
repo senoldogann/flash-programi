@@ -1,0 +1,81 @@
+import type { ExportScale, GifProfile } from '../../model/project';
+import {
+  getExportDimensions,
+  getGifFramePlan,
+  getGifWorkBudget,
+} from '../../export/profiles';
+import { useEditorStore } from '../../store/editor-store';
+
+const EXPORT_SCALES: ExportScale[] = [1, 2, 3, 4];
+const GIF_PROFILES: Array<{ value: GifProfile; label: string }> = [
+  { value: 'small', label: 'Küçük' },
+  { value: 'balanced', label: 'Dengeli' },
+  { value: 'quality', label: 'Kaliteli' },
+];
+
+export function ExportPanel() {
+  const project = useEditorStore((state) => state.project);
+  const setExportSettings = useEditorStore((state) => state.setExportSettings);
+  const { scale, gifProfile } = project.exportSettings;
+  const dimensions = getExportDimensions(project.width, project.height, scale);
+  const gifPlan = getGifFramePlan(project.durationMs, gifProfile);
+  const gifWork = getGifWorkBudget(dimensions.width, dimensions.height, gifPlan.frameCount);
+  const exceedsGifBudget = gifWork > 100_000_000;
+
+  return (
+    <section className="export-panel preset-panel" aria-label="Dışa aktarma ayarları">
+      <div className="panel-title-row">
+        <div>
+          <strong>Dışa Aktarma</strong>
+          <small>PNG ve GIF çıktı boyutunu kalite ihtiyacına göre ayarla.</small>
+        </div>
+        <strong>{dimensions.width} × {dimensions.height} px</strong>
+      </div>
+
+      <div className="export-control-group">
+        <span>Çözünürlük</span>
+        <div className="export-scale-control" aria-label="Çıktı ölçeği">
+          {EXPORT_SCALES.map((option) => (
+            <button
+              key={option}
+              type="button"
+              className={scale === option ? 'selected' : ''}
+              aria-pressed={scale === option}
+              onClick={() => setExportSettings({ scale: option })}
+            >
+              {option}x
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="export-control-group">
+        <span>GIF Profili</span>
+        <div className="segmented-control" aria-label="GIF kalite profili">
+          {GIF_PROFILES.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={gifProfile === option.value ? 'selected' : ''}
+              aria-pressed={gifProfile === option.value}
+              onClick={() => setExportSettings({ gifProfile: option.value })}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="export-summary">
+        <span>PNG: {dimensions.width} × {dimensions.height} px</span>
+        <span>GIF: {gifPlan.frameCount} kare · {Math.round(gifPlan.delayMs)} ms/kare</span>
+      </div>
+
+      {exceedsGifBudget ? (
+        <div className="export-budget-warning" role="alert">
+          GIF ayarları 100 milyon pixel-frame güvenlik bütçesini aşıyor. Ölçeği veya kalite profilini düşür.
+        </div>
+      ) : null}
+    </section>
+  );
+}
