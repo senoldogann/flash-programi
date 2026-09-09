@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultAnimation, type AnimationPreset } from '../model/project';
-import { animationNeedsClock, evaluateAnimation } from './evaluator';
+import {
+  animationNeedsClock,
+  animationPeriodMs,
+  animationShowsAlternateFaceAtProgress,
+  evaluateAnimation,
+  evaluateAnimationAtProgress,
+} from './evaluator';
 
 const identity = {
   x: 0,
@@ -124,5 +130,57 @@ describe('animation evaluator', () => {
     }, 375);
 
     expect(Math.hypot(strong.x, strong.y)).toBeGreaterThan(Math.hypot(subtle.x, subtle.y));
+  });
+
+  it('exposes the canonical speed periods used by legacy and V3 timeline evaluation', () => {
+    expect(animationPeriodMs('slow')).toBe(2800);
+    expect(animationPeriodMs('normal')).toBe(1600);
+    expect(animationPeriodMs('fast')).toBe(850);
+  });
+
+  it('evaluates effects directly from normalized progress', () => {
+    const spin = {
+      ...createDefaultAnimation(),
+      preset: 'spin' as AnimationPreset,
+      intensity: 'normal' as const,
+    };
+    const slideLeft = {
+      ...createDefaultAnimation(),
+      preset: 'slide' as AnimationPreset,
+      direction: 'left' as const,
+      intensity: 'normal' as const,
+    };
+
+    expect(evaluateAnimationAtProgress(spin, 0.25).rotation).toBeCloseTo(90, 6);
+    expect(evaluateAnimationAtProgress(slideLeft, 0.25).x).toBeCloseTo(-18, 6);
+    expect(evaluateAnimationAtProgress(spin, -1).rotation).toBeCloseTo(0, 6);
+    expect(evaluateAnimationAtProgress(spin, 2).rotation).toBeCloseTo(360, 6);
+  });
+
+  it('keeps the legacy time API numerically identical to progress evaluation', () => {
+    const animation = {
+      ...createDefaultAnimation(),
+      preset: 'camera-orbit-25d' as AnimationPreset,
+      speed: 'normal' as const,
+      intensity: 'strong' as const,
+      direction: 'right' as const,
+    };
+    const timeMs = 600;
+    const progress = timeMs / animationPeriodMs(animation.speed);
+
+    expect(evaluateAnimation(animation, timeMs)).toEqual(
+      evaluateAnimationAtProgress(animation, progress),
+    );
+  });
+
+  it('exposes alternate-face state from normalized Xara progress', () => {
+    const xara = {
+      ...createDefaultAnimation(),
+      preset: 'xara-double-sided' as AnimationPreset,
+    };
+
+    expect(animationShowsAlternateFaceAtProgress(xara, 0)).toBe(false);
+    expect(animationShowsAlternateFaceAtProgress(xara, 0.5)).toBe(true);
+    expect(animationShowsAlternateFaceAtProgress(xara, 1)).toBe(false);
   });
 });

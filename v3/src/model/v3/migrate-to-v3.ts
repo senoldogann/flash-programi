@@ -50,6 +50,7 @@ function migrateAnimationClip(
     loop: animation.loop,
     speed: animation.speed,
     intensity: animation.intensity,
+    easing: 'linear',
   };
 
   if (animation.direction !== undefined) {

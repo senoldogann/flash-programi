@@ -30,6 +30,7 @@ export const animationClipV3Schema = z.object({
   loop: z.boolean(),
   speed: animationSchema.shape.speed,
   intensity: animationSchema.shape.intensity,
+  easing: z.enum(['linear', 'ease-in', 'ease-out', 'ease-in-out']),
   direction: animationSchema.shape.direction,
 }).strict();
 
