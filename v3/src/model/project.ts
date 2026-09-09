@@ -32,7 +32,15 @@ export type AnimationPreset =
   | 'glitch-rgb'
   | 'chromatic-shake'
   | 'focus-pulse'
-  | 'pixel-pulse';
+  | 'pixel-pulse'
+  | 'soft-sway'
+  | 'tilt'
+  | 'spiral'
+  | 'pop'
+  | 'shimmer'
+  | 'camera-pan'
+  | 'micro-vibrate'
+  | 'rise-fade';
 
 export type AnimationSpeed = 'slow' | 'normal' | 'fast';
 export type AnimationIntensity = 'subtle' | 'normal' | 'strong';
@@ -67,6 +75,7 @@ export type ImageEffects = {
   posterize: number;
   solarize: boolean;
   threshold: number;
+  vignette: number;
 };
 
 export type DecorationPreset =
@@ -80,7 +89,16 @@ export type DecorationPreset =
   | 'butterflies'
   | 'fire'
   | 'lightning'
-  | 'turkish';
+  | 'turkish'
+  | 'diamonds'
+  | 'music'
+  | 'crowns'
+  | 'roses'
+  | 'moon-stars'
+  | 'cherry-blossom'
+  | 'money'
+  | 'smoke'
+  | 'rain';
 
 export type DecorationLayer = {
   id: string;
@@ -100,7 +118,15 @@ export type FramePreset =
   | 'fire'
   | 'ice'
   | 'glitter'
-  | 'turkish';
+  | 'turkish'
+  | 'rose-gold'
+  | 'electric'
+  | 'cosmic'
+  | 'ocean'
+  | 'matrix'
+  | 'pearls'
+  | 'love-neon'
+  | 'minimal-white';
 
 export type FrameDefinition = {
   preset: FramePreset;
@@ -196,6 +222,7 @@ export function createDefaultImageEffects(): ImageEffects {
     posterize: 0,
     solarize: false,
     threshold: 0,
+    vignette: 0,
   };
 }
 

@@ -29,6 +29,15 @@ export const DECORATION_PRESETS: DecorationPresetDefinition[] = [
   { id: 'fire', label: 'Ateş', symbol: '🔥', color: '#ff6a3d' },
   { id: 'lightning', label: 'Şimşek', symbol: '⚡', color: '#ffe14d' },
   { id: 'turkish', label: 'Türk Bayrağı', symbol: '🇹🇷', color: '#ffffff' },
+  { id: 'diamonds', label: 'Elmas', symbol: '◆', color: '#9deaff' },
+  { id: 'music', label: 'Müzik', symbol: '♪', color: '#b9a2ff' },
+  { id: 'crowns', label: 'Taç', symbol: '♛', color: '#ffd978' },
+  { id: 'roses', label: 'Gül', symbol: '❀', color: '#ff6f9f' },
+  { id: 'moon-stars', label: 'Ay & Yıldız', symbol: '☾', color: '#f8e7a2' },
+  { id: 'cherry-blossom', label: 'Sakura', symbol: '✿', color: '#ffc1dc' },
+  { id: 'money', label: 'Para', symbol: '$', color: '#78db9b' },
+  { id: 'smoke', label: 'Duman', symbol: '☁', color: '#c8ced8' },
+  { id: 'rain', label: 'Yağmur', symbol: '╱', color: '#72b9ff' },
 ];
 
 const SPEED_FACTOR: Record<AnimationSpeed, number> = {
@@ -58,7 +67,19 @@ function positiveModulo(value: number, modulus: number): number {
 }
 
 export function decorationNeedsClock(layer: DecorationLayer): boolean {
-  return ['snow', 'bubbles', 'confetti', 'butterflies', 'fire', 'lightning', 'sparkles'].includes(layer.preset);
+  return [
+    'snow',
+    'bubbles',
+    'confetti',
+    'butterflies',
+    'fire',
+    'lightning',
+    'sparkles',
+    'music',
+    'cherry-blossom',
+    'smoke',
+    'rain',
+  ].includes(layer.preset);
 }
 
 export function decorationPoints(
@@ -81,6 +102,7 @@ export function decorationPoints(
     let x = ux * width;
     let y = uy * height;
     let rotation = ur * 360;
+    let size = 11 + us * 15;
 
     if (layer.preset === 'snow') {
       y = positiveModulo(y + timeMs * 0.018 * speed, height);
@@ -102,14 +124,34 @@ export function decorationPoints(
       rotation = -15 + ur * 30;
     } else if (layer.preset === 'sparkles') {
       rotation += timeMs * 0.04 * speed;
+    } else if (layer.preset === 'music') {
+      y = positiveModulo(y - timeMs * 0.012 * speed, height);
+      x += Math.sin(phase * 1.4) * 7;
+      rotation = Math.sin(phase) * 12;
+    } else if (layer.preset === 'cherry-blossom') {
+      y = positiveModulo(y + timeMs * 0.014 * speed, height);
+      x += Math.sin(phase * 1.2) * 10;
+      rotation += timeMs * 0.025 * speed;
+    } else if (layer.preset === 'smoke') {
+      y = positiveModulo(y - timeMs * 0.009 * speed, height);
+      x += Math.sin(phase * 0.7) * 12;
+      size = 18 + us * 22;
+      rotation = Math.sin(phase * 0.5) * 8;
+    } else if (layer.preset === 'rain') {
+      y = positiveModulo(y + timeMs * 0.045 * speed, height);
+      x = positiveModulo(x - timeMs * 0.006 * speed, width);
+      rotation = 18;
+      size = 15 + us * 12;
     }
 
-    const twinkle = 0.68 + Math.abs(Math.sin(phase * 1.7)) * 0.32;
+    const twinkle = layer.preset === 'smoke'
+      ? 0.5 + Math.abs(Math.sin(phase * 0.6)) * 0.28
+      : 0.68 + Math.abs(Math.sin(phase * 1.7)) * 0.32;
 
     return {
       x,
       y,
-      size: 11 + us * 15,
+      size,
       rotation,
       opacity: layer.opacity * twinkle,
       symbol: preset.symbol,

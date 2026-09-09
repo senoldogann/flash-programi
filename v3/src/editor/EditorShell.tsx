@@ -48,6 +48,7 @@ export function EditorShell() {
   const [gifProgress, setGifProgress] = useState(0);
   const assetRevokers = useRef(new Set<() => void>());
   const stageRef = useRef<Konva.Stage | null>(null);
+  const startImageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const revokers = assetRevokers.current;
@@ -249,6 +250,19 @@ export function EditorShell() {
 
   return (
     <main className="app-shell">
+      <input
+        ref={startImageInputRef}
+        className="visually-hidden"
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        aria-label="Tasarım alanından fotoğraf seç"
+        onChange={(event) => {
+          const file = event.currentTarget.files?.[0];
+          event.currentTarget.value = '';
+          if (file) void handleImageFile(file);
+        }}
+      />
+
       <header className="app-header">
         <div className="brand-block">
           <div className="brand-mark" aria-hidden="true">✦</div>
@@ -296,7 +310,11 @@ export function EditorShell() {
               aria-label="Tasarım alanı"
               style={{ aspectRatio: `${project.width} / ${project.height}` }}
             >
-              <EditorCanvas onStageReady={handleStageReady} timeOverrideMs={exportTimeMs} />
+              <EditorCanvas
+                onStageReady={handleStageReady}
+                timeOverrideMs={exportTimeMs}
+                onRequestImage={() => startImageInputRef.current?.click()}
+              />
             </div>
           </div>
 

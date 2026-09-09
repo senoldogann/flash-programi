@@ -223,6 +223,57 @@ export function evaluateAnimation(
         ...IDENTITY,
         pixelateAmount: withIntensity(2 + Math.abs(sin) * 9, intensity),
       };
+    case 'soft-sway':
+      return {
+        ...IDENTITY,
+        x: withIntensity(sin * 6, intensity),
+        rotation: withIntensity(Math.sin(theta * 0.8) * 2.8, intensity),
+      };
+    case 'tilt':
+      return {
+        ...IDENTITY,
+        rotation: withIntensity(sin * 9, intensity),
+        skewX: withIntensity(cos * 3.5, intensity),
+      };
+    case 'spiral':
+      return {
+        ...IDENTITY,
+        x: withIntensity(cos * 12, intensity),
+        y: withIntensity(sin * 12, intensity),
+        rotation: progress * 96 * intensity,
+      };
+    case 'pop': {
+      const scale = 0.92 + Math.abs(sin) * 0.18 * intensity;
+      return { ...IDENTITY, scaleX: scale, scaleY: scale };
+    }
+    case 'shimmer':
+      return {
+        ...IDENTITY,
+        opacity: Math.min(1, 0.84 + Math.abs(Math.sin(theta * 3)) * 0.16),
+        hueShift: withIntensity(sin * 7, intensity),
+      };
+    case 'camera-pan': {
+      const travel = (progress - 0.5) * 24 * intensity;
+      return {
+        ...IDENTITY,
+        x: direction.x * travel,
+        y: direction.y * travel,
+        scaleX: 1.045,
+        scaleY: 1.045,
+      };
+    }
+    case 'micro-vibrate':
+      return {
+        ...IDENTITY,
+        x: withIntensity(Math.sin(theta * 13) * 1.7, intensity),
+        y: withIntensity(Math.cos(theta * 17) * 1.3, intensity),
+      };
+    case 'rise-fade':
+      return {
+        ...IDENTITY,
+        y: -withIntensity(Math.abs(sin) * 12, intensity),
+        opacity: Math.min(1, 0.65 + Math.abs(sin) * 0.35),
+      };
     default:
       return { ...IDENTITY };
   }

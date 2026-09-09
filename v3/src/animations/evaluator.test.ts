@@ -49,6 +49,14 @@ const animatedPresets = [
   'chromatic-shake',
   'focus-pulse',
   'pixel-pulse',
+  'soft-sway',
+  'tilt',
+  'spiral',
+  'pop',
+  'shimmer',
+  'camera-pan',
+  'micro-vibrate',
+  'rise-fade',
 ] as const;
 
 describe('animation evaluator', () => {

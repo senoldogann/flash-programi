@@ -62,6 +62,30 @@ function createDeterministicNoiseFilter(amount: number): ImageFilter {
   };
 }
 
+function createVignetteFilter(amount: number): ImageFilter {
+  const strength = Math.max(0, Math.min(1, amount)) * 0.88;
+
+  return (imageData) => {
+    const { data, width, height } = imageData;
+    const centerX = Math.max(1, width - 1) / 2;
+    const centerY = Math.max(1, height - 1) / 2;
+
+    for (let y = 0; y < height; y += 1) {
+      const normalizedY = (y - centerY) / Math.max(centerY, 1);
+      for (let x = 0; x < width; x += 1) {
+        const normalizedX = (x - centerX) / Math.max(centerX, 1);
+        const distance = Math.min(1, Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY) / Math.SQRT2);
+        const edge = Math.max(0, (distance - 0.28) / 0.72);
+        const factor = 1 - strength * Math.pow(edge, 1.7);
+        const index = (y * width + x) * 4;
+        data[index] = clampByte(data[index] * factor);
+        data[index + 1] = clampByte(data[index + 1] * factor);
+        data[index + 2] = clampByte(data[index + 2] * factor);
+      }
+    }
+  };
+}
+
 function asImageFilter(filter: unknown): ImageFilter {
   return filter as ImageFilter;
 }
@@ -95,6 +119,10 @@ export function buildImageEffectRenderPlan(
 
   if (effects.temperature !== 0 || effects.tint !== 0) {
     filters.push(createTemperatureTintFilter(effects.temperature, effects.tint));
+  }
+
+  if (effects.vignette > 0) {
+    filters.push(createVignetteFilter(effects.vignette));
   }
 
   if (effectiveBlur > 0) {
@@ -159,6 +187,7 @@ export function buildImageEffectRenderPlan(
     effects.posterize,
     effects.solarize,
     effects.threshold,
+    effects.vignette,
   ]);
 
   return {
