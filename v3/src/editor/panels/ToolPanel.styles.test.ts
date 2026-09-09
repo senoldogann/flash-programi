@@ -3,11 +3,11 @@ import appStyles from '../../styles.css?raw';
 
 describe('ToolPanel responsive scrolling', () => {
   it('bounds active tool content on mobile instead of growing the whole document', () => {
-    const mobileStyles = appStyles.slice(appStyles.lastIndexOf('@media (max-width: 720px)'));
-    const contentRule = mobileStyles.match(/\.tool-panel-content\s*\{([^}]*)\}/s)?.[1] ?? '';
+    const normalized = appStyles.replace(/\s+/g, '');
 
-    expect(contentRule).toContain('max-height:');
-    expect(contentRule).toContain('overflow-y: auto');
-    expect(contentRule).toContain('overscroll-behavior: contain');
+    expect(normalized).toContain('@media(max-width:720px)');
+    expect(normalized).toContain(
+      '.tool-panel-content{max-height:min(60vh,520px);overflow-y:auto;overscroll-behavior:contain;',
+    );
   });
 });
