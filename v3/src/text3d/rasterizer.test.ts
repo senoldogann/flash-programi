@@ -95,10 +95,11 @@ function createRecordingFactory(options: { nullContext?: boolean } = {}) {
       translate: () => undefined,
       createLinearGradient: () => {
         events.push(`${label}:createLinearGradient`);
+        const stops: Array<[number, string]> = [];
         const gradient = {
-          stops: [] as Array<[number, string]>,
+          stops,
           addColorStop(offset: number, color: string) {
-            this.stops.push([offset, color]);
+            stops.push([offset, color]);
             events.push(`${label}:gradientStop:${offset}:${color}`);
           },
         } as unknown as RecordingGradient;
