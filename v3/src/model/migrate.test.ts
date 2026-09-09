@@ -158,6 +158,7 @@ describe('project migration', () => {
 
     expect(migrated.name).toBe('Current Tasarım');
     expect(migrated.version).toBe(2);
+    expect('layers' in migrated).toBe(false);
   });
 
   it('rejects unknown fields in version 2 data instead of silently stripping them', () => {
