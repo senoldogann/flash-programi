@@ -1,4 +1,5 @@
 export type TextAlign = 'left' | 'center' | 'right';
+export type TextWritingMode = 'horizontal' | 'vertical-stacked';
 
 export type AnimationPreset =
   | 'none'
@@ -14,12 +15,18 @@ export type AnimationPreset =
   | 'wave';
 
 export type AnimationSpeed = 'slow' | 'normal' | 'fast';
+export type AnimationIntensity = 'subtle' | 'normal' | 'strong';
+export type AnimationDirection = 'left' | 'right' | 'up' | 'down';
+export type ExportScale = 1 | 2 | 3 | 4;
+export type GifProfile = 'small' | 'balanced' | 'quality';
 
 export type AnimationDefinition = {
   preset: AnimationPreset;
   speed: AnimationSpeed;
+  intensity: AnimationIntensity;
   delayMs: number;
   loop: boolean;
+  direction?: AnimationDirection;
 };
 
 export type ImageEffects = {
@@ -29,6 +36,17 @@ export type ImageEffects = {
   blurRadius: number;
   grayscale: boolean;
   sepia: boolean;
+  hue: number;
+  temperature: number;
+  tint: number;
+  enhance: number;
+  emboss: number;
+  invert: boolean;
+  noise: number;
+  pixelate: number;
+  posterize: number;
+  solarize: boolean;
+  threshold: number;
 };
 
 export type DecorationPreset =
@@ -69,6 +87,11 @@ export type FrameDefinition = {
   width: number;
 };
 
+export type ExportSettings = {
+  scale: ExportScale;
+  gifProfile: GifProfile;
+};
+
 export type ElementBase = {
   id: string;
   name: string;
@@ -86,6 +109,7 @@ export type ElementBase = {
 export type TextElement = ElementBase & {
   type: 'text';
   text: string;
+  writingMode: TextWritingMode;
   fontFamily: string;
   fontSize: number;
   fill: string;
@@ -105,7 +129,7 @@ export type ImageElement = ElementBase & {
 export type EditorElement = TextElement | ImageElement;
 
 export type Project = {
-  version: 1;
+  version: 2;
   id: string;
   name: string;
   width: number;
@@ -116,6 +140,7 @@ export type Project = {
   elements: EditorElement[];
   decorations: DecorationLayer[];
   frame: FrameDefinition;
+  exportSettings: ExportSettings;
 };
 
 export function createId(): string {
@@ -126,6 +151,7 @@ export function createDefaultAnimation(): AnimationDefinition {
   return {
     preset: 'none',
     speed: 'normal',
+    intensity: 'normal',
     delayMs: 0,
     loop: true,
   };
@@ -139,12 +165,23 @@ export function createDefaultImageEffects(): ImageEffects {
     blurRadius: 0,
     grayscale: false,
     sepia: false,
+    hue: 0,
+    temperature: 0,
+    tint: 0,
+    enhance: 0,
+    emboss: 0,
+    invert: false,
+    noise: 0,
+    pixelate: 0,
+    posterize: 0,
+    solarize: false,
+    threshold: 0,
   };
 }
 
 export function createEmptyProject(): Project {
   return {
-    version: 1,
+    version: 2,
     id: createId(),
     name: 'Yeni Tasarım',
     width: 300,
@@ -157,6 +194,10 @@ export function createEmptyProject(): Project {
     frame: {
       preset: 'none',
       width: 8,
+    },
+    exportSettings: {
+      scale: 1,
+      gifProfile: 'balanced',
     },
   };
 }

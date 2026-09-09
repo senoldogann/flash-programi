@@ -19,8 +19,10 @@ export const animationSchema = z.object({
     'wave',
   ]),
   speed: z.enum(['slow', 'normal', 'fast']),
+  intensity: z.enum(['subtle', 'normal', 'strong']),
   delayMs: z.number().finite().min(0).max(30_000),
   loop: z.boolean(),
+  direction: z.enum(['left', 'right', 'up', 'down']).optional(),
 });
 
 export const imageEffectsSchema = z.object({
@@ -30,6 +32,17 @@ export const imageEffectsSchema = z.object({
   blurRadius: z.number().finite().min(0).max(40),
   grayscale: z.boolean(),
   sepia: z.boolean(),
+  hue: z.number().finite().min(-180).max(180),
+  temperature: z.number().finite().min(-100).max(100),
+  tint: z.number().finite().min(-100).max(100),
+  enhance: z.number().finite().min(-1).max(1),
+  emboss: z.number().finite().min(0).max(1),
+  invert: z.boolean(),
+  noise: z.number().finite().min(0).max(1),
+  pixelate: z.number().finite().min(0).max(64),
+  posterize: z.number().finite().min(0).max(1),
+  solarize: z.boolean(),
+  threshold: z.number().finite().min(0).max(1),
 });
 
 const elementBaseShape = {
@@ -50,6 +63,7 @@ export const textElementSchema = z.object({
   ...elementBaseShape,
   type: z.literal('text'),
   text: z.string().max(500),
+  writingMode: z.enum(['horizontal', 'vertical-stacked']),
   fontFamily: z.string().min(1).max(120),
   fontSize: z.number().finite().min(6).max(512),
   fill: z.string().min(1).max(120),
@@ -108,8 +122,13 @@ export const frameDefinitionSchema = z.object({
   width: z.number().finite().min(1).max(32),
 });
 
+export const exportSettingsSchema = z.object({
+  scale: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+  gifProfile: z.enum(['small', 'balanced', 'quality']),
+});
+
 export const projectSchema = z.object({
-  version: z.literal(1),
+  version: z.literal(2),
   id: z.string().min(1).max(120),
   name: z.string().min(1).max(120),
   width: z.number().int().min(32).max(4096),
@@ -120,6 +139,7 @@ export const projectSchema = z.object({
   elements: z.array(editorElementSchema).max(200),
   decorations: z.array(decorationLayerSchema).max(12),
   frame: frameDefinitionSchema,
+  exportSettings: exportSettingsSchema,
 });
 
 export function parseProject(input: unknown): Project {

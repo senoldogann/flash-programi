@@ -1,4 +1,5 @@
 import type { Project } from '../model/project';
+import { migrateProject } from '../model/migrate';
 import { parseProject } from '../model/schema';
 
 const DATABASE_NAME = 'flash-nick-v3';
@@ -12,7 +13,7 @@ let persistenceEpoch = 0;
 
 type StoredProjectRecord = {
   key: typeof CURRENT_PROJECT_KEY;
-  project: Project;
+  project: unknown;
   savedAt: number;
 };
 
@@ -166,7 +167,7 @@ export async function loadCurrentProject(
 
     if (!storedProject) return null;
 
-    const portableProject = parseProject(storedProject.project);
+    const portableProject = migrateProject(storedProject.project);
     const assetsByElementId = new Map(storedAssets.map((asset) => [asset.elementId, asset]));
     const runtimeProject = structuredClone(portableProject);
 

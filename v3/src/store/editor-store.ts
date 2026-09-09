@@ -7,12 +7,14 @@ import {
   type AnimationDefinition,
   type DecorationPreset,
   type EditorElement,
+  type ExportSettings,
   type FramePreset,
   type ImageEffects,
   type ImageElement,
   type Project,
   type TextElement,
 } from '../model/project';
+import { migrateProject } from '../model/migrate';
 import { parseProject } from '../model/schema';
 import { applyDesignTemplate } from '../templates/templates';
 
@@ -31,7 +33,7 @@ export type EditorStore = {
   future: Project[];
   historyBatchStart: Project | null;
   reset: () => void;
-  loadProject: (project: Project) => void;
+  loadProject: (project: unknown) => void;
   beginHistoryBatch: () => void;
   endHistoryBatch: () => void;
   selectElement: (id: string | null) => void;
@@ -43,6 +45,7 @@ export type EditorStore = {
   addDecoration: (preset: DecorationPreset) => string;
   removeDecoration: (id: string) => void;
   setFrame: (preset: FramePreset, width?: number) => void;
+  setExportSettings: (patch: Partial<ExportSettings>) => void;
   applyTemplate: (templateId: string) => void;
   removeElement: (id: string) => void;
   commitTransform: (beforeProject: Project, afterProject: Project) => void;
@@ -98,7 +101,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   }),
 
   loadProject: (project) => {
-    const validated = parseProject(project);
+    const validated = migrateProject(project);
     set({
       project: cloneProject(validated),
       selectedElementId: null,
@@ -147,6 +150,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       type: 'text',
       name: 'Yazı',
       text,
+      writingMode: 'horizontal',
       x: (state.project.width - width) / 2,
       y: (state.project.height - height) / 2,
       width,
@@ -319,6 +323,19 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       },
     };
     set(mutationWithHistory(state, nextProject));
+  },
+
+  setExportSettings: (patch) => {
+    const state = get();
+    set({
+      project: {
+        ...state.project,
+        exportSettings: {
+          ...state.project.exportSettings,
+          ...patch,
+        },
+      },
+    });
   },
 
   applyTemplate: (templateId) => {
