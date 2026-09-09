@@ -11,6 +11,7 @@ import type { ProjectV3 } from './project-v3';
 
 const finiteNumber = z.number().finite();
 const layerDimension = z.number().finite().positive().max(8192);
+const boundedColor = z.string().min(1).max(120);
 
 export const layerTransformV3Schema = z.object({
   x: finiteNumber,
@@ -43,6 +44,58 @@ const sceneLayerBaseV3Shape = {
   transform: layerTransformV3Schema,
   clips: z.array(animationClipV3Schema).max(64),
 };
+
+export const text3DGradientStopV3Schema = z.object({
+  offset: z.number().finite().min(0).max(1),
+  color: boundedColor,
+}).strict();
+
+export const text3DSurfaceV3Schema = z.object({
+  color: boundedColor,
+  gradient: z.array(text3DGradientStopV3Schema).max(16),
+  metallicity: z.number().finite().min(0).max(1),
+}).strict();
+
+export const text3DStyleV3Schema = z.object({
+  bevel: z.object({
+    size: z.number().finite().min(0).max(8),
+    strength: z.number().finite().min(0).max(1),
+  }).strict(),
+  extrusion: z.object({
+    depth: z.number().int().min(0).max(16),
+    angleDeg: z.number().finite().min(-360).max(360),
+  }).strict(),
+  surfaces: z.object({
+    front: text3DSurfaceV3Schema,
+    side: text3DSurfaceV3Schema,
+    back: text3DSurfaceV3Schema,
+  }).strict(),
+  outline: z.object({
+    color: boundedColor,
+    width: z.number().finite().min(0).max(16),
+  }).strict(),
+  shadow: z.object({
+    color: boundedColor,
+    blur: z.number().finite().min(0).max(64),
+    offsetX: z.number().finite().min(-64).max(64),
+    offsetY: z.number().finite().min(-64).max(64),
+    opacity: z.number().finite().min(0).max(1),
+  }).strict(),
+  gloss: z.object({
+    strength: z.number().finite().min(0).max(1),
+    size: z.number().finite().min(0).max(1),
+  }).strict(),
+  texture: z.object({
+    kind: z.enum(['none', 'speckle', 'brushed']),
+    strength: z.number().finite().min(0).max(1),
+  }).strict(),
+  light: z.object({
+    azimuthDeg: z.number().finite().min(-360).max(360),
+    elevationDeg: z.number().finite().min(-90).max(90),
+    intensity: z.number().finite().min(0).max(2),
+    ambient: z.number().finite().min(0).max(1),
+  }).strict(),
+}).strict();
 
 export const imageLayerV3Schema = z.object({
   ...sceneLayerBaseV3Shape,
@@ -83,6 +136,7 @@ export const text3DLayerV3Schema = z.object({
   materialPreset: textElementSchema.shape.materialPreset,
   extrusionDepth: textElementSchema.shape.extrusionDepth,
   extrusionColor: textElementSchema.shape.extrusionColor,
+  style: text3DStyleV3Schema,
 }).strict();
 
 export const particleLayerV3Schema = z.object({
