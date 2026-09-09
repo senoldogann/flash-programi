@@ -441,7 +441,9 @@ button:disabled {
   }
 
   .tool-panel-content {
-    overflow: visible;
+    max-height: min(60vh, 520px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .tool-button {
