@@ -10,6 +10,7 @@ import { frameNeedsClock } from '../../frames/presets';
 import { FrameRenderer } from '../../frames/renderer';
 import type { ImageElement, Project, TextElement } from '../../model/project';
 import { useEditorStore } from '../../store/editor-store';
+import { getFlashTextMaterial } from '../../text/flash-materials';
 import { getDisplayText } from '../../text/layout';
 import { normalizeTransform } from './transform';
 
@@ -269,6 +270,13 @@ function CanvasTextElement({ element, isSelected, previewScale, timeMs, onSelect
   const interactionTimeRef = useRef<number | null>(null);
   const renderTime = interactionTimeRef.current ?? timeMs;
   const animation = evaluateAnimation(element.animation, renderTime);
+  const material = getFlashTextMaterial(element.materialPreset);
+  const depth = Math.max(0, Math.min(16, Math.round(element.extrusionDepth ?? material.extrusionDepth)));
+  const extrusionColor = element.extrusionColor ?? material.extrusionColor;
+  const rawText = animation.alternateFace && element.backText?.trim() ? element.backText : element.text;
+  const displayText = getDisplayText(rawText, element.writingMode);
+  const opacity = element.opacity * animation.opacity * animation.revealProgress;
+  const usesMaterialGradient = element.materialPreset !== undefined && element.materialPreset !== 'flat' && material.gradientStops.length > 0;
 
   useEffect(() => {
     if (!isSelected || element.locked || !shapeRef.current || !transformerRef.current) return;
@@ -291,33 +299,58 @@ function CanvasTextElement({ element, isSelected, previewScale, timeMs, onSelect
     interactionTimeRef.current = null;
   };
 
+  const commonTextProps = {
+    width: element.width,
+    height: element.height,
+    scaleX: animation.scaleX,
+    scaleY: animation.scaleY,
+    rotation: element.rotation + animation.rotation,
+    skewX: animation.skewX,
+    skewY: animation.skewY,
+    opacity,
+    visible: element.visible,
+    text: displayText,
+    fontFamily: element.fontFamily,
+    fontSize: element.fontSize,
+    align: element.align,
+    verticalAlign: 'middle' as const,
+  };
+
   return (
     <>
+      {Array.from({ length: depth }, (_, index) => {
+        const offset = depth - index;
+        return (
+          <Text
+            key={`${element.id}-extrusion-${offset}`}
+            name="flash-text-extrusion"
+            {...commonTextProps}
+            x={element.x + animation.x + offset * 0.72}
+            y={element.y + animation.y + offset * 0.72}
+            fill={extrusionColor}
+            stroke={extrusionColor}
+            strokeWidth={Math.max(1, element.strokeWidth)}
+            listening={false}
+          />
+        );
+      })}
       <Text
         ref={shapeRef}
         id={element.id}
+        {...commonTextProps}
         x={element.x + animation.x}
         y={element.y + animation.y}
-        width={element.width}
-        height={element.height}
-        scaleX={animation.scaleX}
-        scaleY={animation.scaleY}
-        rotation={element.rotation + animation.rotation}
-        skewX={animation.skewX}
-        skewY={animation.skewY}
-        opacity={element.opacity * animation.opacity * animation.revealProgress}
-        visible={element.visible}
         draggable={!element.locked}
-        text={getDisplayText(element.text, element.writingMode)}
-        fontFamily={element.fontFamily}
-        fontSize={element.fontSize}
         fill={element.fill}
+        fillPriority={usesMaterialGradient ? 'linear-gradient' : 'color'}
+        fillLinearGradientStartPoint={{ x: 0, y: 0 }}
+        fillLinearGradientEndPoint={{ x: 0, y: element.height }}
+        fillLinearGradientColorStops={usesMaterialGradient ? material.gradientStops : undefined}
         stroke={element.stroke}
         strokeWidth={element.strokeWidth}
         shadowColor={element.shadowColor}
         shadowBlur={element.shadowBlur}
-        align={element.align}
-        verticalAlign="middle"
+        shadowOpacity={0.9}
         onClick={onSelect}
         onTap={onSelect}
         onDragStart={beginInteraction}
