@@ -14,6 +14,7 @@ import {
 } from '../project';
 
 export type FlashModeV3 = 'classic' | 'neo';
+export type AnimationEasingV3 = 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
 
 export type LayerTransformV3 = {
   x: number;
@@ -33,6 +34,7 @@ export type AnimationClipV3 = {
   loop: boolean;
   speed: AnimationSpeed;
   intensity: AnimationIntensity;
+  easing: AnimationEasingV3;
   direction?: AnimationDirection;
 };
 
