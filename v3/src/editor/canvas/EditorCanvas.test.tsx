@@ -22,8 +22,8 @@ vi.mock('react-konva', async () => {
     let scaleY = Number(props.scaleY ?? 1);
 
     return {
-      x: () => 140,
-      y: () => 150,
+      x: () => Number(props.x ?? 140),
+      y: () => Number(props.y ?? 150),
       width: () => Number(props.width ?? 0),
       height: () => Number(props.height ?? 0),
       rotation: () => Number(props.rotation ?? 0),
@@ -55,6 +55,8 @@ vi.mock('react-konva', async () => {
         data-y={String(props.y ?? 0)}
         data-scale-x={String(props.scaleX ?? 1)}
         data-rotation={String(props.rotation ?? 0)}
+        data-skew-x={String(props.skewX ?? 0)}
+        data-skew-y={String(props.skewY ?? 0)}
         onClick={props.onClick as (() => void) | undefined}
         onDoubleClick={() => {
           const dragEvent: MockKonvaEvent = { target: node };
@@ -70,13 +72,20 @@ vi.mock('react-konva', async () => {
   const MockImage = forwardRef<unknown, Record<string, unknown>>((props, ref) => {
     const node = createNode(props);
     useImperativeHandle(ref, () => node);
+    const isChromaticGhost = props.name === 'animation-chromatic-ghost';
 
     return (
       <button
         type="button"
-        data-testid={`image-${String(props.id)}`}
+        data-testid={isChromaticGhost ? 'chromatic-ghost' : `image-${String(props.id)}`}
         data-filter-count={String(Array.isArray(props.filters) ? props.filters.length : 0)}
         data-brightness={String(props.brightness ?? '')}
+        data-hue={String(props.hue ?? '')}
+        data-blur-radius={String(props.blurRadius ?? '')}
+        data-pixel-size={String(props.pixelSize ?? '')}
+        data-skew-x={String(props.skewX ?? 0)}
+        data-skew-y={String(props.skewY ?? 0)}
+        data-opacity={String(props.opacity ?? 1)}
         onClick={props.onClick as (() => void) | undefined}
       >
         Fotoğraf
@@ -108,6 +117,8 @@ function installPassiveImageStub() {
   class PassiveImage {
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
+    naturalWidth = 640;
+    naturalHeight = 480;
     set src(_value: string) {}
   }
 
@@ -122,6 +133,8 @@ function installAutoLoadingImageStub() {
   class AutoLoadingImage {
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
+    naturalWidth = 640;
+    naturalHeight = 480;
 
     set src(_value: string) {
       this.onload?.();
@@ -249,6 +262,54 @@ describe('EditorCanvas', () => {
     render(<EditorCanvas />);
 
     expect(Number(screen.getByTestId(`image-${imageId}`).getAttribute('data-filter-count'))).toBeGreaterThan(0);
+  });
+
+  it('applies skew animation channels without mutating persisted geometry', () => {
+    const imageId = useEditorStore.getState().addImage('blob:fixture', 640, 480);
+    useEditorStore.getState().setElementAnimation(imageId, { preset: 'jello', intensity: 'strong' });
+    const before = structuredClone(useEditorStore.getState().project);
+
+    render(<EditorCanvas timeOverrideMs={375} />);
+
+    expect(Math.abs(Number(screen.getByTestId(`image-${imageId}`).getAttribute('data-skew-x')))).toBeGreaterThan(0);
+    expect(useEditorStore.getState().project).toEqual(before);
+  });
+
+  it('feeds focus and pixel animation channels into transient image effects', async () => {
+    installAutoLoadingImageStub();
+    const imageId = useEditorStore.getState().addImage('blob:fixture', 640, 480);
+    useEditorStore.getState().setElementAnimation(imageId, { preset: 'focus-pulse', intensity: 'strong' });
+
+    const { rerender } = render(<EditorCanvas timeOverrideMs={375} />);
+    await waitFor(() => expect(Number(screen.getByTestId(`image-${imageId}`).getAttribute('data-blur-radius'))).toBeGreaterThan(0));
+
+    act(() => {
+      useEditorStore.getState().setElementAnimation(imageId, { preset: 'pixel-pulse', intensity: 'strong' });
+    });
+    rerender(<EditorCanvas timeOverrideMs={375} />);
+    await waitFor(() => expect(Number(screen.getByTestId(`image-${imageId}`).getAttribute('data-pixel-size'))).toBeGreaterThan(0));
+  });
+
+  it('renders reveal progress without changing stored opacity', () => {
+    const imageId = useEditorStore.getState().addImage('blob:fixture', 640, 480);
+    useEditorStore.getState().setElementAnimation(imageId, { preset: 'reveal', loop: false });
+    const before = structuredClone(useEditorStore.getState().project);
+
+    render(<EditorCanvas timeOverrideMs={400} />);
+
+    expect(Number(screen.getByTestId(`image-${imageId}`).getAttribute('data-opacity'))).toBeLessThan(1);
+    expect(useEditorStore.getState().project).toEqual(before);
+  });
+
+  it('renders chromatic animation helper layers without persisting extra elements', () => {
+    const imageId = useEditorStore.getState().addImage('blob:fixture', 640, 480);
+    useEditorStore.getState().setElementAnimation(imageId, { preset: 'glitch-rgb', intensity: 'strong' });
+    const elementCount = useEditorStore.getState().project.elements.length;
+
+    render(<EditorCanvas timeOverrideMs={375} />);
+
+    expect(screen.getAllByTestId('chromatic-ghost')).toHaveLength(2);
+    expect(useEditorStore.getState().project.elements).toHaveLength(elementCount);
   });
 
   it('persists a completed drag as one undoable project change', () => {
