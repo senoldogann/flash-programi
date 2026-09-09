@@ -14,6 +14,7 @@ export type EvaluatedAnimation = {
   revealProgress: number;
   chromaticOffset: number;
   pixelateAmount: number;
+  alternateFace: boolean;
 };
 
 const IDENTITY: EvaluatedAnimation = {
@@ -30,6 +31,7 @@ const IDENTITY: EvaluatedAnimation = {
   revealProgress: 1,
   chromaticOffset: 0,
   pixelateAmount: 0,
+  alternateFace: false,
 };
 
 const PERIOD_BY_SPEED = {
@@ -363,6 +365,12 @@ export function evaluateAnimation(
         scaleY: scale,
       };
     }
+    case 'xara-double-sided':
+      return {
+        ...IDENTITY,
+        scaleX: Math.abs(cos),
+        alternateFace: cos < 0,
+      };
     default:
       return { ...IDENTITY };
   }
