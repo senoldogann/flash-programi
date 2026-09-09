@@ -10,6 +10,7 @@ import { frameNeedsClock } from '../../frames/presets';
 import { FrameRenderer } from '../../frames/renderer';
 import type { ImageElement, Project, TextElement } from '../../model/project';
 import { useEditorStore } from '../../store/editor-store';
+import { getDisplayText } from '../../text/layout';
 import { normalizeTransform } from './transform';
 
 type Viewport = { width: number; height: number; scale: number };
@@ -265,7 +266,7 @@ function CanvasTextElement({ element, isSelected, previewScale, timeMs, onSelect
         opacity={element.opacity * animation.opacity}
         visible={element.visible}
         draggable={!element.locked}
-        text={element.text}
+        text={getDisplayText(element.text, element.writingMode)}
         fontFamily={element.fontFamily}
         fontSize={element.fontSize}
         fill={element.fill}
