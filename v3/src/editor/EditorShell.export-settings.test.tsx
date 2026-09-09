@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getGifFramePlan } from '../export/profiles';
 import { useEditorStore } from '../store/editor-store';
@@ -26,6 +26,9 @@ const runtime = vi.hoisted(() => {
     await options.renderFrame(options.frameTimesMs?.[0] ?? 0);
     return gifBlob;
   });
+  const loadCurrentProject = vi.fn();
+  const saveCurrentProject = vi.fn();
+  const clearCurrentProject = vi.fn();
 
   return {
     gifBlob,
@@ -36,6 +39,9 @@ const runtime = vi.hoisted(() => {
     createBrowserGifEncoder,
     downloadBlob,
     encodeGifFrames,
+    loadCurrentProject,
+    saveCurrentProject,
+    clearCurrentProject,
   };
 });
 
@@ -58,10 +64,21 @@ vi.mock('../export/gif-browser', () => ({
 }));
 
 vi.mock('../persistence/project-db', () => ({
-  loadCurrentProject: vi.fn(async () => null),
-  saveCurrentProject: vi.fn(async () => undefined),
-  clearCurrentProject: vi.fn(async () => undefined),
+  loadCurrentProject: runtime.loadCurrentProject,
+  saveCurrentProject: runtime.saveCurrentProject,
+  clearCurrentProject: runtime.clearCurrentProject,
 }));
+
+async function renderReadyEditorShell() {
+  const view = render(<EditorShell />);
+  const loadPromise = runtime.loadCurrentProject.mock.results.at(-1)?.value;
+
+  await act(async () => {
+    await loadPromise;
+  });
+
+  return view;
+}
 
 describe('EditorShell export settings integration', () => {
   beforeEach(() => {
@@ -74,6 +91,12 @@ describe('EditorShell export settings integration', () => {
     runtime.createBrowserGifEncoder.mockClear();
     runtime.downloadBlob.mockClear();
     runtime.encodeGifFrames.mockClear();
+    runtime.loadCurrentProject.mockReset();
+    runtime.loadCurrentProject.mockResolvedValue(null);
+    runtime.saveCurrentProject.mockReset();
+    runtime.saveCurrentProject.mockResolvedValue(undefined);
+    runtime.clearCurrentProject.mockReset();
+    runtime.clearCurrentProject.mockResolvedValue(undefined);
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
   });
 
@@ -81,15 +104,15 @@ describe('EditorShell export settings integration', () => {
     vi.restoreAllMocks();
   });
 
-  it('mounts export settings in the real editor workspace', () => {
-    render(<EditorShell />);
+  it('mounts export settings in the real editor workspace', async () => {
+    await renderReadyEditorShell();
 
     expect(screen.getByLabelText('Dışa aktarma ayarları')).toBeInTheDocument();
   });
 
-  it('uses the latest export scale for PNG capture', () => {
+  it('uses the latest export scale for PNG capture', async () => {
     useEditorStore.getState().setExportSettings({ scale: 2 });
-    render(<EditorShell />);
+    await renderReadyEditorShell();
 
     fireEvent.click(screen.getByRole('button', { name: 'PNG İndir' }));
 
@@ -101,7 +124,7 @@ describe('EditorShell export settings integration', () => {
 
   it('uses scaled GIF dimensions and the exact selected profile frame plan', async () => {
     useEditorStore.getState().setExportSettings({ scale: 2, gifProfile: 'quality' });
-    render(<EditorShell />);
+    await renderReadyEditorShell();
 
     fireEvent.click(screen.getByRole('button', { name: 'GIF İndir' }));
 
@@ -123,11 +146,13 @@ describe('EditorShell export settings integration', () => {
   it('stops unsafe GIF exports before loading the GIF engine', async () => {
     useEditorStore.getState().resizeProject(4096, 4096);
     useEditorStore.getState().setExportSettings({ scale: 4, gifProfile: 'quality' });
-    render(<EditorShell />);
+    await renderReadyEditorShell();
 
     fireEvent.click(screen.getByRole('button', { name: 'GIF İndir' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/100 milyon/i);
+    expect(
+      await screen.findByText(/GIF iş yükü 100 milyon pixel-frame güvenlik sınırını aşıyor/i),
+    ).toBeInTheDocument();
     expect(runtime.loadGifConstructor).not.toHaveBeenCalled();
     expect(runtime.createBrowserGifEncoder).not.toHaveBeenCalled();
     expect(runtime.encodeGifFrames).not.toHaveBeenCalled();
