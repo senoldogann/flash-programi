@@ -1,5 +1,14 @@
 export type TextAlign = 'left' | 'center' | 'right';
 export type TextWritingMode = 'horizontal' | 'vertical-stacked';
+export type TextMaterialPreset =
+  | 'flat'
+  | 'xara-gold'
+  | 'xara-chrome'
+  | 'xara-ruby'
+  | 'xara-ice'
+  | 'xara-purple-glass'
+  | 'xara-emerald'
+  | 'xara-fire';
 
 export type AnimationPreset =
   | 'none'
@@ -48,7 +57,8 @@ export type AnimationPreset =
   | 'parallax-walk'
   | 'perspective-card'
   | 'levitate-25d'
-  | 'cinematic-push';
+  | 'cinematic-push'
+  | 'xara-double-sided';
 
 export type AnimationSpeed = 'slow' | 'normal' | 'fast';
 export type AnimationIntensity = 'subtle' | 'normal' | 'strong';
@@ -163,6 +173,7 @@ export type ElementBase = {
 export type TextElement = ElementBase & {
   type: 'text';
   text: string;
+  backText: string;
   writingMode: TextWritingMode;
   fontFamily: string;
   fontSize: number;
@@ -172,6 +183,9 @@ export type TextElement = ElementBase & {
   shadowColor: string;
   shadowBlur: number;
   align: TextAlign;
+  materialPreset: TextMaterialPreset;
+  extrusionDepth: number;
+  extrusionColor: string;
 };
 
 export type ImageElement = ElementBase & {
