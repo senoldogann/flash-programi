@@ -160,6 +160,36 @@ describe('project migration', () => {
     expect(migrated.version).toBe(2);
   });
 
+  it('rejects unknown fields in version 2 data instead of silently stripping them', () => {
+    const current = migrateProject(legacyProject);
+
+    expect(() => migrateProject({
+      ...current,
+      unexpectedRootField: true,
+    })).toThrow();
+
+    expect(() => migrateProject({
+      ...current,
+      exportSettings: {
+        ...current.exportSettings,
+        unexpectedNestedField: true,
+      },
+    })).toThrow();
+
+    expect(() => migrateProject({
+      ...current,
+      elements: current.elements.map((element, index) => index === 0
+        ? {
+            ...element,
+            animation: {
+              ...element.animation,
+              unexpectedAnimationField: true,
+            },
+          }
+        : element),
+    })).toThrow();
+  });
+
   it('rejects unknown future versions', () => {
     expect(() => migrateProject({ ...legacyProject, version: 99 })).toThrow();
   });
