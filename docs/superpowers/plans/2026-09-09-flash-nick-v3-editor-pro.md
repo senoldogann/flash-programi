@@ -2,108 +2,71 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Upgrade Flash Nick Studio V3 with reliable photo effects, independently scrollable tool content, vertical stacked text, richer deterministic image animations, proportional canvas resizing, and controllable PNG/GIF output sizing.
+**Goal:** Fix the broken photo-effect pipeline, make tool content independently scrollable, add grapheme-safe vertical text, substantially expand deterministic image animations, restore proportional canvas sizing, and give PNG/GIF explicit output-size controls.
 
-**Architecture:** Keep React + react-konva + Zustand and the existing deterministic preview/export model. Move effect mapping, text layout, project sizing, migration, animation evaluation, and export sizing into focused pure modules so preview, undo/redo, persistence, PNG, and GIF all share the same state and calculations.
+**Architecture:** Keep React + react-konva + Zustand. Move effect mapping, migration, text layout, animation math, project sizing, and export sizing into pure focused modules. Preview and GIF must sample the same deterministic renderer; export settings live in `Project.exportSettings` but never alter visual geometry or visual undo history.
 
-**Tech Stack:** React 19, TypeScript 7, Vite 8, react-konva 19, Konva 10, Zustand 5, Zod 4, Vitest 5, IndexedDB persistence, gif.js.
+**Tech Stack:** React 19, TypeScript 7, Vite 8, react-konva 19, Konva 10, Zustand 5, Zod 4, Vitest 5, IndexedDB, gif.js.
 
 **Spec:** `docs/superpowers/specs/2026-09-09-flash-nick-v3-editor-pro-design.md`
 
 ## Global Constraints
 
-- Anything visible in live preview must render the same way in PNG/GIF export.
-- Keep direct canvas position/resize/rotation behavior.
-- One completed user edit gesture creates one undo history step.
-- Existing V1 persisted projects must migrate instead of being discarded.
-- Project resize and export resize remain separate concepts.
-- Project resize uses the approved proportional rule: uniform element scaling with center-preserving recentering.
-- PNG/GIF export scale supports exactly `1 | 2 | 3 | 4`.
-- GIF profiles are exactly `small | balanced | quality`.
-- Feature branches use GitHub CI only. Only `main` may trigger Vercel deployment.
-- Do not replace React/Konva with PixiJS, Three.js, or a WebGL-first renderer in this phase.
+- Anything visible in preview must render the same way in PNG/GIF.
+- One completed edit gesture equals one undo step.
+- Existing V1 IndexedDB projects must migrate to V2.
+- Project resize and export resize are separate.
+- Approved resize rule: uniformly scale content by `min(newW / oldW, newH / oldH)` and preserve element centers relative to the canvas center.
+- Export scale is exactly `1 | 2 | 3 | 4`.
+- GIF profile is exactly `small | balanced | quality`.
+- `Project.exportSettings` is the single persisted export-settings source of truth.
+- Feature branches run GitHub CI only. Only `main` may deploy to Vercel.
+- No PixiJS/Three.js/WebGL renderer migration in this phase.
+
+## File Map
+
+**Create**
+- `v3/src/model/migrate.ts`
+- `v3/src/effects/image-effects.ts`
+- `v3/src/text/layout.ts`
+- `v3/src/sizing/project-size.ts`
+- `v3/src/export/profiles.ts`
+- `v3/src/editor/panels/CanvasSizePanel.tsx`
+- `v3/src/editor/panels/ExportPanel.tsx`
+
+**Modify**
+- `v3/src/model/project.ts`
+- `v3/src/model/schema.ts`
+- `v3/src/store/editor-store.ts`
+- `v3/src/persistence/project-db.ts`
+- `v3/src/animations/evaluator.ts`
+- `v3/src/editor/canvas/EditorCanvas.tsx`
+- `v3/src/editor/panels/EffectsPanel.tsx`
+- `v3/src/editor/panels/MotionPanel.tsx`
+- `v3/src/editor/panels/TextInspector.tsx`
+- `v3/src/editor/panels/ToolPanel.tsx`
+- `v3/src/editor/panels/rich-panels.css`
+- `v3/src/editor/EditorShell.tsx`
+- `v3/src/export/png.ts`
+- `v3/src/export/gif.ts`
+- `v3/src/export/gif-browser.ts`
+- `v3/src/styles.css`
 
 ---
 
-## File Structure
-
-### New focused modules
-
-- `v3/src/model/migrate.ts` — migrate legacy V1 project JSON into the current schema.
-- `v3/src/effects/image-effects.ts` — map editor effect state to ordered Konva filters/attributes/cache key.
-- `v3/src/text/layout.ts` — grapheme-safe horizontal/vertical display text and text-box helpers.
-- `v3/src/sizing/project-size.ts` — proportional project resize transform and numeric validation.
-- `v3/src/export/profiles.ts` — output dimensions, GIF frame plans, and export work-budget validation.
-- `v3/src/editor/panels/CanvasSizePanel.tsx` — project width/height presets and custom resize controls.
-- `v3/src/editor/panels/ExportPanel.tsx` — PNG/GIF scale/profile controls and final dimensions.
-
-### Existing files to modify
-
-- `v3/src/model/project.ts` — schema version, text writing mode, expanded effects, richer animation definition, export settings.
-- `v3/src/model/schema.ts` — validate the current model only.
-- `v3/src/store/editor-store.ts` — migration-aware load, proportional resize, export settings actions.
-- `v3/src/persistence/project-db.ts` — migrate before validating restored projects.
-- `v3/src/animations/evaluator.ts` — deterministic expanded animation channels/presets.
-- `v3/src/editor/canvas/EditorCanvas.tsx` — consume effect/text/animation adapters without owning their business rules.
-- `v3/src/editor/panels/EffectsPanel.tsx` — working grouped effect controls.
-- `v3/src/editor/panels/MotionPanel.tsx` — richer preset grid with speed/intensity/direction.
-- `v3/src/editor/panels/TextInspector.tsx` — horizontal/vertical writing control.
-- `v3/src/editor/panels/ToolPanel.tsx` — fixed navigation plus independently scrollable active content.
-- `v3/src/editor/panels/rich-panels.css` and `v3/src/styles.css` — bounded tool-content scrolling and new controls.
-- `v3/src/editor/EditorShell.tsx` — canvas/export panels and scaled export wiring.
-- `v3/src/export/png.ts` — explicit pixel ratio/output scale.
-- `v3/src/export/gif.ts` and `v3/src/export/gif-browser.ts` — deterministic profile frame plan and scaled output.
-
----
-
-### Task 1: Current Project Model and V1 Migration
+### Task 1: V2 Project Model and V1 Migration
 
 **Files:**
 - Modify: `v3/src/model/project.ts`
 - Modify: `v3/src/model/schema.ts`
 - Create: `v3/src/model/migrate.ts`
+- Create: `v3/src/model/migrate.test.ts`
 - Modify: `v3/src/store/editor-store.ts`
+- Modify: `v3/src/store/editor-store.test.ts`
 - Modify: `v3/src/persistence/project-db.ts`
-- Test: `v3/src/model/project.test.ts`
-- Test: `v3/src/model/migrate.test.ts`
-- Test: `v3/src/persistence/project-db.test.ts`
+- Modify: `v3/src/persistence/project-db.test.ts`
 
 **Interfaces:**
-- Produces: `TextWritingMode = 'horizontal' | 'vertical-stacked'`
-- Produces: `AnimationIntensity = 'subtle' | 'normal' | 'strong'`
-- Produces: `AnimationDirection = 'left' | 'right' | 'up' | 'down'`
-- Produces: `ExportScale = 1 | 2 | 3 | 4`
-- Produces: `GifProfile = 'small' | 'balanced' | 'quality'`
-- Produces: `migrateProject(input: unknown): Project`
-- Existing `parseProject(input)` remains strict current-schema validation.
-
-- [ ] **Step 1: Write migration and default-model failing tests**
-
-Add tests asserting that a legacy V1 project with old text/effects/animation fields migrates to the new version while preserving IDs, geometry, text, asset URLs, decorations, and frame. Also assert defaults:
-
-```ts
-expect(migrated.elements[0]).toMatchObject({
-  writingMode: 'horizontal',
-  animation: { intensity: 'normal' },
-});
-expect(migrated.exportSettings).toEqual({ scale: 1, gifProfile: 'balanced' });
-```
-
-For an image, assert all new effect fields receive neutral values.
-
-- [ ] **Step 2: Run the focused tests and verify RED**
-
-Run:
-
-```bash
-npm --prefix v3 test -- src/model/project.test.ts src/model/migrate.test.ts src/persistence/project-db.test.ts
-```
-
-Expected: FAIL because the new model fields and `migrateProject` do not exist.
-
-- [ ] **Step 3: Extend the current data model**
-
-In `project.ts`, add:
 
 ```ts
 export type TextWritingMode = 'horizontal' | 'vertical-stacked';
@@ -111,16 +74,44 @@ export type AnimationIntensity = 'subtle' | 'normal' | 'strong';
 export type AnimationDirection = 'left' | 'right' | 'up' | 'down';
 export type ExportScale = 1 | 2 | 3 | 4;
 export type GifProfile = 'small' | 'balanced' | 'quality';
+export type ExportSettings = { scale: ExportScale; gifProfile: GifProfile };
 
-export type ExportSettings = {
-  scale: ExportScale;
-  gifProfile: GifProfile;
-};
+export function migrateProject(input: unknown): Project;
+
+// EditorStore additions
+setExportSettings(patch: Partial<ExportSettings>): void;
+resizeProject(width: number, height: number): void; // implementation lands in Task 6
 ```
 
-Extend `TextElement` with `writingMode`, `AnimationDefinition` with `intensity` and optional `direction`, `ImageEffects` with the spec fields, and `Project` with `exportSettings`. Increment the current project version to `2`.
+- [ ] **Step 1: Write RED migration tests**
 
-Use neutral defaults:
+Create a literal V1 project fixture and assert:
+
+```ts
+const migrated = migrateProject(v1Fixture);
+expect(migrated.version).toBe(2);
+expect(migrated.exportSettings).toEqual({ scale: 1, gifProfile: 'balanced' });
+expect(migrated.elements[0]).toMatchObject({
+  writingMode: 'horizontal',
+  animation: { intensity: 'normal' },
+});
+```
+
+For an image, assert every added effect field is neutral and all old IDs/geometry/asset URLs are unchanged.
+
+- [ ] **Step 2: Verify RED**
+
+```bash
+npm --prefix v3 test -- src/model/migrate.test.ts src/persistence/project-db.test.ts
+```
+
+Expected: FAIL because V2 fields/migration do not exist.
+
+- [ ] **Step 3: Extend `project.ts` and strict V2 Zod schema**
+
+Add `writingMode`, animation `intensity` plus optional `direction`, expanded image effects, and `exportSettings`. Change current version to `2`.
+
+Neutral additions:
 
 ```ts
 writingMode: 'horizontal'
@@ -139,51 +130,47 @@ solarize: false
 threshold: 0
 ```
 
-- [ ] **Step 4: Implement migration before strict validation**
+- [ ] **Step 4: Implement `migrateProject`**
 
-Create `migrateProject(input)` that:
+Rules:
+1. V1 gets defaults added and version changed to 2.
+2. V2 is strictly validated unchanged.
+3. Unknown/future versions throw.
+4. Migration finishes by calling current `parseProject`.
 
-1. Accepts unknown input.
-2. Detects `version: 1`.
-3. Adds only missing new fields while preserving legacy data.
-4. Produces `version: 2`.
-5. Calls `parseProject()` on the migrated output.
-6. For `version: 2`, simply validates through `parseProject()`.
-7. Rejects unknown future versions instead of guessing.
+Update restore/load paths to call `migrateProject` before store hydration.
 
-Update persistence restore and `loadProject` to call `migrateProject`, not strict `parseProject` directly.
+- [ ] **Step 5: Add export-setting store action**
 
-- [ ] **Step 5: Run tests and typecheck**
+`setExportSettings` validates allowed scale/profile, updates only `project.exportSettings`, does not append to visual `past`, and remains persisted through autosave.
+
+- [ ] **Step 6: Verify GREEN**
 
 ```bash
-npm --prefix v3 test -- src/model/project.test.ts src/model/migrate.test.ts src/persistence/project-db.test.ts src/store/editor-store.test.ts
+npm --prefix v3 test -- src/model/migrate.test.ts src/model/project.test.ts src/persistence/project-db.test.ts src/store/editor-store.test.ts
 npm --prefix v3 run typecheck
 ```
 
-Expected: PASS.
-
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add v3/src/model v3/src/store/editor-store.ts v3/src/persistence/project-db.ts
+git add v3/src/model v3/src/store/editor-store.ts v3/src/store/editor-store.test.ts v3/src/persistence
 git commit -m "feat: add editor pro project migration"
 ```
 
 ---
 
-### Task 2: Reliable and Expanded Image Effect Engine
+### Task 2: Reliable Expanded Photo Effects
 
 **Files:**
 - Create: `v3/src/effects/image-effects.ts`
 - Create: `v3/src/effects/image-effects.test.ts`
 - Modify: `v3/src/editor/canvas/EditorCanvas.tsx`
+- Modify: `v3/src/editor/canvas/EditorCanvas.test.tsx`
 - Modify: `v3/src/editor/panels/EffectsPanel.tsx`
-- Test: `v3/src/editor/canvas/EditorCanvas.test.tsx`
-- Test: `v3/src/editor/panels/EffectsPanel.test.tsx`
+- Create/Modify: `v3/src/editor/panels/EffectsPanel.test.tsx`
 
-**Interfaces:**
-- Consumes: current `ImageEffects` from Task 1.
-- Produces:
+**Interface:**
 
 ```ts
 export type ImageEffectRenderPlan = {
@@ -196,81 +183,57 @@ export type ImageEffectRenderPlan = {
 export function buildImageEffectRenderPlan(effects: ImageEffects): ImageEffectRenderPlan;
 ```
 
-- [ ] **Step 1: Write failing pure adapter tests**
+- [ ] **Step 1: Write RED adapter tests**
 
-Test that neutral effects produce no filters and `requiresCache === false`. Test non-neutral values map to the correct ordered Konva filters. Explicitly assert that `Konva.Filters.Brightness` is used and `Konva.Filters.Brighten` is not.
+Assert neutral state returns no filters and no cache requirement. Assert active brightness uses `Konva.Filters.Brightness`, never deprecated `Brighten`. Assert stable ordered combinations for Contrast, HSL, Blur, Grayscale, Sepia, Enhance, Emboss, Invert, Noise, Pixelate, Posterize, Solarize, Threshold.
 
-Also test stable ordering with multiple active effects, for example brightness + HSL + blur + pixelate + invert.
-
-- [ ] **Step 2: Run adapter tests and verify RED**
+- [ ] **Step 2: Verify RED**
 
 ```bash
 npm --prefix v3 test -- src/effects/image-effects.test.ts
 ```
 
-Expected: FAIL because the module does not exist.
+- [ ] **Step 3: Implement deterministic effect adapter**
 
-- [ ] **Step 3: Implement the effect adapter**
+Use a fixed filter order. Map normalized editor values to Konva attrs. Implement temperature/tint as deterministic RGB/RGBA channel adjustment inside this adapter. Build `cacheKey` only from effect values that affect cached pixels.
 
-Use a fixed filter order. Map normalized UI state to Konva attributes. Use Konva-native deterministic filters for Brightness, Contrast, HSL, Blur, Grayscale, Sepia, Enhance, Emboss, Invert, Noise, Pixelate, Posterize, Solarize, and Threshold.
+- [ ] **Step 4: Write RED renderer cache test**
 
-Implement temperature/tint through deterministic RGB/RGBA channel adjustments in the adapter rather than a second renderer.
+Mock the Konva image node and prove:
+- image load + active cached effect calls `cache()`;
+- effect-value change re-caches and redraws;
+- neutral state calls `clearCache()`.
 
-Create `cacheKey` from only effect values that affect cached pixels, for example:
+- [ ] **Step 5: Replace `EditorCanvas` in-component filter logic**
 
-```ts
-const cacheKey = JSON.stringify([
-  effects.brightness,
-  effects.contrast,
-  effects.saturation,
-  effects.blurRadius,
-  effects.hue,
-  effects.temperature,
-  effects.tint,
-  effects.enhance,
-  effects.emboss,
-  effects.invert,
-  effects.noise,
-  effects.pixelate,
-  effects.posterize,
-  effects.solarize,
-  effects.threshold,
-  effects.grayscale,
-  effects.sepia,
-]);
-```
+Memoize `buildImageEffectRenderPlan(element.effects)`. Apply its filters/attrs. Re-cache on `image` or `plan.cacheKey` changes.
 
-- [ ] **Step 4: Write RED renderer test for cache refresh**
+- [ ] **Step 6: Expand EffectsPanel**
 
-Mock a Konva Image node and verify that changing an effect value causes `cache()` and layer redraw, while returning to the neutral plan clears the cache.
+Groups:
+- **Temel:** Parlaklık, Kontrast, Doygunluk, Bulanıklık
+- **Renk:** Ton, Sıcaklık, Tint, Siyah Beyaz, Sepya, Ters Renk
+- **Stil:** Enhance, Emboss, Noise, Pixelate, Posterize, Solarize, Threshold
 
-- [ ] **Step 5: Wire `EditorCanvas` to the adapter**
+All sliders use `beginHistoryBatch`/`endHistoryBatch`. Toggles remain one history step.
 
-Delete the in-component `buildImageFilters`. In `CanvasImageElement`, memoize the render plan and use its `filters` and `attrs`. Re-cache when `image` or `plan.cacheKey` changes.
-
-- [ ] **Step 6: Expand the Effects UI**
-
-Group controls under `Temel`, `Renk`, and `Stil`. Keep continuous sliders inside `beginHistoryBatch` / `endHistoryBatch`. Toggle/preset buttons remain one history step each.
-
-- [ ] **Step 7: Run focused and regression tests**
+- [ ] **Step 7: Verify GREEN**
 
 ```bash
 npm --prefix v3 test -- src/effects/image-effects.test.ts src/editor/panels/EffectsPanel.test.tsx src/editor/canvas/EditorCanvas.test.tsx
 npm --prefix v3 run typecheck
 ```
 
-Expected: PASS and effect state changes are visible in renderer props/cache behavior.
-
 - [ ] **Step 8: Commit**
 
 ```bash
-git add v3/src/effects v3/src/editor/canvas/EditorCanvas.tsx v3/src/editor/panels/EffectsPanel.tsx v3/src/editor/panels/EffectsPanel.test.tsx
-git commit -m "feat: rebuild image effect pipeline"
+git add v3/src/effects v3/src/editor/canvas/EditorCanvas.tsx v3/src/editor/canvas/EditorCanvas.test.tsx v3/src/editor/panels/EffectsPanel.tsx v3/src/editor/panels/EffectsPanel.test.tsx
+git commit -m "feat: rebuild photo effect pipeline"
 ```
 
 ---
 
-### Task 3: Independently Scrollable Tool Content
+### Task 3: Fixed Tool Navigation with Independent Content Scroll
 
 **Files:**
 - Modify: `v3/src/editor/panels/ToolPanel.tsx`
@@ -278,33 +241,22 @@ git commit -m "feat: rebuild image effect pipeline"
 - Modify: `v3/src/editor/panels/rich-panels.css`
 - Modify: `v3/src/styles.css`
 
-**Interfaces:**
-- Produces a `.tool-panel-content` region that is the only vertically scrollable desktop category area.
-
-- [ ] **Step 1: Write failing structure test**
-
-Render `ToolPanel`, open `Hazır Tasarımlar`, and assert:
+- [ ] **Step 1: Write RED structure test**
 
 ```ts
 expect(screen.getByTestId('tool-panel-nav')).toBeInTheDocument();
-expect(screen.getByTestId('tool-panel-content')).toContainElement(
-  screen.getByLabelText('Hazır Tasarımlar'),
-);
+expect(screen.getByTestId('tool-panel-content')).toBeInTheDocument();
 ```
 
-Also assert `tool-panel-content` exists regardless of active category so layout does not jump.
+Open `Hazır Tasarımlar` and assert the templates live inside `tool-panel-content`, while Photo/Text/category buttons remain in `tool-panel-nav`.
 
-- [ ] **Step 2: Run and verify RED**
+- [ ] **Step 2: Verify RED**
 
 ```bash
 npm --prefix v3 test -- src/editor/panels/ToolPanel.test.tsx
 ```
 
-Expected: FAIL because the regions do not exist.
-
-- [ ] **Step 3: Split fixed navigation from active content**
-
-Structure `ToolPanel` as:
+- [ ] **Step 3: Split panel shell**
 
 ```tsx
 <aside className="tool-panel">
@@ -313,11 +265,7 @@ Structure `ToolPanel` as:
 </aside>
 ```
 
-Photo/Text actions and category buttons remain in the nav region. Only active category panels render inside content.
-
-- [ ] **Step 4: Add desktop/mobile bounded scrolling CSS**
-
-Desktop:
+- [ ] **Step 4: Add bounded scroll CSS**
 
 ```css
 .tool-panel {
@@ -333,22 +281,20 @@ Desktop:
 }
 ```
 
-Mobile uses a bounded max-height for active content instead of allowing the whole page to expand indefinitely.
+On mobile use a bounded `max-height` for active content instead of letting the document grow indefinitely.
 
-- [ ] **Step 5: Run test and typecheck**
+- [ ] **Step 5: Verify GREEN**
 
 ```bash
 npm --prefix v3 test -- src/editor/panels/ToolPanel.test.tsx
 npm --prefix v3 run typecheck
 ```
 
-Expected: PASS.
-
 - [ ] **Step 6: Commit**
 
 ```bash
 git add v3/src/editor/panels/ToolPanel.tsx v3/src/editor/panels/ToolPanel.test.tsx v3/src/editor/panels/rich-panels.css v3/src/styles.css
-git commit -m "fix: keep editor tool navigation visible"
+git commit -m "fix: isolate tool panel scrolling"
 ```
 
 ---
@@ -364,8 +310,6 @@ git commit -m "fix: keep editor tool navigation visible"
 - Modify: `v3/src/store/editor-store.test.ts`
 
 **Interfaces:**
-- Consumes: `TextWritingMode` from Task 1.
-- Produces:
 
 ```ts
 export function segmentGraphemes(text: string): string[];
@@ -377,49 +321,41 @@ export function getWritingModeBox(
 ): { x: number; y: number; width: number; height: number };
 ```
 
-- [ ] **Step 1: Write failing grapheme tests**
-
-Cover plain Turkish text, emoji, and composed graphemes. Example:
+- [ ] **Step 1: Write RED grapheme tests**
 
 ```ts
 expect(getDisplayText('KRAL', 'vertical-stacked')).toBe('K\nR\nA\nL');
 expect(segmentGraphemes('A👨‍👩‍👧‍👦B')).toEqual(['A', '👨‍👩‍👧‍👦', 'B']);
 ```
 
-- [ ] **Step 2: Run and verify RED**
+Also cover a combining-character example.
+
+- [ ] **Step 2: Verify RED**
 
 ```bash
 npm --prefix v3 test -- src/text/layout.test.ts
 ```
 
-Expected: FAIL because the module does not exist.
+- [ ] **Step 3: Implement layout helper**
 
-- [ ] **Step 3: Implement segmentation and display text**
+Use `Intl.Segmenter(undefined, { granularity: 'grapheme' })` when available, with `Array.from(text)` fallback only when Segmenter is unavailable. Stored source text never changes.
 
-Prefer `Intl.Segmenter(undefined, { granularity: 'grapheme' })`. Provide a deterministic fallback using `Array.from(text)` only when Segmenter is unavailable.
+- [ ] **Step 4: Write RED inspector/history test**
 
-- [ ] **Step 4: Add one-step writing-mode store/UI behavior test**
+Switch horizontal → vertical and assert source text stays unchanged, geometry center is preserved, and one `undo()` restores the prior mode/geometry.
 
-Select a text element, switch to `vertical-stacked`, assert source `element.text` remains unchanged and only `writingMode`/geometry change. Undo must restore horizontal mode in one step.
+- [ ] **Step 5: Add `Yatay / Dikey` inspector control and render derived display text**
 
-- [ ] **Step 5: Implement inspector control and center-preserving box change**
+Switching mode computes a sensible new box through `getWritingModeBox`. `EditorCanvas` passes `getDisplayText(...)` into Konva Text.
 
-Add a clearly labeled `Yatay / Dikey` segmented control. When switching modes, compute the new text box but preserve the previous box center.
-
-- [ ] **Step 6: Render derived display text in `EditorCanvas`**
-
-Pass `getDisplayText(element.text, element.writingMode)` to Konva Text. Do not mutate stored source text.
-
-- [ ] **Step 7: Run focused tests**
+- [ ] **Step 6: Verify GREEN**
 
 ```bash
 npm --prefix v3 test -- src/text/layout.test.ts src/editor/panels/TextInspector.test.tsx src/editor/canvas/EditorCanvas.test.tsx src/store/editor-store.test.ts
 npm --prefix v3 run typecheck
 ```
 
-Expected: PASS.
-
-- [ ] **Step 8: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 git add v3/src/text v3/src/editor/canvas/EditorCanvas.tsx v3/src/editor/panels/TextInspector.tsx v3/src/editor/panels/TextInspector.test.tsx v3/src/store/editor-store.test.ts
@@ -428,18 +364,17 @@ git commit -m "feat: add vertical stacked text"
 
 ---
 
-### Task 5: Expanded Deterministic Image Animation Engine
+### Task 5: Expanded Deterministic Image Animations
 
 **Files:**
 - Modify: `v3/src/animations/evaluator.ts`
 - Modify: `v3/src/animations/evaluator.test.ts`
 - Modify: `v3/src/editor/canvas/EditorCanvas.tsx`
+- Modify: `v3/src/editor/canvas/EditorCanvas.test.tsx`
 - Modify: `v3/src/editor/panels/MotionPanel.tsx`
-- Modify: `v3/src/editor/panels/MotionPanel.test.tsx`
+- Create/Modify: `v3/src/editor/panels/MotionPanel.test.tsx`
 
-**Interfaces:**
-- Consumes: expanded `AnimationDefinition` from Task 1.
-- Produces expanded `EvaluatedAnimation`:
+**Expanded interface:**
 
 ```ts
 export type EvaluatedAnimation = {
@@ -458,55 +393,71 @@ export type EvaluatedAnimation = {
 };
 ```
 
-- [ ] **Step 1: Write table-driven RED tests for all presets**
+- [ ] **Step 1: Write RED table-driven tests for every preset**
 
-For every existing and new preset, assert two calls with the same animation definition/time return deep-equal values. Test identity before `delayMs`, and test `loop: false` clamps at the final frame.
+Keep existing presets and add:
+- Ken Burns
+- Slow Pan
+- Orbit
+- Breathing Zoom
+- Rubber
+- Flip X
+- Flip Y
+- Pendulum
+- Drift
+- Parallax
+- Jello
+- Wobble
+- Heartbeat
+- Flash
+- Reveal
+- Scanline
+- Glitch RGB
+- Chromatic Shake
+- Focus Pulse
+- Pixel Pulse
 
-Include the new presets from the spec: Ken Burns, Slow Pan, Orbit, Breathing Zoom, Rubber, Flip X, Flip Y, Pendulum, Drift, Parallax, Jello, Wobble, Heartbeat, Flash, Reveal, Scanline, Glitch RGB, Chromatic Shake, Focus Pulse, Pixel Pulse.
+For each preset, same definition + timestamp must produce deep-equal output. Test delay and non-loop clamp behavior.
 
-- [ ] **Step 2: Run evaluator tests and verify RED**
+- [ ] **Step 2: Verify RED**
 
 ```bash
 npm --prefix v3 test -- src/animations/evaluator.test.ts
 ```
 
-Expected: FAIL because presets/channels do not exist.
+- [ ] **Step 3: Implement pure animation math**
 
-- [ ] **Step 3: Implement pure evaluator math**
+Use speed period + intensity multiplier + optional direction. No `Math.random()`, DOM time reads, or imperative Tween state inside evaluator.
 
-Keep all output derived only from definition + timestamp. Use speed period, intensity multiplier, direction sign/vector, and deterministic trig/phase functions. No `Math.random()` and no imperative Konva Tween state.
+- [ ] **Step 4: Add RED canvas tests for new channels**
 
-- [ ] **Step 4: Write RED canvas tests for new render channels**
+With fixed `timeOverrideMs`, assert skew/focus/chromatic/reveal output is stable and project geometry does not mutate.
 
-For a selected image with a fixed `timeOverrideMs`, assert skew/blur/chromatic/reveal-related props/helper output are deterministic and stored geometry remains unchanged.
+- [ ] **Step 5: Wire channels into renderer**
 
-- [ ] **Step 5: Wire render channels**
+Direct props handle x/y/scale/rotation/opacity/skew. Transient hue/blur/pixel values feed the effect adapter as render overrides. RGB/glitch uses render-only helper image layers, never persisted project elements.
 
-Use direct Konva props for x/y/scale/rotation/opacity/skew. Feed `hueShift`, `blurAmount`, and pixel pulse into the effect render plan as transient render overrides. Use render-only helper image layers for RGB/chromatic split where needed. Keep helper layers out of project state.
+- [ ] **Step 6: Expand MotionPanel**
 
-- [ ] **Step 6: Expand Motion UI**
+Preset cards plus shared **Hız** and **Yoğunluk**. Show **Yön** only for presets that use direction.
 
-Show presets as labeled cards. Add shared `Hız` and `Yoğunluk` controls. Show direction controls only for directional presets.
-
-- [ ] **Step 7: Run focused tests and typecheck**
+- [ ] **Step 7: Verify GREEN**
 
 ```bash
 npm --prefix v3 test -- src/animations/evaluator.test.ts src/editor/canvas/EditorCanvas.test.tsx src/editor/panels/MotionPanel.test.tsx
 npm --prefix v3 run typecheck
 ```
 
-Expected: PASS.
-
 - [ ] **Step 8: Commit**
 
 ```bash
-git add v3/src/animations v3/src/editor/canvas/EditorCanvas.tsx v3/src/editor/panels/MotionPanel.tsx v3/src/editor/panels/MotionPanel.test.tsx
-git commit -m "feat: expand deterministic image animations"
+git add v3/src/animations v3/src/editor/canvas/EditorCanvas.tsx v3/src/editor/canvas/EditorCanvas.test.tsx v3/src/editor/panels/MotionPanel.tsx v3/src/editor/panels/MotionPanel.test.tsx
+git commit -m "feat: expand deterministic photo animations"
 ```
 
 ---
 
-### Task 6: Proportional Project Canvas Resizing
+### Task 6: Proportional Canvas Resize
 
 **Files:**
 - Create: `v3/src/sizing/project-size.ts`
@@ -517,8 +468,7 @@ git commit -m "feat: expand deterministic image animations"
 - Create: `v3/src/editor/panels/CanvasSizePanel.test.tsx`
 - Modify: `v3/src/editor/EditorShell.tsx`
 
-**Interfaces:**
-- Produces:
+**Interface:**
 
 ```ts
 export function resizeProjectProportionally(
@@ -528,74 +478,70 @@ export function resizeProjectProportionally(
 ): Project;
 ```
 
-- Store produces:
+- [ ] **Step 1: Write RED resize tests**
+
+300×100 → 600×200 must double element size/position, text `fontSize`, `strokeWidth`, `shadowBlur`, and frame width.
+
+300×100 → 300×300 must use uniform scale 1 and re-center element centers without distortion:
 
 ```ts
-resizeProject(width: number, height: number): void;
+const oldCx = element.x + element.width / 2;
+const oldCy = element.y + element.height / 2;
+const relativeX = oldCx - oldW / 2;
+const relativeY = oldCy - oldH / 2;
+const newCx = newW / 2 + relativeX * uniformScale;
+const newCy = newH / 2 + relativeY * uniformScale;
 ```
 
-- [ ] **Step 1: Write pure sizing RED tests**
-
-Same aspect ratio example: 300×100 → 600×200 must double positions, width/height, fontSize, strokeWidth, shadowBlur, and frame width.
-
-Aspect ratio change example: 300×100 → 300×300 uses `uniformScale = 1`; element sizes remain undistorted while their centers are re-centered relative to the new canvas center.
-
-Use element-center math:
-
-```ts
-oldElementCenterX = element.x + element.width / 2;
-oldElementCenterY = element.y + element.height / 2;
-relativeX = oldElementCenterX - oldW / 2;
-relativeY = oldElementCenterY - oldH / 2;
-newCenterX = newW / 2 + relativeX * uniformScale;
-newCenterY = newH / 2 + relativeY * uniformScale;
-newX = newCenterX - newElementWidth / 2;
-newY = newCenterY - newElementHeight / 2;
-```
-
-- [ ] **Step 2: Run and verify RED**
+- [ ] **Step 2: Verify RED**
 
 ```bash
 npm --prefix v3 test -- src/sizing/project-size.test.ts
 ```
 
-Expected: FAIL because the module does not exist.
+- [ ] **Step 3: Implement pure resize transform**
 
-- [ ] **Step 3: Implement pure proportional resize**
+Validate positive finite integer dimensions inside schema limits. Scale element geometry uniformly; scale text visual dimensions and frame width; decorations remain dimension-relative.
 
-Validate finite integer dimensions inside project schema limits. Scale each visual element uniformly, text visual dimensions, and frame width. Keep decorations declarative.
+- [ ] **Step 4: Add store RED test for one undo step**
 
-- [ ] **Step 4: Write store RED test for one undo step**
+`resizeProject(600, 200)` then one `undo()` must restore the exact prior project.
 
-Call `resizeProject(600, 200)`, then one `undo()` must restore the exact prior project.
+- [ ] **Step 5: Add CanvasSizePanel**
 
-- [ ] **Step 5: Add store action and Canvas Size UI**
+Presets:
+- 300×100
+- 350×120
+- 450×150
+- 600×200
+- 150×150
+- 200×200
+- 300×300
+- Custom
 
-Add presets exactly from spec and custom numeric width/height. Preset/custom apply calls the store once, not once per keystroke. Invalid values show inline validation and do not mutate the project.
+Custom width/height commit only after validation. Do not mutate on every number-field keystroke.
 
-- [ ] **Step 6: Wire into EditorShell workspace controls**
+- [ ] **Step 6: Wire panel into workspace controls**
 
-Make `Tuval Boyutu` an actionable control that opens/displays `CanvasSizePanel`. Ensure current final dimensions remain visible.
+Keep current canvas dimensions visible. Resize action calls the store once.
 
-- [ ] **Step 7: Run tests and typecheck**
+- [ ] **Step 7: Verify GREEN**
 
 ```bash
 npm --prefix v3 test -- src/sizing/project-size.test.ts src/store/editor-store.test.ts src/editor/panels/CanvasSizePanel.test.tsx
 npm --prefix v3 run typecheck
 ```
 
-Expected: PASS.
-
 - [ ] **Step 8: Commit**
 
 ```bash
 git add v3/src/sizing v3/src/store/editor-store.ts v3/src/store/editor-store.test.ts v3/src/editor/panels/CanvasSizePanel.tsx v3/src/editor/panels/CanvasSizePanel.test.tsx v3/src/editor/EditorShell.tsx
-git commit -m "feat: add proportional canvas sizing"
+git commit -m "feat: restore proportional canvas sizing"
 ```
 
 ---
 
-### Task 7: PNG/GIF Output Scale, Profiles, and Memory Guard
+### Task 7: PNG/GIF Scale, GIF Profiles, and Work Budget
 
 **Files:**
 - Create: `v3/src/export/profiles.ts`
@@ -607,186 +553,108 @@ git commit -m "feat: add proportional canvas sizing"
 - Modify: `v3/src/export/gif-browser.ts`
 - Create: `v3/src/editor/panels/ExportPanel.tsx`
 - Create: `v3/src/editor/panels/ExportPanel.test.tsx`
-- Modify: `v3/src/store/editor-store.ts`
+- Modify: `v3/src/editor/EditorShell.tsx`
 
 **Interfaces:**
-- Produces:
 
 ```ts
-export type ExportDimensions = { width: number; height: number };
-
 export function getExportDimensions(
   projectWidth: number,
   projectHeight: number,
   scale: ExportScale,
-): ExportDimensions;
+): { width: number; height: number };
 
 export function getGifFramePlan(
   durationMs: number,
   profile: GifProfile,
 ): { frameCount: number; frameTimesMs: number[]; delayMs: number };
 
-export function getGifWorkBudget(
-  width: number,
-  height: number,
-  frameCount: number,
-): number;
-
+export function getGifWorkBudget(width: number, height: number, frameCount: number): number;
 export function assertSafeGifWorkBudget(work: number): void;
 ```
 
-Use deterministic profile targets:
+Profiles:
 
 ```ts
-small:    targetFps = 8
-balanced: targetFps = 12
-quality:  targetFps = 20
+small:    targetFps = 8,  maxFrames = 16
+balanced: targetFps = 12, maxFrames = 36
+quality:  targetFps = 20, maxFrames = 60
 ```
 
-Clamp minimum frames to 2 and maximum frames to 16 / 36 / 60 respectively. Generate evenly spaced frame timestamps over `durationMs`.
+Minimum 2 frames. Evenly sample the full `durationMs`. Hard budget ceiling: `100_000_000` pixel-frames.
 
-Use `100_000_000` pixel-frames as the initial hard work-budget ceiling from the approved spec self-review.
+- [ ] **Step 1: Write RED profile/dimension tests**
 
-- [ ] **Step 1: Write profile/dimension RED tests**
+Assert `300×100 @2x => 600×200`, stable profile frame times, max-frame clamps, and >100M work rejection.
 
-Assert `300×100 @2x` returns `600×200`. Assert each profile generates stable frame times and respects maximum frame counts. Assert work above 100M throws a useful error.
-
-- [ ] **Step 2: Run and verify RED**
+- [ ] **Step 2: Verify RED**
 
 ```bash
 npm --prefix v3 test -- src/export/profiles.test.ts
 ```
 
-Expected: FAIL because the module does not exist.
+- [ ] **Step 3: Implement pure profile helpers**
 
-- [ ] **Step 3: Implement pure export profile helpers**
+No DOM/Konva imports in `profiles.ts`.
 
-Keep all calculations free of DOM/Konva so tests are cheap and deterministic.
+- [ ] **Step 4: Write RED PNG output-scale test and implement scaled PNG**
 
-- [ ] **Step 4: Write RED PNG scale test**
+Extend:
 
-Mock a Stage whose logical preview scale differs from output scale. Assert PNG capture requests the correct effective pixel ratio and output dimensions while excluding `.selection-transformer`.
+```ts
+downloadStagePng(stage, filename, scale)
+```
 
-- [ ] **Step 5: Implement scaled PNG export**
+Output dimensions must be logical project size × export scale, independent of responsive preview scale. Hide selection transformer during capture.
 
-Extend `downloadStagePng(stage, filename, scale)` and capture helpers. Output scale is relative to logical project dimensions, not current responsive display dimensions.
+- [ ] **Step 5: Write RED GIF plan/size test and implement scaled GIF**
 
-- [ ] **Step 6: Write RED GIF frame/profile test**
+Encoder dimensions are project × export scale. `encodeGifFrames` receives the exact deterministic `frameTimesMs`. Check work budget before encoder startup.
 
-Pass a profile plan into `encodeGifFrames`. Assert `renderFrame` receives the exact deterministic timestamps and encoder width/height match project × export scale.
+- [ ] **Step 6: Add ExportPanel**
 
-- [ ] **Step 7: Implement scaled/profiled GIF export**
+Show 1x/2x/3x/4x, Küçük/Dengeli/Kaliteli, final output pixels, and budget warning. Controls call `setExportSettings`; they do not alter element geometry or visual undo history.
 
-Create the encoder at final output dimensions. Render each frame from logical project state at the requested timestamp, then capture/scale to final dimensions. Reject unsafe budgets before loading/starting the encoder.
+- [ ] **Step 7: Wire EditorShell exports**
 
-- [ ] **Step 8: Add ExportPanel**
+`handlePngExport` reads `project.exportSettings.scale`. `handleGifExport` reads both scale/profile, computes profile/work budget, uses `exportTimeMs` for each exact sample, then restores live time.
 
-Show:
-
-- 1x / 2x / 3x / 4x
-- Küçük / Dengeli / Kaliteli
-- Final dimensions, e.g. `600 × 200 px`
-- A warning when the current GIF budget is unsafe
-
-Changing these settings updates only `project.exportSettings` (or the dedicated persisted export settings state decided in Task 1) and does not add a visual undo step.
-
-- [ ] **Step 9: Run tests and typecheck**
+- [ ] **Step 8: Verify GREEN**
 
 ```bash
-npm --prefix v3 test -- src/export/profiles.test.ts src/export/png.test.ts src/export/gif.test.ts src/editor/panels/ExportPanel.test.tsx
+npm --prefix v3 test -- src/export/profiles.test.ts src/export/png.test.ts src/export/gif.test.ts src/editor/panels/ExportPanel.test.tsx src/editor/EditorShell.test.tsx
 npm --prefix v3 run typecheck
 ```
 
-Expected: PASS.
-
-- [ ] **Step 10: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add v3/src/export v3/src/editor/panels/ExportPanel.tsx v3/src/editor/panels/ExportPanel.test.tsx v3/src/store/editor-store.ts
-git commit -m "feat: add controllable PNG and GIF sizing"
+git add v3/src/export v3/src/editor/panels/ExportPanel.tsx v3/src/editor/panels/ExportPanel.test.tsx v3/src/editor/EditorShell.tsx
+git commit -m "feat: add PNG and GIF output sizing"
 ```
 
 ---
 
-### Task 8: EditorShell Integration and Preview/Export Parity
+### Task 8: Full Integration and Release Gate
 
 **Files:**
-- Modify: `v3/src/editor/EditorShell.tsx`
-- Modify: `v3/src/editor/EditorShell.test.tsx`
-- Modify: `v3/src/editor/canvas/EditorCanvas.tsx`
-- Modify: `v3/src/editor/canvas/EditorCanvas.test.tsx`
-- Modify: `v3/src/editor/toolbar/TopToolbar.tsx`
-- Modify: `v3/src/styles.css`
-
-**Interfaces:**
-- Consumes Tasks 1–7.
-- Produces a fully wired editor where project/export size controls and preview/export renderer share the same project/evaluator state.
-
-- [ ] **Step 1: Write failing integration tests**
-
-Cover this user flow in `EditorShell.test.tsx` with render-module mocks only where browser canvas APIs make it unavoidable:
-
-1. Add/select an image.
-2. Open Effects and change brightness.
-3. Select a new image animation.
-4. Add text and switch to vertical.
-5. Resize 300×300 → 300×100.
-6. Set export scale 2x and GIF profile balanced.
-7. Trigger PNG/GIF export.
-8. Assert exporters receive the latest state/dimensions and the visual project geometry is unchanged by export settings.
-
-- [ ] **Step 2: Run integration tests and verify RED**
-
-```bash
-npm --prefix v3 test -- src/editor/EditorShell.test.tsx src/editor/canvas/EditorCanvas.test.tsx
-```
-
-Expected: FAIL on missing final wiring.
-
-- [ ] **Step 3: Wire CanvasSizePanel and ExportPanel into the editor**
-
-Keep controls visible without forcing the user to scroll the long category content. Do not put canvas/export sizing at the bottom of Hazır Tasarımlar.
-
-- [ ] **Step 4: Wire export scale/profile into existing toolbar actions**
-
-`handlePngExport` reads current scale. `handleGifExport` reads scale/profile, computes work budget before encoder startup, sets deterministic `exportTimeMs`, and restores live time afterward.
-
-- [ ] **Step 5: Verify preview/export transient animation channels**
-
-Ensure all transient effect/animation overrides are derived from `timeOverrideMs` during GIF sampling and from live RAF time during preview. No export-only effect implementation is allowed.
-
-- [ ] **Step 6: Run integration tests, full tests, typecheck, build**
-
-```bash
-npm --prefix v3 test -- src/editor/EditorShell.test.tsx src/editor/canvas/EditorCanvas.test.tsx
-npm --prefix v3 test
-npm --prefix v3 run typecheck
-npm --prefix v3 run build
-```
-
-Expected: all PASS.
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add v3/src/editor v3/src/styles.css
-git commit -m "feat: integrate editor pro controls"
-```
-
----
-
-### Task 9: Regression Gate, Documentation, and PR
-
-**Files:**
-- Modify where necessary based only on concrete failing tests/review findings.
+- Modify only files implicated by concrete failing regression tests/review findings.
 - Verify: `.github/workflows/v3-ci.yml`
 - Verify: `vercel.json`
-- Update if necessary: `docs/superpowers/plans/2026-09-09-flash-nick-v3-editor-pro.md` checkboxes only.
 
-**Interfaces:**
-- Produces the merge-ready `feat/v3-editor-pro` branch.
+- [ ] **Step 1: Add one end-to-end editor integration test**
 
-- [ ] **Step 1: Run the complete fresh verification gate**
+Cover this state flow:
+1. image selected;
+2. effect changes;
+3. rich image animation selected;
+4. text added and switched vertical;
+5. canvas resized proportionally;
+6. export set to 2x + balanced;
+7. PNG/GIF handlers receive latest dimensions/settings;
+8. export settings did not alter visual element geometry.
+
+- [ ] **Step 2: Run full verification**
 
 ```bash
 npm --prefix v3 test
@@ -796,13 +664,13 @@ npm --prefix v3 run build
 
 Expected: all PASS on the exact branch head proposed for PR.
 
-- [ ] **Step 2: Inspect test logs for warnings**
+- [ ] **Step 3: Inspect logs for test-quality warnings**
 
-There must be no React `act(...)` warning, unhandled promise rejection, jsdom navigation warning, or test worker crash. The existing Vite large-chunk warning may remain only if the bundle still builds successfully; do not silence it by merely raising the warning limit.
+Block on React `act(...)` warnings, unhandled promises, jsdom navigation errors, or worker crashes. Do not hide the existing Vite large-chunk warning by merely raising the warning limit.
 
-- [ ] **Step 3: Verify deployment policy before pushing final changes**
+- [ ] **Step 4: Verify deployment policy**
 
-Confirm root `vercel.json` still contains:
+Root `vercel.json` must still contain:
 
 ```json
 {
@@ -815,39 +683,36 @@ Confirm root `vercel.json` still contains:
 }
 ```
 
-Feature-branch commits must not create preview deployments.
+No feature-branch Vercel preview deployment loop.
 
-- [ ] **Step 4: Review spec coverage against implementation**
+- [ ] **Step 5: Review all acceptance criteria**
 
-Explicitly verify all acceptance criteria:
+Every item must have code + automated evidence:
+- working image effects;
+- independent left-panel scroll;
+- vertical stacked text;
+- expanded deterministic image animations;
+- proportional canvas resize;
+- PNG/GIF 1x–4x;
+- GIF Small/Balanced/Quality;
+- V1 migration;
+- meaningful undo/redo;
+- preview/export parity.
 
-- effects visibly mutate selected image
-- independent tool-panel content scroll
-- vertical stacked text
-- expanded deterministic animations
-- proportional project resize
-- PNG/GIF 1x–4x
-- GIF small/balanced/quality
-- V1 migration
-- meaningful undo/redo
-- preview/export parity
+- [ ] **Step 6: Request final code review**
 
-Any failed item blocks PR readiness.
+Compare `main` to current branch head. Fix every Critical/Important finding, then repeat Step 2.
 
-- [ ] **Step 5: Request code review on the final diff**
+- [ ] **Step 7: Open PR**
 
-Review base `main` versus the current `feat/v3-editor-pro` head. Fix all Critical and Important findings before proceeding and re-run Step 1 after each fix batch.
-
-- [ ] **Step 6: Open PR against main**
-
-Use title:
+Title:
 
 ```text
 Upgrade V3 editor effects, animation and sizing
 ```
 
-PR body must summarize the five user-requested product gaps, migration behavior, TDD evidence, exact final test count, typecheck/build result, and note that feature branches do not deploy to Vercel.
+PR body includes the five user-reported gaps, V1 migration, exact final test count, typecheck/build evidence, and the no-preview deployment policy.
 
-- [ ] **Step 7: Do not merge until explicitly completing the branch workflow**
+- [ ] **Step 8: Finish branch only after green review gate**
 
-After PR verification, follow `superpowers:finishing-a-development-branch`. Merge to `main` only after the final branch gate is green. The resulting `main` merge should trigger exactly one production Vercel deployment.
+Use `superpowers:finishing-a-development-branch`. Merge to `main` only after the exact final head is green. That main merge triggers one production Vercel deployment.
