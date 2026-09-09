@@ -1,7 +1,13 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEditorStore } from '../../store/editor-store';
 import { EditorCanvas } from './EditorCanvas';
+
+const konvaNodeSpies = vi.hoisted(() => ({
+  cache: vi.fn(),
+  clearCache: vi.fn(),
+  batchDraw: vi.fn(),
+}));
 
 vi.mock('../../animations/useAnimationClock', () => ({
   useAnimationClock: () => 375,
@@ -29,9 +35,9 @@ vi.mock('react-konva', async () => {
         if (value !== undefined) scaleY = value;
         return scaleY;
       },
-      cache: () => undefined,
-      clearCache: () => undefined,
-      getLayer: () => ({ batchDraw: () => undefined }),
+      cache: konvaNodeSpies.cache,
+      clearCache: konvaNodeSpies.clearCache,
+      getLayer: () => ({ batchDraw: konvaNodeSpies.batchDraw }),
     };
   };
 
@@ -70,6 +76,7 @@ vi.mock('react-konva', async () => {
         type="button"
         data-testid={`image-${String(props.id)}`}
         data-filter-count={String(Array.isArray(props.filters) ? props.filters.length : 0)}
+        data-brightness={String(props.brightness ?? '')}
         onClick={props.onClick as (() => void) | undefined}
       >
         Fotoğraf
@@ -100,6 +107,24 @@ vi.mock('react-konva', async () => {
 describe('EditorCanvas', () => {
   beforeEach(() => {
     useEditorStore.getState().reset();
+    konvaNodeSpies.cache.mockClear();
+    konvaNodeSpies.clearCache.mockClear();
+    konvaNodeSpies.batchDraw.mockClear();
+
+    class AutoLoadingImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+
+      set src(_value: string) {
+        queueMicrotask(() => this.onload?.());
+      }
+    }
+
+    Object.defineProperty(window, 'Image', {
+      configurable: true,
+      writable: true,
+      value: AutoLoadingImage,
+    });
   });
 
   it('renders text elements from the project and selects them when clicked', () => {
@@ -160,6 +185,29 @@ describe('EditorCanvas', () => {
 
     rerender(<EditorCanvas timeOverrideMs={400} />);
     expect(Number(screen.getByTestId(`text-${textId}`).getAttribute('data-y'))).toBeCloseTo(element.y + 10, 5);
+  });
+
+  it('maps effect values through Konva 10 and refreshes the image cache', async () => {
+    const imageId = useEditorStore.getState().addImage('blob:fixture', 640, 480);
+    useEditorStore.getState().setImageEffects(imageId, { brightness: 0.2 });
+
+    render(<EditorCanvas />);
+
+    await waitFor(() => expect(konvaNodeSpies.cache).toHaveBeenCalled());
+    expect(screen.getByTestId(`image-${imageId}`)).toHaveAttribute('data-brightness', '1.2');
+
+    konvaNodeSpies.cache.mockClear();
+    act(() => {
+      useEditorStore.getState().setImageEffects(imageId, { brightness: 0.4 });
+    });
+    await waitFor(() => expect(konvaNodeSpies.cache).toHaveBeenCalled());
+    expect(screen.getByTestId(`image-${imageId}`)).toHaveAttribute('data-brightness', '1.4');
+
+    act(() => {
+      useEditorStore.getState().setImageEffects(imageId, { brightness: 0 });
+    });
+    await waitFor(() => expect(konvaNodeSpies.clearCache).toHaveBeenCalled());
+    expect(screen.getByTestId(`image-${imageId}`)).toHaveAttribute('data-filter-count', '0');
   });
 
   it('passes active image effects to the Konva image filter pipeline', () => {
