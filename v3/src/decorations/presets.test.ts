@@ -24,6 +24,15 @@ describe('decoration presets', () => {
       'fire',
       'lightning',
       'turkish',
+      'diamonds',
+      'music',
+      'crowns',
+      'roses',
+      'moon-stars',
+      'cherry-blossom',
+      'money',
+      'smoke',
+      'rain',
     ]);
   });
 
@@ -32,5 +41,19 @@ describe('decoration presets', () => {
       decorationPoints(layer, 300, 300, 1250),
     );
     expect(decorationPoints(layer, 300, 300, 1250)).toHaveLength(8);
+  });
+
+  it('keeps animated decorative layers deterministic at a fixed timestamp', () => {
+    const smoke: DecorationLayer = {
+      ...layer,
+      preset: 'smoke',
+    };
+    const rain: DecorationLayer = {
+      ...layer,
+      preset: 'rain',
+    };
+
+    expect(decorationPoints(smoke, 300, 300, 850)).toEqual(decorationPoints(smoke, 300, 300, 850));
+    expect(decorationPoints(rain, 300, 300, 850)).toEqual(decorationPoints(rain, 300, 300, 850));
   });
 });
