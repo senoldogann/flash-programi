@@ -7,6 +7,7 @@ const CUSTOM_MIN_HEIGHT = 30;
 const CUSTOM_MAX_HEIGHT = 1200;
 
 const SIZE_PRESETS = [
+  [133, 33],
   [300, 100],
   [350, 120],
   [450, 150],

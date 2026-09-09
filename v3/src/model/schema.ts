@@ -53,6 +53,7 @@ export const animationSchema = z.object({
     'perspective-card',
     'levitate-25d',
     'cinematic-push',
+    'xara-double-sided',
   ]),
   speed: z.enum(['slow', 'normal', 'fast']),
   intensity: z.enum(['subtle', 'normal', 'strong']),
@@ -100,6 +101,7 @@ export const textElementSchema = z.object({
   ...elementBaseShape,
   type: z.literal('text'),
   text: z.string().max(500),
+  backText: z.string().max(500).optional(),
   writingMode: z.enum(['horizontal', 'vertical-stacked']),
   fontFamily: z.string().min(1).max(120),
   fontSize: z.number().finite().min(6).max(512),
@@ -109,6 +111,18 @@ export const textElementSchema = z.object({
   shadowColor: z.string().min(1).max(120),
   shadowBlur: z.number().finite().min(0).max(128),
   align: z.enum(['left', 'center', 'right']),
+  materialPreset: z.enum([
+    'flat',
+    'xara-gold',
+    'xara-chrome',
+    'xara-ruby',
+    'xara-ice',
+    'xara-purple-glass',
+    'xara-emerald',
+    'xara-fire',
+  ]).optional(),
+  extrusionDepth: z.number().int().min(0).max(16).optional(),
+  extrusionColor: z.string().min(1).max(120).optional(),
 }).strict();
 
 export const imageElementSchema = z.object({
