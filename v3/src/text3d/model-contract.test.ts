@@ -50,6 +50,17 @@ const expectedStyle = {
   },
 };
 
+const compatibilityPaintFields = {
+  fill: '#ffd75a',
+  stroke: '#4b2b00',
+  strokeWidth: 2,
+  shadowColor: '#000000',
+  shadowBlur: 8,
+  materialPreset: 'xara-gold' as const,
+  extrusionDepth: 8,
+  extrusionColor: '#7c4800',
+};
+
 function buildLegacyText3DProject(): Project {
   const base = createEmptyProject();
   const text: TextElement = {
@@ -116,6 +127,7 @@ describe('FlashText3D Project V3 model contract', () => {
         fontFamily: 'Impact',
         fontSize: 28,
         align: 'center',
+        ...compatibilityPaintFields,
         style: expectedStyle,
       }],
     };
@@ -127,12 +139,12 @@ describe('FlashText3D Project V3 model contract', () => {
     });
   });
 
-  it('rejects the provisional V3 material/extrusion fields once the explicit style model is used', () => {
+  it('rejects out-of-range Text3D material and lighting values', () => {
     const project = {
       ...createDefaultProjectV3(),
       layers: [{
-        id: 'text3d-legacy-shape',
-        name: 'Legacy provisional Text3D',
+        id: 'text3d-invalid-style',
+        name: 'Invalid Text3D',
         type: 'text3d',
         visible: true,
         locked: false,
@@ -152,10 +164,17 @@ describe('FlashText3D Project V3 model contract', () => {
         fontFamily: 'Impact',
         fontSize: 28,
         align: 'center',
-        style: expectedStyle,
-        materialPreset: 'xara-gold',
-        extrusionDepth: 8,
-        extrusionColor: '#7c4800',
+        ...compatibilityPaintFields,
+        style: {
+          ...expectedStyle,
+          surfaces: {
+            ...expectedStyle.surfaces,
+            front: {
+              ...expectedStyle.surfaces.front,
+              metallicity: 1.25,
+            },
+          },
+        },
       }],
     };
 
@@ -209,9 +228,5 @@ describe('FlashText3D Project V3 model contract', () => {
         },
       },
     });
-
-    expect(layer).not.toHaveProperty('materialPreset');
-    expect(layer).not.toHaveProperty('extrusionDepth');
-    expect(layer).not.toHaveProperty('extrusionColor');
   });
 });
