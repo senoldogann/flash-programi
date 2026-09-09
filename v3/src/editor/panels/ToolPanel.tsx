@@ -45,7 +45,7 @@ export function ToolPanel({ onAddText, onImageFile }: ToolPanelProps) {
         <div className="primary-tools">
           <button
             type="button"
-            className="tool-button tool-button-active"
+            className="tool-button tool-button-primary"
             aria-label="Fotoğraf Seç"
             onClick={() => imageInputRef.current?.click()}
           >
