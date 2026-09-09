@@ -50,16 +50,36 @@ const expectedStyle = {
   },
 };
 
-const compatibilityPaintFields = {
-  fill: '#ffd75a',
-  stroke: '#4b2b00',
-  strokeWidth: 2,
-  shadowColor: '#000000',
-  shadowBlur: 8,
-  materialPreset: 'xara-gold' as const,
-  extrusionDepth: 8,
-  extrusionColor: '#7c4800',
-};
+function text3dProject(style = expectedStyle) {
+  return {
+    ...createDefaultProjectV3(),
+    layers: [{
+      id: 'text3d-1',
+      name: 'Nick 3D',
+      type: 'text3d',
+      visible: true,
+      locked: false,
+      opacity: 1,
+      transform: {
+        x: 10,
+        y: 12,
+        width: 133,
+        height: 33,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+      },
+      clips: [],
+      text: 'SENOL',
+      backText: 'DOGAN',
+      writingMode: 'horizontal',
+      fontFamily: 'Impact',
+      fontSize: 28,
+      align: 'center',
+      style,
+    }],
+  };
+}
 
 function buildLegacyText3DProject(): Project {
   const base = createEmptyProject();
@@ -101,87 +121,51 @@ function buildLegacyText3DProject(): Project {
 }
 
 describe('FlashText3D Project V3 model contract', () => {
-  it('accepts explicit serializable Text3D geometry, surfaces, lighting and texture state', () => {
-    const project = {
-      ...createDefaultProjectV3(),
-      layers: [{
-        id: 'text3d-1',
-        name: 'Nick 3D',
-        type: 'text3d',
-        visible: true,
-        locked: false,
-        opacity: 1,
-        transform: {
-          x: 10,
-          y: 12,
-          width: 133,
-          height: 33,
-          rotation: 0,
-          scaleX: 1,
-          scaleY: 1,
-        },
-        clips: [],
-        text: 'SENOL',
-        backText: 'DOGAN',
-        writingMode: 'horizontal',
-        fontFamily: 'Impact',
-        fontSize: 28,
-        align: 'center',
-        ...compatibilityPaintFields,
-        style: expectedStyle,
-      }],
-    };
-
-    const parsed = parseProjectV3(project);
+  it('accepts explicit serializable Text3D geometry, surfaces, lighting and texture state without legacy paint fields', () => {
+    const parsed = parseProjectV3(text3dProject());
     expect(parsed.layers[0]).toMatchObject({
       type: 'text3d',
       style: expectedStyle,
     });
   });
 
-  it('rejects out-of-range Text3D material and lighting values', () => {
-    const project = {
-      ...createDefaultProjectV3(),
-      layers: [{
-        id: 'text3d-invalid-style',
-        name: 'Invalid Text3D',
-        type: 'text3d',
-        visible: true,
-        locked: false,
-        opacity: 1,
-        transform: {
-          x: 0,
-          y: 0,
-          width: 133,
-          height: 33,
-          rotation: 0,
-          scaleX: 1,
-          scaleY: 1,
-        },
-        clips: [],
-        text: 'SENOL',
-        writingMode: 'horizontal',
-        fontFamily: 'Impact',
-        fontSize: 28,
-        align: 'center',
-        ...compatibilityPaintFields,
-        style: {
-          ...expectedStyle,
-          surfaces: {
-            ...expectedStyle.surfaces,
-            front: {
-              ...expectedStyle.surfaces.front,
-              metallicity: 1.25,
-            },
-          },
-        },
-      }],
-    };
+  it('rejects provisional V3 paint/material/extrusion fields once style is explicit', () => {
+    const project = text3dProject();
+    const layer = project.layers[0];
 
-    expect(() => parseProjectV3(project)).toThrow();
+    for (const legacyField of [
+      { fill: '#ffd75a' },
+      { stroke: '#4b2b00' },
+      { strokeWidth: 2 },
+      { shadowColor: '#000000' },
+      { shadowBlur: 8 },
+      { materialPreset: 'xara-gold' },
+      { extrusionDepth: 8 },
+      { extrusionColor: '#7c4800' },
+    ]) {
+      expect(() => parseProjectV3({
+        ...project,
+        layers: [{ ...layer, ...legacyField }],
+      })).toThrow();
+    }
   });
 
-  it('migrates legacy Xara text into the explicit Text3D style model', () => {
+  it('rejects out-of-range Text3D material and lighting values', () => {
+    const invalidStyle = {
+      ...expectedStyle,
+      surfaces: {
+        ...expectedStyle.surfaces,
+        front: {
+          ...expectedStyle.surfaces.front,
+          metallicity: 1.25,
+        },
+      },
+    };
+
+    expect(() => parseProjectV3(text3dProject(invalidStyle))).toThrow();
+  });
+
+  it('migrates legacy Xara text into style without provisional V3 paint fields', () => {
     const migrated = migrateProjectToV3(buildLegacyText3DProject());
     const layer = migrated.layers.find((candidate) => candidate.id === 'text3d-1');
 
@@ -228,5 +212,18 @@ describe('FlashText3D Project V3 model contract', () => {
         },
       },
     });
+
+    for (const field of [
+      'fill',
+      'stroke',
+      'strokeWidth',
+      'shadowColor',
+      'shadowBlur',
+      'materialPreset',
+      'extrusionDepth',
+      'extrusionColor',
+    ]) {
+      expect(layer).not.toHaveProperty(field);
+    }
   });
 });
