@@ -12,7 +12,27 @@ export type AnimationPreset =
   | 'shake'
   | 'slide'
   | 'bounce'
-  | 'wave';
+  | 'wave'
+  | 'ken-burns'
+  | 'slow-pan'
+  | 'orbit'
+  | 'breathing-zoom'
+  | 'rubber'
+  | 'flip-x'
+  | 'flip-y'
+  | 'pendulum'
+  | 'drift'
+  | 'parallax'
+  | 'jello'
+  | 'wobble'
+  | 'heartbeat'
+  | 'flash'
+  | 'reveal'
+  | 'scanline'
+  | 'glitch-rgb'
+  | 'chromatic-shake'
+  | 'focus-pulse'
+  | 'pixel-pulse';
 
 export type AnimationSpeed = 'slow' | 'normal' | 'fast';
 export type AnimationIntensity = 'subtle' | 'normal' | 'strong';
