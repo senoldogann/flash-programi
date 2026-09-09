@@ -22,8 +22,8 @@ vi.mock('react-konva', async () => {
     let scaleY = Number(props.scaleY ?? 1);
 
     return {
-      x: () => Number(props.x ?? 140),
-      y: () => Number(props.y ?? 150),
+      x: () => 140,
+      y: () => 150,
       width: () => Number(props.width ?? 0),
       height: () => Number(props.height ?? 0),
       rotation: () => Number(props.rotation ?? 0),
