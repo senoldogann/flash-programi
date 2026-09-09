@@ -139,11 +139,29 @@ button:disabled {
 .inspector {
   padding: 16px;
   background: #0c1320;
+}
+
+.inspector {
   overflow-y: auto;
 }
 
 .tool-panel {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
   border-right: 1px solid #263044;
+}
+
+.tool-panel-nav {
+  min-width: 0;
+}
+
+.tool-panel-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .tool-button {
@@ -410,11 +428,20 @@ button:disabled {
   }
 
   .tool-panel {
+    display: block;
+    overflow: visible;
+    border-top: 1px solid #263044;
+    border-right: 0;
+  }
+
+  .tool-panel-nav {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
-    border-top: 1px solid #263044;
-    border-right: 0;
+  }
+
+  .tool-panel-content {
+    overflow: visible;
   }
 
   .tool-button {
