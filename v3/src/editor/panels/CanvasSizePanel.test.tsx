@@ -32,16 +32,33 @@ describe('CanvasSizePanel', () => {
     expect(useEditorStore.getState().project).toMatchObject({ width: 450, height: 150 });
   });
 
-  it('rejects invalid custom dimensions without mutating the project', () => {
+  it('exposes the approved custom width and height limits', () => {
+    render(<CanvasSizePanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Özel' }));
+
+    expect(screen.getByLabelText('Özel genişlik')).toHaveAttribute('min', '50');
+    expect(screen.getByLabelText('Özel genişlik')).toHaveAttribute('max', '1200');
+    expect(screen.getByLabelText('Özel yükseklik')).toHaveAttribute('min', '30');
+    expect(screen.getByLabelText('Özel yükseklik')).toHaveAttribute('max', '1200');
+  });
+
+  it('rejects custom dimensions outside the approved range without mutating the project', () => {
     const before = structuredClone(useEditorStore.getState().project);
     render(<CanvasSizePanel />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Özel' }));
-    fireEvent.change(screen.getByLabelText('Özel genişlik'), { target: { value: '20' } });
+    fireEvent.change(screen.getByLabelText('Özel genişlik'), { target: { value: '49' } });
     fireEvent.change(screen.getByLabelText('Özel yükseklik'), { target: { value: '150' } });
     fireEvent.click(screen.getByRole('button', { name: 'Özel Boyutu Uygula' }));
 
-    expect(screen.getByRole('alert')).toHaveTextContent('32');
+    expect(screen.getByRole('alert')).toHaveTextContent('50-1200');
+    expect(useEditorStore.getState().project).toEqual(before);
+
+    fireEvent.change(screen.getByLabelText('Özel genişlik'), { target: { value: '450' } });
+    fireEvent.change(screen.getByLabelText('Özel yükseklik'), { target: { value: '29' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Özel Boyutu Uygula' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('30-1200');
     expect(useEditorStore.getState().project).toEqual(before);
   });
 });
