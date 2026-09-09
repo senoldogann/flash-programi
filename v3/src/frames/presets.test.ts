@@ -14,12 +14,21 @@ describe('frame presets', () => {
       'ice',
       'glitter',
       'turkish',
+      'rose-gold',
+      'electric',
+      'cosmic',
+      'ocean',
+      'matrix',
+      'pearls',
+      'love-neon',
+      'minimal-white',
     ]);
   });
 
   it('returns a stable preset definition and clock requirement', () => {
     expect(getFramePreset('gold')).toMatchObject({ id: 'gold', label: 'Altın' });
     expect(frameNeedsClock({ preset: 'rainbow', width: 8 })).toBe(true);
+    expect(frameNeedsClock({ preset: 'electric', width: 8 })).toBe(true);
     expect(frameNeedsClock({ preset: 'gold', width: 8 })).toBe(false);
   });
 });
