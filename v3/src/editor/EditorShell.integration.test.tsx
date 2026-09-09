@@ -207,6 +207,7 @@ describe('EditorShell editor-pro integration', () => {
       runtime.fakeConstructor,
       1200,
       400,
+      'balanced',
     );
     expect(runtime.encodeGifFrames).toHaveBeenCalledWith(expect.objectContaining({
       frameTimesMs: expectedPlan.frameTimesMs,
