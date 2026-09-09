@@ -1,21 +1,41 @@
 import { useEditorStore } from '../../store/editor-store';
 
 type TopToolbarProps = {
+  onNewProject?: () => void;
   onExport?: () => void;
+  onGifExport?: () => void;
+  gifExporting?: boolean;
+  gifProgress?: number;
 };
 
-export function TopToolbar({ onExport }: TopToolbarProps) {
+export function TopToolbar({
+  onNewProject,
+  onExport,
+  onGifExport,
+  gifExporting = false,
+  gifProgress = 0,
+}: TopToolbarProps) {
   const canUndo = useEditorStore((state) => state.past.length > 0);
   const canRedo = useEditorStore((state) => state.future.length > 0);
   const undo = useEditorStore((state) => state.undo);
   const redo = useEditorStore((state) => state.redo);
+  const progressPercent = Math.max(0, Math.min(100, Math.round(gifProgress * 100)));
 
   return (
     <div className="header-actions" aria-label="Tasarım işlemleri">
       <button
         type="button"
         className="secondary-action"
-        disabled={!canUndo}
+        disabled={!onNewProject || gifExporting}
+        onClick={onNewProject}
+        aria-label="Yeni Tasarım"
+      >
+        Yeni Tasarım
+      </button>
+      <button
+        type="button"
+        className="secondary-action"
+        disabled={!canUndo || gifExporting}
         onClick={undo}
         aria-label="Geri Al"
       >
@@ -24,7 +44,7 @@ export function TopToolbar({ onExport }: TopToolbarProps) {
       <button
         type="button"
         className="secondary-action"
-        disabled={!canRedo}
+        disabled={!canRedo || gifExporting}
         onClick={redo}
         aria-label="Yinele"
       >
@@ -32,8 +52,17 @@ export function TopToolbar({ onExport }: TopToolbarProps) {
       </button>
       <button
         type="button"
+        className="secondary-action"
+        disabled={!onGifExport || gifExporting}
+        onClick={onGifExport}
+        aria-label="GIF İndir"
+      >
+        {gifExporting ? `GIF %${progressPercent}` : 'GIF İndir'}
+      </button>
+      <button
+        type="button"
         className="primary-action"
-        disabled={!onExport}
+        disabled={!onExport || gifExporting}
         onClick={onExport}
         aria-label="PNG İndir"
       >

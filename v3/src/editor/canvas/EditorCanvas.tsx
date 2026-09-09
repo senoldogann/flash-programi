@@ -1,15 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
-import type Konva from 'konva';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import Konva from 'konva';
 import { Image as KonvaImage, Layer, Rect, Stage, Text, Transformer } from 'react-konva';
-import type { ImageElement, Project, TextElement } from '../../model/project';
+import { animationNeedsClock, evaluateAnimation, type EvaluatedAnimation } from '../../animations/evaluator';
+import { useAnimationClock } from '../../animations/useAnimationClock';
+import { decorationNeedsClock } from '../../decorations/presets';
+import { DecorationRenderer } from '../../decorations/renderer';
+import { frameNeedsClock } from '../../frames/presets';
+import { FrameRenderer } from '../../frames/renderer';
+import type { ImageEffects, ImageElement, Project, TextElement } from '../../model/project';
 import { useEditorStore } from '../../store/editor-store';
 import { normalizeTransform } from './transform';
 
-type Viewport = {
-  width: number;
-  height: number;
-  scale: number;
-};
+type Viewport = { width: number; height: number; scale: number };
 
 type GeometryNode = {
   x(): number;
@@ -26,7 +28,13 @@ type GeometryNode = {
 type TransformableProps = {
   isSelected: boolean;
   previewScale: number;
+  timeMs: number;
   onSelect: () => void;
+};
+
+export type EditorCanvasProps = {
+  onStageReady?: (stage: Konva.Stage | null) => void;
+  timeOverrideMs?: number | null;
 };
 
 function snapshotProject(): Project {
@@ -37,29 +45,29 @@ function commitNodeGeometry(
   elementId: string,
   node: GeometryNode,
   beforeProject: Project,
+  animation: EvaluatedAnimation,
 ): void {
   const state = useEditorStore.getState();
   const element = state.project.elements.find((candidate) => candidate.id === elementId);
+  if (!element) return;
 
-  if (!element) {
-    return;
-  }
-
+  const safeScaleX = Math.abs(animation.scaleX) < 0.001 ? 1 : animation.scaleX;
+  const safeScaleY = Math.abs(animation.scaleY) < 0.001 ? 1 : animation.scaleY;
   const geometry = normalizeTransform(
     {
-      x: node.x(),
-      y: node.y(),
+      x: node.x() - animation.x,
+      y: node.y() - animation.y,
       width: node.width(),
       height: node.height(),
-      rotation: node.rotation(),
-      scaleX: node.scaleX(),
-      scaleY: node.scaleY(),
+      rotation: node.rotation() - animation.rotation,
+      scaleX: node.scaleX() / safeScaleX,
+      scaleY: node.scaleY() / safeScaleY,
     },
     element,
   );
 
-  node.scaleX(1);
-  node.scaleY(1);
+  node.scaleX(animation.scaleX);
+  node.scaleY(animation.scaleY);
 
   const afterProject: Project = {
     ...state.project,
@@ -67,7 +75,6 @@ function commitNodeGeometry(
       candidate.id === elementId ? { ...candidate, ...geometry } : candidate,
     ),
   };
-
   state.commitTransform(beforeProject, afterProject);
 }
 
@@ -75,37 +82,35 @@ function transformerSize(previewScale: number, pixels: number): number {
   return pixels / Math.max(previewScale, 0.1);
 }
 
-type CanvasImageElementProps = TransformableProps & {
-  element: ImageElement;
-};
+function buildImageFilters(effects: ImageEffects) {
+  const filters = [];
+  if (effects.brightness !== 0) filters.push(Konva.Filters.Brighten);
+  if (effects.contrast !== 0) filters.push(Konva.Filters.Contrast);
+  if (effects.saturation !== 0) filters.push(Konva.Filters.HSL);
+  if (effects.blurRadius > 0) filters.push(Konva.Filters.Blur);
+  if (effects.grayscale) filters.push(Konva.Filters.Grayscale);
+  if (effects.sepia) filters.push(Konva.Filters.Sepia);
+  return filters;
+}
 
-function CanvasImageElement({
-  element,
-  isSelected,
-  previewScale,
-  onSelect,
-}: CanvasImageElementProps) {
+type CanvasImageElementProps = TransformableProps & { element: ImageElement };
+
+function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelect }: CanvasImageElementProps) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const shapeRef = useRef<Konva.Image>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const beforeProjectRef = useRef<Project | null>(null);
+  const interactionTimeRef = useRef<number | null>(null);
+  const renderTime = interactionTimeRef.current ?? timeMs;
+  const animation = evaluateAnimation(element.animation, renderTime);
+  const filters = useMemo(() => buildImageFilters(element.effects), [element.effects]);
 
   useEffect(() => {
     let active = true;
     const nextImage = new window.Image();
-
-    nextImage.onload = () => {
-      if (active) {
-        setImage(nextImage);
-      }
-    };
-    nextImage.onerror = () => {
-      if (active) {
-        setImage(null);
-      }
-    };
+    nextImage.onload = () => active && setImage(nextImage);
+    nextImage.onerror = () => active && setImage(null);
     nextImage.src = element.assetUrl;
-
     return () => {
       active = false;
       nextImage.onload = null;
@@ -114,27 +119,31 @@ function CanvasImageElement({
   }, [element.assetUrl]);
 
   useEffect(() => {
-    if (!isSelected || !shapeRef.current || !transformerRef.current) {
-      return;
-    }
+    const node = shapeRef.current;
+    if (!node || !image) return;
+    if (filters.length > 0) node.cache(); else node.clearCache();
+    node.getLayer()?.batchDraw();
+  }, [filters, image]);
 
+  useEffect(() => {
+    if (!isSelected || element.locked || !shapeRef.current || !transformerRef.current) return;
     transformerRef.current.nodes([shapeRef.current]);
     transformerRef.current.getLayer()?.batchDraw();
-  }, [isSelected]);
+  }, [element.locked, isSelected]);
 
   const beginInteraction = () => {
     onSelect();
+    interactionTimeRef.current = timeMs;
     beforeProjectRef.current = snapshotProject();
   };
 
   const finishInteraction = () => {
-    if (!shapeRef.current) {
-      return;
-    }
-
+    if (!shapeRef.current) return;
+    const frozenAnimation = evaluateAnimation(element.animation, interactionTimeRef.current ?? timeMs);
     const beforeProject = beforeProjectRef.current ?? snapshotProject();
-    commitNodeGeometry(element.id, shapeRef.current, beforeProject);
+    commitNodeGeometry(element.id, shapeRef.current, beforeProject, frozenAnimation);
     beforeProjectRef.current = null;
+    interactionTimeRef.current = null;
   };
 
   return (
@@ -143,14 +152,21 @@ function CanvasImageElement({
         ref={shapeRef}
         id={element.id}
         image={image ?? undefined}
-        x={element.x}
-        y={element.y}
+        x={element.x + animation.x}
+        y={element.y + animation.y}
         width={element.width}
         height={element.height}
-        rotation={element.rotation}
-        opacity={element.opacity}
+        scaleX={animation.scaleX}
+        scaleY={animation.scaleY}
+        rotation={element.rotation + animation.rotation}
+        opacity={element.opacity * animation.opacity}
         visible={element.visible}
         draggable={!element.locked}
+        filters={filters}
+        brightness={element.effects.brightness}
+        contrast={element.effects.contrast}
+        saturation={element.effects.saturation}
+        blurRadius={element.effects.blurRadius}
         onClick={onSelect}
         onTap={onSelect}
         onDragStart={beginInteraction}
@@ -158,14 +174,12 @@ function CanvasImageElement({
         onTransformStart={beginInteraction}
         onTransformEnd={finishInteraction}
       />
-
-      {isSelected ? (
+      {isSelected && !element.locked ? (
         <Transformer
+          name="selection-transformer"
           ref={transformerRef}
           flipEnabled={false}
           keepRatio
-          rotateEnabled={!element.locked}
-          resizeEnabled={!element.locked}
           borderStroke="#8b7cff"
           borderStrokeWidth={transformerSize(previewScale, 1.5)}
           anchorFill="#ffffff"
@@ -182,42 +196,35 @@ function CanvasImageElement({
   );
 }
 
-type CanvasTextElementProps = TransformableProps & {
-  element: TextElement;
-};
+type CanvasTextElementProps = TransformableProps & { element: TextElement };
 
-function CanvasTextElement({
-  element,
-  isSelected,
-  previewScale,
-  onSelect,
-}: CanvasTextElementProps) {
+function CanvasTextElement({ element, isSelected, previewScale, timeMs, onSelect }: CanvasTextElementProps) {
   const shapeRef = useRef<Konva.Text>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const beforeProjectRef = useRef<Project | null>(null);
+  const interactionTimeRef = useRef<number | null>(null);
+  const renderTime = interactionTimeRef.current ?? timeMs;
+  const animation = evaluateAnimation(element.animation, renderTime);
 
   useEffect(() => {
-    if (!isSelected || !shapeRef.current || !transformerRef.current) {
-      return;
-    }
-
+    if (!isSelected || element.locked || !shapeRef.current || !transformerRef.current) return;
     transformerRef.current.nodes([shapeRef.current]);
     transformerRef.current.getLayer()?.batchDraw();
-  }, [isSelected]);
+  }, [element.locked, isSelected]);
 
   const beginInteraction = () => {
     onSelect();
+    interactionTimeRef.current = timeMs;
     beforeProjectRef.current = snapshotProject();
   };
 
   const finishInteraction = () => {
-    if (!shapeRef.current) {
-      return;
-    }
-
+    if (!shapeRef.current) return;
+    const frozenAnimation = evaluateAnimation(element.animation, interactionTimeRef.current ?? timeMs);
     const beforeProject = beforeProjectRef.current ?? snapshotProject();
-    commitNodeGeometry(element.id, shapeRef.current, beforeProject);
+    commitNodeGeometry(element.id, shapeRef.current, beforeProject, frozenAnimation);
     beforeProjectRef.current = null;
+    interactionTimeRef.current = null;
   };
 
   return (
@@ -225,12 +232,14 @@ function CanvasTextElement({
       <Text
         ref={shapeRef}
         id={element.id}
-        x={element.x}
-        y={element.y}
+        x={element.x + animation.x}
+        y={element.y + animation.y}
         width={element.width}
         height={element.height}
-        rotation={element.rotation}
-        opacity={element.opacity}
+        scaleX={animation.scaleX}
+        scaleY={animation.scaleY}
+        rotation={element.rotation + animation.rotation}
+        opacity={element.opacity * animation.opacity}
         visible={element.visible}
         draggable={!element.locked}
         text={element.text}
@@ -250,14 +259,12 @@ function CanvasTextElement({
         onTransformStart={beginInteraction}
         onTransformEnd={finishInteraction}
       />
-
-      {isSelected ? (
+      {isSelected && !element.locked ? (
         <Transformer
+          name="selection-transformer"
           ref={transformerRef}
           flipEnabled={false}
           keepRatio={false}
-          rotateEnabled={!element.locked}
-          resizeEnabled={!element.locked}
           borderStroke="#8b7cff"
           borderStrokeWidth={transformerSize(previewScale, 1.5)}
           anchorFill="#ffffff"
@@ -274,60 +281,50 @@ function CanvasTextElement({
   );
 }
 
-export function EditorCanvas() {
+export function EditorCanvas({ onStageReady, timeOverrideMs }: EditorCanvasProps) {
   const project = useEditorStore((state) => state.project);
   const selectedElementId = useEditorStore((state) => state.selectedElementId);
   const selectElement = useEditorStore((state) => state.selectElement);
+  const animationActive =
+    project.elements.some((element) => animationNeedsClock(element.animation)) ||
+    project.decorations.some(decorationNeedsClock) ||
+    frameNeedsClock(project.frame);
+  const liveTimeMs = useAnimationClock(animationActive && timeOverrideMs == null);
+  const timeMs = timeOverrideMs ?? liveTimeMs;
   const containerRef = useRef<HTMLDivElement>(null);
-  const [viewport, setViewport] = useState<Viewport>({
-    width: project.width,
-    height: project.height,
-    scale: 1,
-  });
+  const stageRef = useRef<Konva.Stage>(null);
+  const [viewport, setViewport] = useState<Viewport>({ width: project.width, height: project.height, scale: 1 });
+
+  useEffect(() => {
+    onStageReady?.(stageRef.current);
+    return () => onStageReady?.(null);
+  }, [onStageReady]);
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) {
-      return;
-    }
-
+    if (!container) return;
     const measure = () => {
       const availableWidth = container.clientWidth || project.width;
       const availableHeight = container.clientHeight || project.height;
-      const scale = Math.min(
-        availableWidth / project.width,
-        availableHeight / project.height,
-      );
-
-      setViewport({
-        width: project.width * scale,
-        height: project.height * scale,
-        scale,
-      });
+      const scale = Math.min(availableWidth / project.width, availableHeight / project.height);
+      setViewport({ width: project.width * scale, height: project.height * scale, scale });
     };
-
     measure();
-
-    if (typeof ResizeObserver === 'undefined') {
-      return;
-    }
-
+    if (typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(measure);
     observer.observe(container);
-
     return () => observer.disconnect();
   }, [project.height, project.width]);
 
   const clearSelection = (event: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
     const stage = event.target.getStage();
-    if (event.target === stage || event.target.name() === 'canvas-background') {
-      selectElement(null);
-    }
+    if (event.target === stage || event.target.name() === 'canvas-background') selectElement(null);
   };
 
   return (
     <div ref={containerRef} className="editor-canvas" data-testid="editor-canvas">
       <Stage
+        ref={stageRef}
         width={viewport.width}
         height={viewport.height}
         scaleX={viewport.scale}
@@ -336,16 +333,9 @@ export function EditorCanvas() {
         onTouchStart={clearSelection}
       >
         <Layer>
-          <Rect
-            name="canvas-background"
-            width={project.width}
-            height={project.height}
-            fill={project.background}
-          />
-
+          <Rect name="canvas-background" width={project.width} height={project.height} fill={project.background} />
           {project.elements.map((element) => {
             const isSelected = element.id === selectedElementId;
-
             if (element.type === 'image') {
               return (
                 <CanvasImageElement
@@ -353,32 +343,34 @@ export function EditorCanvas() {
                   element={element}
                   isSelected={isSelected}
                   previewScale={viewport.scale}
+                  timeMs={timeMs}
                   onSelect={() => selectElement(element.id)}
                 />
               );
             }
-
             return (
               <CanvasTextElement
                 key={element.id}
                 element={element}
                 isSelected={isSelected}
                 previewScale={viewport.scale}
+                timeMs={timeMs}
                 onSelect={() => selectElement(element.id)}
               />
             );
           })}
+          <DecorationRenderer layers={project.decorations} width={project.width} height={project.height} timeMs={timeMs} />
+          <FrameRenderer frame={project.frame} width={project.width} height={project.height} timeMs={timeMs} />
         </Layer>
       </Stage>
 
-      {project.elements.length === 0 ? (
+      {project.elements.length === 0 && project.decorations.length === 0 ? (
         <div className="canvas-empty-overlay" aria-hidden="true">
           <div className="empty-icon">＋</div>
           <strong>Tasarımına başla</strong>
           <span>Bir fotoğraf seç veya yazı ekle.</span>
         </div>
       ) : null}
-
       <span className="visually-hidden" aria-live="polite">
         {selectedElementId ? 'Bir öğe seçildi.' : 'Seçili öğe yok.'}
       </span>
