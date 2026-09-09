@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useEditorStore } from '../../store/editor-store';
 
+const CUSTOM_MIN_WIDTH = 50;
+const CUSTOM_MAX_WIDTH = 1200;
+const CUSTOM_MIN_HEIGHT = 30;
+const CUSTOM_MAX_HEIGHT = 1200;
+
 const SIZE_PRESETS = [
   [300, 100],
   [350, 120],
@@ -10,6 +15,10 @@ const SIZE_PRESETS = [
   [200, 200],
   [300, 300],
 ] as const;
+
+function isIntegerInRange(value: number, min: number, max: number): boolean {
+  return Number.isFinite(value) && Number.isInteger(value) && value >= min && value <= max;
+}
 
 export function CanvasSizePanel() {
   const width = useEditorStore((state) => state.project.width);
@@ -38,7 +47,19 @@ export function CanvasSizePanel() {
   };
 
   const applyCustom = () => {
-    applySize(Number(draftWidth), Number(draftHeight));
+    const nextWidth = Number(draftWidth);
+    const nextHeight = Number(draftHeight);
+
+    if (!isIntegerInRange(nextWidth, CUSTOM_MIN_WIDTH, CUSTOM_MAX_WIDTH)) {
+      setError(`Genişlik ${CUSTOM_MIN_WIDTH}-${CUSTOM_MAX_WIDTH} arasında tam sayı olmalı.`);
+      return;
+    }
+    if (!isIntegerInRange(nextHeight, CUSTOM_MIN_HEIGHT, CUSTOM_MAX_HEIGHT)) {
+      setError(`Yükseklik ${CUSTOM_MIN_HEIGHT}-${CUSTOM_MAX_HEIGHT} arasında tam sayı olmalı.`);
+      return;
+    }
+
+    applySize(nextWidth, nextHeight);
   };
 
   return (
@@ -85,8 +106,8 @@ export function CanvasSizePanel() {
             <input
               aria-label="Özel genişlik"
               type="number"
-              min="32"
-              max="4096"
+              min={CUSTOM_MIN_WIDTH}
+              max={CUSTOM_MAX_WIDTH}
               step="1"
               value={draftWidth}
               onChange={(event) => setDraftWidth(event.target.value)}
@@ -98,8 +119,8 @@ export function CanvasSizePanel() {
             <input
               aria-label="Özel yükseklik"
               type="number"
-              min="32"
-              max="4096"
+              min={CUSTOM_MIN_HEIGHT}
+              max={CUSTOM_MAX_HEIGHT}
               step="1"
               value={draftHeight}
               onChange={(event) => setDraftHeight(event.target.value)}
