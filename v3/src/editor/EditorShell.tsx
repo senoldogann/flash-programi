@@ -4,6 +4,12 @@ import type Konva from 'konva';
 import { createBrowserGifEncoder, downloadBlob, loadGifConstructor } from '../export/gif-browser';
 import { encodeGifFrames } from '../export/gif';
 import { captureStageCanvas, downloadStagePng } from '../export/png';
+import {
+  assertSafeGifWorkBudget,
+  getExportDimensions,
+  getGifFramePlan,
+  getGifWorkBudget,
+} from '../export/profiles';
 import { clearCurrentProject, loadCurrentProject, saveCurrentProject } from '../persistence/project-db';
 import { useEditorStore } from '../store/editor-store';
 import { EditorCanvas } from './canvas/EditorCanvas';
@@ -11,6 +17,7 @@ import { readImageFile } from './canvas/image-loader';
 import './editor-controls.css';
 import { handleEditorShortcut } from './keyboard-shortcuts';
 import { CanvasSizePanel } from './panels/CanvasSizePanel';
+import { ExportPanel } from './panels/ExportPanel';
 import { TextInspector } from './panels/TextInspector';
 import { ToolPanel } from './panels/ToolPanel';
 import { TopToolbar } from './toolbar/TopToolbar';
@@ -105,14 +112,14 @@ export function EditorShell() {
 
     try {
       setErrorNotice(null);
-      downloadStagePng(stage, 'flash-nick.png');
+      downloadStagePng(stage, 'flash-nick.png', project.exportSettings.scale);
     } catch (error) {
       setErrorNotice({
         title: 'PNG oluşturulamadı.',
         message: getErrorMessage(error),
       });
     }
-  }, [gifExporting]);
+  }, [gifExporting, project.exportSettings.scale]);
 
   useEffect(() => {
     if (gifExporting) return;
@@ -157,16 +164,24 @@ export function EditorShell() {
     setErrorNotice(null);
 
     try {
+      const { scale, gifProfile } = project.exportSettings;
+      const dimensions = getExportDimensions(project.width, project.height, scale);
+      const framePlan = getGifFramePlan(project.durationMs, gifProfile);
+      const work = getGifWorkBudget(dimensions.width, dimensions.height, framePlan.frameCount);
+      assertSafeGifWorkBudget(work);
+
       const Gif = await loadGifConstructor();
-      const encoder = createBrowserGifEncoder(Gif, project.width, project.height);
+      const encoder = createBrowserGifEncoder(Gif, dimensions.width, dimensions.height);
       const blob = await encodeGifFrames({
         durationMs: project.durationMs,
         fps: project.fps,
+        frameTimesMs: framePlan.frameTimesMs,
+        frameDelayMs: framePlan.delayMs,
         encoder,
         renderFrame: async (timeMs) => {
           flushSync(() => setExportTimeMs(timeMs));
           stage.draw();
-          return captureStageCanvas(stage);
+          return captureStageCanvas(stage, scale);
         },
         onProgress: setGifProgress,
       });
@@ -183,7 +198,15 @@ export function EditorShell() {
       setGifExporting(false);
       setGifProgress(0);
     }
-  }, [gifExporting, project.durationMs, project.fps, project.height, project.width]);
+  }, [
+    gifExporting,
+    project.durationMs,
+    project.exportSettings.gifProfile,
+    project.exportSettings.scale,
+    project.fps,
+    project.height,
+    project.width,
+  ]);
 
   const handleAddText = () => {
     setErrorNotice(null);
@@ -252,6 +275,7 @@ export function EditorShell() {
           </div>
 
           <CanvasSizePanel />
+          <ExportPanel />
 
           <div className="canvas-zone">
             <div
