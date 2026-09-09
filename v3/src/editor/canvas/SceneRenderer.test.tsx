@@ -23,7 +23,7 @@ vi.mock('react-konva', async () => {
   const React = await import('react');
   const { forwardRef, useImperativeHandle } = React;
 
-  const MockGroup = forwardRef<unknown, { children?: React.ReactNode } & Record<string, unknown>>((props, ref) => {
+  const MockGroup = forwardRef<unknown, Record<string, unknown>>((props, ref) => {
     useImperativeHandle(ref, () => ({
       x: () => Number(props.x ?? 0),
       y: () => Number(props.y ?? 0),
@@ -35,6 +35,7 @@ vi.mock('react-konva', async () => {
       getLayer: () => ({ batchDraw: () => undefined }),
     }));
     const isText3D = props.name === 'resolved-text3d-layer';
+    const children = props.children as React.ReactNode;
     return (
       <div
         data-testid={isText3D ? 'text3d-group' : String(props.name ?? 'group')}
@@ -44,7 +45,7 @@ vi.mock('react-konva', async () => {
         data-y={String(props.y ?? 0)}
       >
         {isText3D ? <span data-testid="text3d-render">text3d:{String(props.id)}</span> : null}
-        {props.children}
+        {children}
       </div>
     );
   });
