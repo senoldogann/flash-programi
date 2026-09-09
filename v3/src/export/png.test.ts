@@ -32,6 +32,17 @@ describe('PNG and frame capture', () => {
     });
   });
 
+  it('captures PNG at the requested export scale independently of preview scale', () => {
+    const { stage } = createStage(0.5);
+
+    captureStagePng(stage, 2);
+
+    expect(stage.toDataURL).toHaveBeenCalledWith({
+      mimeType: 'image/png',
+      pixelRatio: 4,
+    });
+  });
+
   it('captures a logical-resolution canvas for animation frames', () => {
     const { stage, canvas } = createStage(0.4);
 
