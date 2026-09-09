@@ -29,6 +29,20 @@ describe('MotionPanel', () => {
     });
   });
 
+  it('keeps motion controls usable when the canvas selection is cleared', () => {
+    const imageId = useEditorStore.getState().addImage('blob:fixture', 640, 480);
+    useEditorStore.getState().selectElement(null);
+    render(<MotionPanel />);
+
+    const pulse = screen.getByRole('button', { name: 'Nabız' });
+    expect(pulse).toBeEnabled();
+    fireEvent.click(pulse);
+
+    expect(useEditorStore.getState().project.elements.find((item) => item.id === imageId)).toMatchObject({
+      animation: { preset: 'pulse' },
+    });
+  });
+
   it('shows direction only for directional presets and persists the chosen direction', () => {
     const imageId = useEditorStore.getState().addImage('blob:fixture', 640, 480);
     render(<MotionPanel />);
