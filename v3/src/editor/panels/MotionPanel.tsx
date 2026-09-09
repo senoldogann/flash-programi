@@ -6,7 +6,20 @@ import type {
 } from '../../model/project';
 import { useEditorStore } from '../../store/editor-store';
 
-const MOTION_PRESETS: Array<{ id: AnimationPreset; label: string; icon: string }> = [
+type MotionPresetDefinition = { id: AnimationPreset; label: string; icon: string };
+
+const CINEMATIC_PRESETS: MotionPresetDefinition[] = [
+  { id: 'walk-25d', label: 'Yürü 2.5D', icon: '⇢' },
+  { id: 'depth-tilt', label: 'Derinlik Eğimi', icon: '◫' },
+  { id: 'dolly-zoom', label: 'Dolly Zoom', icon: '⊙' },
+  { id: 'camera-orbit-25d', label: '3D Kamera Orbit', icon: '◉' },
+  { id: 'parallax-walk', label: 'Parallax Yürü', icon: '≋' },
+  { id: 'perspective-card', label: 'Perspektif Kart', icon: '◇' },
+  { id: 'levitate-25d', label: '3D Süzül', icon: '⬡' },
+  { id: 'cinematic-push', label: 'Sinematik Push', icon: '▣' },
+];
+
+const MOTION_PRESETS: MotionPresetDefinition[] = [
   { id: 'none', label: 'Hareket Yok', icon: '■' },
   { id: 'pulse', label: 'Nabız', icon: '◎' },
   { id: 'float', label: 'Süzül', icon: '↟' },
@@ -73,6 +86,10 @@ const DIRECTIONAL_PRESETS = new Set<AnimationPreset>([
   'slow-pan',
   'parallax',
   'camera-pan',
+  'walk-25d',
+  'parallax-walk',
+  'dolly-zoom',
+  'cinematic-push',
 ]);
 
 export function MotionPanel() {
@@ -85,6 +102,19 @@ export function MotionPanel() {
   const disabled = selectedElement === null;
   const isAutomaticTarget = selectedElement !== null && selectedElement.id !== selectedElementId;
   const showsDirection = selectedElement !== null && DIRECTIONAL_PRESETS.has(selectedElement.animation.preset);
+
+  const renderPreset = (preset: MotionPresetDefinition) => (
+    <button
+      key={preset.id}
+      type="button"
+      className={`preset-card ${selectedElement?.animation.preset === preset.id ? 'preset-card-active' : ''}`}
+      disabled={disabled}
+      onClick={() => selectedElement && setElementAnimation(selectedElement.id, { preset: preset.id })}
+    >
+      <span aria-hidden="true">{preset.icon}</span>
+      <strong>{preset.label}</strong>
+    </button>
+  );
 
   return (
     <div className="preset-panel" aria-label="Hareket ayarları">
@@ -101,19 +131,18 @@ export function MotionPanel() {
         </div>
       </div>
 
+      <section className="cinematic-motion-section" aria-label="3D ve sinematik hareketler">
+        <strong>3D & Sinematik</strong>
+        <small>
+          Tek kare fotoğrafa perspektif, kamera ve yürüme hissi verir. Şeffaf veya kesilmiş kişi görsellerinde daha doğal görünür.
+        </small>
+        <div className="cinematic-motion-grid">
+          {CINEMATIC_PRESETS.map(renderPreset)}
+        </div>
+      </section>
+
       <div className="preset-grid preset-grid-2">
-        {MOTION_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            className={`preset-card ${selectedElement?.animation.preset === preset.id ? 'preset-card-active' : ''}`}
-            disabled={disabled}
-            onClick={() => selectedElement && setElementAnimation(selectedElement.id, { preset: preset.id })}
-          >
-            <span aria-hidden="true">{preset.icon}</span>
-            <strong>{preset.label}</strong>
-          </button>
-        ))}
+        {MOTION_PRESETS.map(renderPreset)}
       </div>
 
       <div className="speed-control" aria-label="Hareket hızı">
