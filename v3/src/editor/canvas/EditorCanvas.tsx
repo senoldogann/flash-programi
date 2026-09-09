@@ -5,9 +5,10 @@ import { animationNeedsClock, evaluateAnimation, type EvaluatedAnimation } from 
 import { useAnimationClock } from '../../animations/useAnimationClock';
 import { decorationNeedsClock } from '../../decorations/presets';
 import { DecorationRenderer } from '../../decorations/renderer';
+import { buildImageEffectRenderPlan } from '../../effects/image-effects';
 import { frameNeedsClock } from '../../frames/presets';
 import { FrameRenderer } from '../../frames/renderer';
-import type { ImageEffects, ImageElement, Project, TextElement } from '../../model/project';
+import type { ImageElement, Project, TextElement } from '../../model/project';
 import { useEditorStore } from '../../store/editor-store';
 import { normalizeTransform } from './transform';
 
@@ -82,17 +83,6 @@ function transformerSize(previewScale: number, pixels: number): number {
   return pixels / Math.max(previewScale, 0.1);
 }
 
-function buildImageFilters(effects: ImageEffects) {
-  const filters = [];
-  if (effects.brightness !== 0) filters.push(Konva.Filters.Brighten);
-  if (effects.contrast !== 0) filters.push(Konva.Filters.Contrast);
-  if (effects.saturation !== 0) filters.push(Konva.Filters.HSL);
-  if (effects.blurRadius > 0) filters.push(Konva.Filters.Blur);
-  if (effects.grayscale) filters.push(Konva.Filters.Grayscale);
-  if (effects.sepia) filters.push(Konva.Filters.Sepia);
-  return filters;
-}
-
 type CanvasImageElementProps = TransformableProps & { element: ImageElement };
 
 function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelect }: CanvasImageElementProps) {
@@ -103,7 +93,24 @@ function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelec
   const interactionTimeRef = useRef<number | null>(null);
   const renderTime = interactionTimeRef.current ?? timeMs;
   const animation = evaluateAnimation(element.animation, renderTime);
-  const filters = useMemo(() => buildImageFilters(element.effects), [element.effects]);
+  const effectPlan = useMemo(() => buildImageEffectRenderPlan(element.effects), [element.effects]);
+  const effectAttrs = effectPlan.attrs as {
+    brightness?: number;
+    contrast?: number;
+    saturation?: number;
+    hue?: number;
+    luminance?: number;
+    blurRadius?: number;
+    enhance?: number;
+    embossStrength?: number;
+    embossWhiteLevel?: number;
+    embossDirection?: string;
+    embossBlend?: boolean;
+    noise?: number;
+    pixelSize?: number;
+    levels?: number;
+    threshold?: number;
+  };
 
   useEffect(() => {
     let active = true;
@@ -121,9 +128,14 @@ function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelec
   useEffect(() => {
     const node = shapeRef.current;
     if (!node || !image) return;
-    if (filters.length > 0) node.cache(); else node.clearCache();
+
+    if (effectPlan.requiresCache) {
+      node.cache();
+    } else {
+      node.clearCache();
+    }
     node.getLayer()?.batchDraw();
-  }, [filters, image]);
+  }, [effectPlan.cacheKey, effectPlan.requiresCache, image]);
 
   useEffect(() => {
     if (!isSelected || element.locked || !shapeRef.current || !transformerRef.current) return;
@@ -162,11 +174,22 @@ function CanvasImageElement({ element, isSelected, previewScale, timeMs, onSelec
         opacity={element.opacity * animation.opacity}
         visible={element.visible}
         draggable={!element.locked}
-        filters={filters}
-        brightness={element.effects.brightness}
-        contrast={element.effects.contrast}
-        saturation={element.effects.saturation}
-        blurRadius={element.effects.blurRadius}
+        filters={effectPlan.filters}
+        brightness={effectAttrs.brightness}
+        contrast={effectAttrs.contrast}
+        saturation={effectAttrs.saturation}
+        hue={effectAttrs.hue}
+        luminance={effectAttrs.luminance}
+        blurRadius={effectAttrs.blurRadius}
+        enhance={effectAttrs.enhance}
+        embossStrength={effectAttrs.embossStrength}
+        embossWhiteLevel={effectAttrs.embossWhiteLevel}
+        embossDirection={effectAttrs.embossDirection}
+        embossBlend={effectAttrs.embossBlend}
+        noise={effectAttrs.noise}
+        pixelSize={effectAttrs.pixelSize}
+        levels={effectAttrs.levels}
+        threshold={effectAttrs.threshold}
         onClick={onSelect}
         onTap={onSelect}
         onDragStart={beginInteraction}

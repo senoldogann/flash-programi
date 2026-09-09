@@ -104,27 +104,44 @@ vi.mock('react-konva', async () => {
   };
 });
 
+function installPassiveImageStub() {
+  class PassiveImage {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    set src(_value: string) {}
+  }
+
+  Object.defineProperty(window, 'Image', {
+    configurable: true,
+    writable: true,
+    value: PassiveImage,
+  });
+}
+
+function installAutoLoadingImageStub() {
+  class AutoLoadingImage {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+
+    set src(_value: string) {
+      this.onload?.();
+    }
+  }
+
+  Object.defineProperty(window, 'Image', {
+    configurable: true,
+    writable: true,
+    value: AutoLoadingImage,
+  });
+}
+
 describe('EditorCanvas', () => {
   beforeEach(() => {
     useEditorStore.getState().reset();
     konvaNodeSpies.cache.mockClear();
     konvaNodeSpies.clearCache.mockClear();
     konvaNodeSpies.batchDraw.mockClear();
-
-    class AutoLoadingImage {
-      onload: (() => void) | null = null;
-      onerror: (() => void) | null = null;
-
-      set src(_value: string) {
-        queueMicrotask(() => this.onload?.());
-      }
-    }
-
-    Object.defineProperty(window, 'Image', {
-      configurable: true,
-      writable: true,
-      value: AutoLoadingImage,
-    });
+    installPassiveImageStub();
   });
 
   it('renders text elements from the project and selects them when clicked', () => {
@@ -188,6 +205,7 @@ describe('EditorCanvas', () => {
   });
 
   it('maps effect values through Konva 10 and refreshes the image cache', async () => {
+    installAutoLoadingImageStub();
     const imageId = useEditorStore.getState().addImage('blob:fixture', 640, 480);
     useEditorStore.getState().setImageEffects(imageId, { brightness: 0.2 });
 
