@@ -3,11 +3,29 @@ import type { Text3DLayerV3 } from '../model/v3/project-v3';
 import type { ResolvedLayerV3 } from '../timeline';
 import { createDefaultText3DStyle } from './material-recipes';
 
-type RenderPlanModule = typeof import('./render-plan');
+type SidePass = { kind: 'side'; offsetX: number; offsetY: number; shade: number };
+type BevelPass = { kind: 'bevel'; size: number };
+type FacePass = { kind: 'face'; surface: Text3DLayerV3['style']['surfaces']['front'] };
+type TexturePass = { kind: 'texture'; seed: number };
+type RenderPlan = {
+  text: string;
+  logicalWidth: number;
+  logicalHeight: number;
+  padding: number;
+  supersample: number;
+  passes: Array<SidePass | BevelPass | FacePass | TexturePass | { kind: string; [key: string]: unknown }>;
+};
+type RenderPlanModule = {
+  TEXT3D_MAX_SUPERSAMPLE: number;
+  TEXT3D_MAX_OFFSCREEN_PIXELS: number;
+  chooseText3DSupersample(width: number, height: number, padding: number): number;
+  buildText3DRenderPlan(layer: ResolvedLayerV3 & { source: Text3DLayerV3 }): RenderPlan;
+};
 
 async function loadRenderPlanModule(): Promise<RenderPlanModule | null> {
+  const modulePath = ['.', 'render-plan'].join('/');
   try {
-    return await import('./render-plan');
+    return await import(/* @vite-ignore */ modulePath) as RenderPlanModule;
   } catch {
     return null;
   }
@@ -126,8 +144,8 @@ describe('FlashText3D render plan', () => {
       },
     }));
 
-    const horizontalSides = horizontal.passes.filter((pass) => pass.kind === 'side');
-    const verticalSides = vertical.passes.filter((pass) => pass.kind === 'side');
+    const horizontalSides = horizontal.passes.filter((pass): pass is SidePass => pass.kind === 'side');
+    const verticalSides = vertical.passes.filter((pass): pass is SidePass => pass.kind === 'side');
     expect(horizontalSides).toMatchObject([
       { offsetX: 2, offsetY: 0 },
       { offsetX: 1, offsetY: 0 },
@@ -145,7 +163,7 @@ describe('FlashText3D render plan', () => {
     const layer = layerFixture();
     layer.animation.alternateFace = true;
     const plan = module.buildText3DRenderPlan(layer);
-    const face = plan.passes.find((pass) => pass.kind === 'face');
+    const face = plan.passes.find((pass): pass is FacePass => pass.kind === 'face');
 
     expect(plan.text).toBe('DOGAN');
     expect(face).toMatchObject({
@@ -165,8 +183,8 @@ describe('FlashText3D render plan', () => {
     style.shadow = { ...style.shadow, blur: 12, offsetX: -5, offsetY: 7 };
     style.light = { azimuthDeg: 25, elevationDeg: 40, intensity: 1.4, ambient: 0.2 };
     const plan = module.buildText3DRenderPlan(layerFixture({ style }));
-    const sides = plan.passes.filter((pass) => pass.kind === 'side');
-    const bevel = plan.passes.find((pass) => pass.kind === 'bevel');
+    const sides = plan.passes.filter((pass): pass is SidePass => pass.kind === 'side');
+    const bevel = plan.passes.find((pass): pass is BevelPass => pass.kind === 'bevel');
 
     expect(plan.padding).toBeGreaterThanOrEqual(21);
     expect(sides.every((pass) => pass.shade >= 0 && pass.shade <= 1)).toBe(true);
@@ -181,8 +199,8 @@ describe('FlashText3D render plan', () => {
     const before = structuredClone(layer);
     const first = module.buildText3DRenderPlan(layer);
     const second = module.buildText3DRenderPlan(layer);
-    const firstTexture = first.passes.find((pass) => pass.kind === 'texture');
-    const secondTexture = second.passes.find((pass) => pass.kind === 'texture');
+    const firstTexture = first.passes.find((pass): pass is TexturePass => pass.kind === 'texture');
+    const secondTexture = second.passes.find((pass): pass is TexturePass => pass.kind === 'texture');
 
     expect(firstTexture).toEqual(secondTexture);
     expect(firstTexture).toMatchObject({ kind: 'texture', seed: expect.any(Number) });
