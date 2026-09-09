@@ -64,7 +64,7 @@ The text model keeps the original source string unchanged. The renderer derives 
 
 ### 4.2 Image effects
 
-The current effect object is expanded. The initial target set is:
+The current effect object is expanded. All of the following are in scope for this phase:
 
 - brightness
 - contrast
@@ -103,11 +103,11 @@ type AnimationDefinition = {
 };
 ```
 
-Existing projects migrate with `intensity: 'normal'`.
+Existing projects migrate with `intensity: 'normal'` and no direction unless the preset requires a default direction.
 
 ### 4.4 Export settings
 
-Export configuration is remembered with the project/session separately from visual geometry:
+The current project schema gains a non-visual export-settings section so saved projects remember their preferred output configuration:
 
 ```ts
 type ExportSettings = {
@@ -116,7 +116,9 @@ type ExportSettings = {
 };
 ```
 
-Changing export scale must never mutate project element geometry.
+`scale` is shared by PNG and GIF, matching the useful behavior of the legacy editor. It is independent from canvas size, not a second geometry transform.
+
+Changing export scale/profile must never mutate project element geometry and does not create an undo-history entry.
 
 ## 5. Effect Engine
 
@@ -143,7 +145,7 @@ Konva 10 `Brightness` will replace deprecated `Brighten`.
 
 Konva-native filters should be used where they produce deterministic CPU-canvas output. Custom color temperature/tint behavior may use RGB/RGBA adjustment through a small adapter rather than introducing a second renderer.
 
-Effects that cannot be made consistent between live preview and export are excluded from this phase.
+Effects that cannot be made consistent between live preview and export are excluded only if an equivalent deterministic implementation is provided instead. The UI must not expose a preview-only effect.
 
 ### 5.4 UI
 
@@ -171,6 +173,7 @@ Desktop behavior:
 
 - Primary actions and category buttons remain visible.
 - Active content scroll position is independent from the page and canvas.
+- Switching categories resets the newly opened category content to its top; applying an item does not scroll the category back to top.
 
 Mobile behavior:
 
@@ -203,9 +206,9 @@ The renderer converts the original text into newline-separated graphemes for Kon
 
 ### 7.3 Geometry
 
-Switching writing mode should preserve the element center point as closely as possible.
+Switching writing mode preserves the element center point.
 
-The renderer recomputes a sensible text bounding box. The user can still resize and move the text afterward.
+The renderer derives a sensible vertical bounding box from grapheme count, font size, line height, and current element dimensions. The user can still resize and move the text afterward.
 
 Font, outline, glow, opacity, animation, rotation, and alignment remain compatible with vertical text.
 
@@ -219,18 +222,18 @@ No preset may rely solely on an imperative browser tween that the GIF exporter c
 
 ### 8.2 Animation channels
 
-`EvaluatedAnimation` expands beyond x/y/scale/rotation/opacity to support additional deterministic channels such as:
+`EvaluatedAnimation` expands beyond x/y/scale/rotation/opacity to support deterministic channels such as:
 
 - skewX / skewY
 - hue shift
 - blur/focus modulation
 - reveal progress
 - RGB/chromatic offsets
-- clip or mask progress where practical
+- clip or mask progress
 
 Image rendering may use deterministic helper layers for effects such as RGB split/glitch. Those helper layers are render output only and are not persisted as user elements.
 
-### 8.3 Target image animation presets
+### 8.3 Required image animation presets
 
 Existing presets remain:
 
@@ -246,7 +249,7 @@ Existing presets remain:
 - bounce
 - wave
 
-New target presets:
+All of the following new presets are in scope for this phase:
 
 - Ken Burns
 - Slow Pan
@@ -269,7 +272,7 @@ New target presets:
 - Focus Pulse
 - Pixel Pulse
 
-Not every preset needs every parameter. UI should expose presets first, then shared Speed and Intensity controls. Direction is shown only for presets that use it.
+Not every preset needs every parameter. UI exposes presets first, then shared Speed and Intensity controls. Direction is shown only for presets that use it.
 
 ### 8.4 Safety
 
@@ -294,7 +297,7 @@ Initial presets:
 - 300 × 300
 - Custom
 
-Custom numeric values are validated before commit.
+Custom values support width `50..1200` px and height `30..1200` px. Values are committed only after validation.
 
 ### 9.2 Proportional resize rule
 
@@ -310,14 +313,27 @@ uniformScale = Math.min(sx, sy)
 
 Element sizes scale uniformly by `uniformScale` to avoid distortion.
 
-Element positions are transformed relative to the old canvas center and re-centered in the new canvas:
+For each element, first calculate its center relative to the old canvas center:
 
 ```ts
-newX = newW / 2 + (oldCenterXRelative * uniformScale)
-newY = newH / 2 + (oldCenterYRelative * uniformScale)
+oldElementCenterX = element.x + element.width / 2
+oldElementCenterY = element.y + element.height / 2
+relativeX = oldElementCenterX - oldW / 2
+relativeY = oldElementCenterY - oldH / 2
 ```
 
-This preserves the composition when aspect ratio is unchanged and keeps content centered without stretching when aspect ratio changes.
+Then scale the element size and place its new center relative to the new canvas center:
+
+```ts
+newElementWidth = element.width * uniformScale
+newElementHeight = element.height * uniformScale
+newElementCenterX = newW / 2 + relativeX * uniformScale
+newElementCenterY = newH / 2 + relativeY * uniformScale
+newX = newElementCenterX - newElementWidth / 2
+newY = newElementCenterY - newElementHeight / 2
+```
+
+This preserves the composition exactly when aspect ratio is unchanged and keeps content uniformly scaled and centered without stretching when aspect ratio changes.
 
 For text, also scale:
 
@@ -333,7 +349,7 @@ The whole resize is one undo step.
 
 ### 9.3 Limits
 
-Project dimensions must remain within safe browser/editor limits. The schema continues to reject invalid, zero, negative, NaN, or excessive values.
+Project dimensions are validated at `50..1200` width and `30..1200` height for this editor phase. Invalid, zero, negative, NaN, or excessive values are rejected before store mutation.
 
 ## 10. PNG and GIF Output Sizing
 
@@ -343,7 +359,7 @@ Example:
 
 - Project: 300 × 100
 - Export scale: 2x
-- Output: 600 × 200
+- PNG/GIF output: 600 × 200
 
 ### 10.1 PNG
 
@@ -353,40 +369,62 @@ Selection transformers and editor-only UI never appear in output.
 
 ### 10.2 GIF profiles
 
-Reintroduce legacy-style profiles:
+Reintroduce deterministic legacy-style profiles:
 
 **Küçük**
+- target sampling: 10 FPS
+- maximum frames: 20
+- encoder quality target: 15
 - prioritizes file size
-- lower frame count / sampling rate
-- suitable for chat avatars and lightweight sharing
 
 **Dengeli**
-- default
-- balances motion smoothness and file size
+- target sampling: 15 FPS
+- maximum frames: 36
+- encoder quality target: 10
+- default profile
 
 **Kaliteli**
-- higher frame count and smoother animation
-- larger memory/file cost
+- target sampling: 20 FPS
+- maximum frames: 60
+- encoder quality target: 8
+- prioritizes smoother motion
 
-The exact frame plan is deterministic and generated by the export module rather than scattered across UI code.
+For each profile:
+
+```ts
+frameCount = min(ceil(durationSeconds * targetFps), maxFrames)
+frameDelayMs = durationMs / frameCount
+```
+
+The exact frame timestamps are derived from these values in the export module. They are not scattered across UI code.
 
 ### 10.3 Output scale
 
-GIF supports 1x, 2x, 3x, and 4x output scaling.
+PNG and GIF both support the shared project export scale: 1x, 2x, 3x, or 4x.
 
-Frames are rendered from the project at logical resolution and then captured/encoded at the chosen export size without modifying project geometry.
+Frames are rendered from the project at logical resolution and captured/encoded at the chosen output size without modifying project geometry.
 
 ### 10.4 Resource budget
 
-Before GIF encoding, compute a rough work budget from:
+Before export:
 
-```text
-outputWidth × outputHeight × frameCount
+```ts
+outputWidth = project.width * exportScale
+outputHeight = project.height * exportScale
+pixelFrameBudget = outputWidth * outputHeight * frameCount
 ```
 
-If a requested combination is likely to exhaust browser memory, the UI blocks the export with a useful message and suggests a smaller scale or quality profile instead of crashing the tab.
+Hard limits for this phase:
 
-The panel also shows the final pixel dimensions before export.
+- output width <= 4096
+- output height <= 4096
+- GIF pixel-frame budget <= 100_000_000
+
+PNG uses the dimension limits but has no frame budget.
+
+If a requested GIF combination exceeds the budget, export is blocked before encoder creation and the UI suggests a lower scale or lower quality profile.
+
+The export controls always show the final output dimensions before download.
 
 ## 11. Persistence and Migration
 
@@ -394,10 +432,12 @@ Existing IndexedDB projects must continue loading.
 
 A project migration layer converts V1 projects to the new schema by supplying defaults for:
 
-- text writing mode
-- animation intensity/direction
-- expanded image effects
-- export settings
+- text writing mode: `horizontal`
+- animation intensity: `normal`
+- animation direction when needed
+- all newly added image-effect fields at neutral values
+- export scale: `1`
+- GIF profile: `balanced`
 
 Migration happens before validation into the current project type.
 
@@ -434,11 +474,13 @@ Required automated coverage includes:
 ### Tool panel
 - category navigation remains accessible while content is scrollable
 - active content has its own scroll container
+- applying a template does not jump the content scroll position to the top
 
 ### Text
 - horizontal source text remains unchanged
 - vertical-stacked output uses grapheme-aware segmentation
 - emoji / composed characters are not split incorrectly
+- switching writing mode preserves element center
 - writing mode persists through save/load
 
 ### Animation
@@ -452,12 +494,13 @@ Required automated coverage includes:
 - aspect-ratio change uses uniform scale and re-centering
 - text styling dimensions scale appropriately
 - canvas resize is one undo step
+- invalid dimensions do not mutate the project
 
 ### Export
-- PNG dimensions match project × output scale
-- GIF dimensions match project × output scale
+- PNG dimensions match project × export scale
+- GIF dimensions match project × export scale
 - Small/Balanced/Quality produce the defined deterministic frame plans
-- unsafe export budgets are rejected
+- unsafe dimension/pixel-frame budgets are rejected before encoding
 - transformer handles are excluded
 
 ### Migration
@@ -475,7 +518,7 @@ Rules:
 - keep animation evaluation pure and cheap
 - do not persist render-only helper layers
 - do not start the RAF clock if no animation/decor/frame requires it
-- reject obviously unsafe GIF export workloads before encoding
+- reject unsafe GIF export workloads before encoding
 
 Bundle splitting can be addressed where it materially improves initial editor load, but this phase should not add unrelated architectural churn.
 
@@ -506,11 +549,12 @@ This phase is complete only when all of the following are true:
 1. Effect controls visibly work on the selected photo and survive PNG/GIF export.
 2. Left-side active tool content scrolls independently while category controls remain accessible.
 3. Text supports both horizontal and upright stacked vertical modes.
-4. Image animation selection is substantially richer than the current V3 set and all supported presets export deterministically.
-5. Canvas width/height controls proportionally scale the complete design.
-6. PNG and GIF support independent 1x–4x output scale.
-7. GIF offers Small/Balanced/Quality profiles and displays final output dimensions.
-8. Existing saved V3 projects migrate and restore correctly.
-9. Undo/redo remains meaningful and gesture-based.
-10. Full tests, typecheck, and production build are green before merge.
-11. Only the final `main` merge triggers production deployment.
+4. All listed image animation presets are available and export deterministically.
+5. Canvas width/height controls proportionally scale the complete design using the specified center-preserving uniform-scale rule.
+6. PNG and GIF support 1x–4x output scale independent of project geometry.
+7. GIF offers Small/Balanced/Quality profiles with the defined frame plans and displays final output dimensions.
+8. Unsafe GIF workloads are rejected before encoding.
+9. Existing saved V3 projects migrate and restore correctly.
+10. Undo/redo remains meaningful and gesture-based.
+11. Full tests, typecheck, and production build are green before merge.
+12. Only the final `main` merge triggers production deployment.
