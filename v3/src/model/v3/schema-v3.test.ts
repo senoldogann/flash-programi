@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createDefaultImageEffects } from '../project';
 import {
   createDefaultProjectV3,
+  type AnimationClipV3,
   type SceneLayerV3,
 } from './project-v3';
 import { parseProjectV3 } from './schema-v3';
@@ -19,8 +20,8 @@ const baseLayer = {
     scaleX: 1,
     scaleY: 1,
   },
-  clips: [],
-} as const;
+  clips: [] as AnimationClipV3[],
+};
 
 function sampleLayers(): SceneLayerV3[] {
   return [
