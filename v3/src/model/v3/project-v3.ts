@@ -9,7 +9,6 @@ import {
   type FramePreset,
   type ImageEffects,
   type TextAlign,
-  type TextMaterialPreset,
   type TextWritingMode,
 } from '../project';
 
@@ -68,6 +67,60 @@ export type TextLayerV3 = SceneLayerBaseV3 & {
   align: TextAlign;
 };
 
+export type Text3DGradientStopV3 = {
+  offset: number;
+  color: string;
+};
+
+export type Text3DSurfaceV3 = {
+  color: string;
+  gradient: Text3DGradientStopV3[];
+  metallicity: number;
+};
+
+export type Text3DTextureKindV3 = 'none' | 'speckle' | 'brushed';
+
+export type Text3DStyleV3 = {
+  bevel: {
+    size: number;
+    strength: number;
+  };
+  extrusion: {
+    depth: number;
+    angleDeg: number;
+  };
+  surfaces: {
+    front: Text3DSurfaceV3;
+    side: Text3DSurfaceV3;
+    back: Text3DSurfaceV3;
+  };
+  outline: {
+    color: string;
+    width: number;
+  };
+  shadow: {
+    color: string;
+    blur: number;
+    offsetX: number;
+    offsetY: number;
+    opacity: number;
+  };
+  gloss: {
+    strength: number;
+    size: number;
+  };
+  texture: {
+    kind: Text3DTextureKindV3;
+    strength: number;
+  };
+  light: {
+    azimuthDeg: number;
+    elevationDeg: number;
+    intensity: number;
+    ambient: number;
+  };
+};
+
 export type Text3DLayerV3 = SceneLayerBaseV3 & {
   type: 'text3d';
   text: string;
@@ -75,15 +128,8 @@ export type Text3DLayerV3 = SceneLayerBaseV3 & {
   writingMode: TextWritingMode;
   fontFamily: string;
   fontSize: number;
-  fill: string;
-  stroke: string;
-  strokeWidth: number;
-  shadowColor: string;
-  shadowBlur: number;
   align: TextAlign;
-  materialPreset?: TextMaterialPreset;
-  extrusionDepth?: number;
-  extrusionColor?: string;
+  style: Text3DStyleV3;
 };
 
 export type ParticleLayerV3 = SceneLayerBaseV3 & {

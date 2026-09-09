@@ -4,6 +4,7 @@ import type { GeometryNode, ResolvedLayerInteractionProps } from './layer-intera
 import { ResolvedFrameLayer, type ResolvedFrameLayerState } from './layers/ResolvedFrameLayer';
 import { ResolvedImageLayer, type ResolvedImageLayerState } from './layers/ResolvedImageLayer';
 import { ResolvedParticleLayer, type ResolvedParticleLayerState } from './layers/ResolvedParticleLayer';
+import { ResolvedText3DLayer, type ResolvedText3DLayerState } from './layers/ResolvedText3DLayer';
 import { ResolvedTextLayer, type ResolvedTextLayerState } from './layers/ResolvedTextLayer';
 
 type SceneRendererProps = ResolvedLayerInteractionProps & {
@@ -25,23 +26,14 @@ export function SceneRenderer({
   onInteractionStart,
   onInteractionFinish,
 }: SceneRendererProps) {
-  const renderInteractiveLayer = (
-    layer: ResolvedImageLayerState | ResolvedTextLayerState,
-  ) => {
-    const common = {
-      isSelected: layer.id === selectedElementId,
-      previewScale,
-      onSelect: () => onSelectElement(layer.id),
-      onInteractionStart,
-      onInteractionFinish: (resolved: ResolvedLayerV3, node: GeometryNode) =>
-        onInteractionFinish(resolved, node),
-    };
-    const key = resolvedLayerKey(layer);
-
-    return layer.source.type === 'image'
-      ? <ResolvedImageLayer key={key} {...common} layer={layer as ResolvedImageLayerState} />
-      : <ResolvedTextLayer key={key} {...common} layer={layer as ResolvedTextLayerState} />;
-  };
+  const interactionProps = (layer: ResolvedLayerV3) => ({
+    isSelected: layer.id === selectedElementId,
+    previewScale,
+    onSelect: () => onSelectElement(layer.id),
+    onInteractionStart,
+    onInteractionFinish: (resolved: ResolvedLayerV3, node: GeometryNode) =>
+      onInteractionFinish(resolved, node),
+  });
 
   return (
     <>
@@ -52,15 +44,36 @@ export function SceneRenderer({
         fill={scene.canvas.background}
       />
       {scene.layers.map((layer) => {
+        const key = resolvedLayerKey(layer);
         switch (layer.source.type) {
           case 'image':
+            return (
+              <ResolvedImageLayer
+                key={key}
+                {...interactionProps(layer)}
+                layer={layer as ResolvedImageLayerState}
+              />
+            );
           case 'text':
+            return (
+              <ResolvedTextLayer
+                key={key}
+                {...interactionProps(layer)}
+                layer={layer as ResolvedTextLayerState}
+              />
+            );
           case 'text3d':
-            return renderInteractiveLayer(layer as ResolvedImageLayerState | ResolvedTextLayerState);
+            return (
+              <ResolvedText3DLayer
+                key={key}
+                {...interactionProps(layer)}
+                layer={layer as ResolvedText3DLayerState}
+              />
+            );
           case 'particle':
             return (
               <ResolvedParticleLayer
-                key={resolvedLayerKey(layer)}
+                key={key}
                 layer={layer as ResolvedParticleLayerState}
                 canvasWidth={scene.canvas.width}
                 canvasHeight={scene.canvas.height}
@@ -70,7 +83,7 @@ export function SceneRenderer({
           case 'frame':
             return (
               <ResolvedFrameLayer
-                key={resolvedLayerKey(layer)}
+                key={key}
                 layer={layer as ResolvedFrameLayerState}
                 canvasWidth={scene.canvas.width}
                 canvasHeight={scene.canvas.height}

@@ -1,46 +1,67 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import Konva from 'konva';
-import { Text } from 'react-konva';
-import type { TextLayerV3 } from '../../../model/v3/project-v3';
-import { getDisplayText } from '../../../text/layout';
+import { Group, Image as KonvaImage } from 'react-konva';
+import type { Text3DLayerV3 } from '../../../model/v3/project-v3';
+import { renderText3DToCanvas } from '../../../text3d/rasterizer';
+import { buildText3DRenderPlan } from '../../../text3d/render-plan';
 import type { ResolvedLayerV3 } from '../../../timeline';
 import type { ResolvedLayerInteractionProps } from '../layer-interaction';
 import { SelectionTransformer } from '../selection-transformer';
 
-export type ResolvedTextLayerState = ResolvedLayerV3 & {
-  source: TextLayerV3;
-  type: 'text';
+export type ResolvedText3DLayerState = ResolvedLayerV3 & {
+  source: Text3DLayerV3;
+  type: 'text3d';
 };
 
-type ResolvedTextLayerProps = ResolvedLayerInteractionProps & {
-  layer: ResolvedTextLayerState;
+type ResolvedText3DLayerProps = ResolvedLayerInteractionProps & {
+  layer: ResolvedText3DLayerState;
   isSelected: boolean;
   previewScale: number;
   onSelect(): void;
 };
 
-export function ResolvedTextLayer({
+export function ResolvedText3DLayer({
   layer,
   isSelected,
   previewScale,
   onSelect,
   onInteractionStart,
   onInteractionFinish,
-}: ResolvedTextLayerProps) {
-  const shapeRef = useRef<Konva.Text>(null);
+}: ResolvedText3DLayerProps) {
+  const groupRef = useRef<Konva.Group>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
-  const frozenLayerRef = useRef<ResolvedTextLayerState | null>(null);
+  const frozenLayerRef = useRef<ResolvedText3DLayerState | null>(null);
   const renderLayer = frozenLayerRef.current ?? layer;
   const source = renderLayer.source;
   const { transform } = renderLayer;
-  const displayText = getDisplayText(source.text, source.writingMode);
   const opacity = renderLayer.opacity * renderLayer.animation.revealProgress;
 
+  const renderPlan = useMemo(
+    () => buildText3DRenderPlan(renderLayer),
+    [
+      source.id,
+      source.text,
+      source.backText,
+      source.writingMode,
+      source.fontFamily,
+      source.fontSize,
+      source.align,
+      source.style,
+      transform.width,
+      transform.height,
+      renderLayer.animation.alternateFace,
+    ],
+  );
+  const raster = useMemo(
+    () => renderText3DToCanvas(renderPlan),
+    [renderPlan],
+  );
+
   useEffect(() => {
-    if (!isSelected || renderLayer.locked || !shapeRef.current || !transformerRef.current) return;
-    transformerRef.current.nodes([shapeRef.current]);
+    if (!isSelected || renderLayer.locked || !groupRef.current || !transformerRef.current) return;
+    transformerRef.current.nodes([groupRef.current]);
     transformerRef.current.getLayer()?.batchDraw();
-  }, [isSelected, renderLayer.locked]);
+  }, [isSelected, renderLayer.locked, raster.canvas]);
 
   const beginInteraction = () => {
     onSelect();
@@ -49,7 +70,7 @@ export function ResolvedTextLayer({
   };
 
   const finishInteraction = () => {
-    const node = shapeRef.current;
+    const node = groupRef.current;
     const frozenLayer = frozenLayerRef.current ?? layer;
     if (node) onInteractionFinish(frozenLayer, node);
     frozenLayerRef.current = null;
@@ -57,9 +78,10 @@ export function ResolvedTextLayer({
 
   return (
     <>
-      <Text
-        ref={shapeRef}
+      <Group
+        ref={groupRef}
         id={source.id}
+        name="resolved-text3d-layer"
         x={transform.x}
         y={transform.y}
         width={transform.width}
@@ -71,25 +93,23 @@ export function ResolvedTextLayer({
         skewY={transform.skewY}
         opacity={opacity}
         visible={renderLayer.visible}
-        text={displayText}
-        fontFamily={source.fontFamily}
-        fontSize={source.fontSize}
-        align={source.align}
-        verticalAlign="middle"
         draggable={!renderLayer.locked}
-        fill={source.fill}
-        stroke={source.stroke}
-        strokeWidth={source.strokeWidth}
-        shadowColor={source.shadowColor}
-        shadowBlur={source.shadowBlur}
-        shadowOpacity={0.9}
         onClick={onSelect}
         onTap={onSelect}
         onDragStart={beginInteraction}
         onDragEnd={finishInteraction}
         onTransformStart={beginInteraction}
         onTransformEnd={finishInteraction}
-      />
+      >
+        <KonvaImage
+          image={raster.canvas}
+          x={-raster.padding}
+          y={-raster.padding}
+          width={raster.width}
+          height={raster.height}
+          listening={false}
+        />
+      </Group>
       {isSelected && !renderLayer.locked ? (
         <SelectionTransformer
           transformerRef={transformerRef}

@@ -229,7 +229,7 @@ describe('migrateProjectToV3', () => {
     });
   });
 
-  it('keeps flat text flat and promotes Xara/extruded text to text3d', () => {
+  it('keeps flat text flat and promotes Xara/extruded text to explicit text3d style', () => {
     const migrated = migrateProjectToV3(buildV2Project());
     const flat = migrated.layers.find((layer) => layer.id === 'text-flat');
     const xara = migrated.layers.find((layer) => layer.id === 'text-xara');
@@ -253,9 +253,31 @@ describe('migrateProjectToV3', () => {
       type: 'text3d',
       text: 'SENOL',
       backText: 'DOGAN',
-      materialPreset: 'xara-gold',
-      extrusionDepth: 8,
-      extrusionColor: '#7c4800',
+      style: {
+        extrusion: { depth: 8, angleDeg: 45 },
+        surfaces: {
+          front: {
+            color: expect.any(String),
+            metallicity: expect.any(Number),
+          },
+          side: {
+            color: '#7c4800',
+            metallicity: expect.any(Number),
+          },
+          back: {
+            color: expect.any(String),
+            metallicity: expect.any(Number),
+          },
+        },
+        outline: { color: '#4b2b00', width: 2 },
+        shadow: {
+          color: '#000000',
+          blur: 8,
+          offsetX: expect.any(Number),
+          offsetY: expect.any(Number),
+          opacity: expect.any(Number),
+        },
+      },
       clips: [{
         id: 'text-xara-animation',
         effect: 'xara-double-sided',
@@ -267,6 +289,9 @@ describe('migrateProjectToV3', () => {
         easing: 'linear',
       }],
     });
+    expect(xara).not.toHaveProperty('materialPreset');
+    expect(xara).not.toHaveProperty('extrusionDepth');
+    expect(xara).not.toHaveProperty('extrusionColor');
   });
 
   it('maps decorations and frame to deterministic full-canvas layers', () => {

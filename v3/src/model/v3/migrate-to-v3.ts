@@ -7,6 +7,7 @@ import type {
   Project,
   TextElement,
 } from '../project';
+import { createText3DStyleFromLegacy } from '../../text3d/material-recipes';
 import type {
   AnimationClipV3,
   FrameLayerV3,
@@ -72,18 +73,23 @@ function baseLayerFields(element: EditorElement, durationMs: number) {
   };
 }
 
-function textFields(element: TextElement) {
+function textTypographyFields(element: TextElement) {
   return {
     text: element.text,
     writingMode: element.writingMode,
     fontFamily: element.fontFamily,
     fontSize: element.fontSize,
+    align: element.align,
+  };
+}
+
+function flatTextPaintFields(element: TextElement) {
+  return {
     fill: element.fill,
     stroke: element.stroke,
     strokeWidth: element.strokeWidth,
     shadowColor: element.shadowColor,
     shadowBlur: element.shadowBlur,
-    align: element.align,
   };
 }
 
@@ -113,12 +119,13 @@ function migrateTextToLayer(
 ): TextLayerV3 | Text3DLayerV3 {
   const base = {
     ...baseLayerFields(element, durationMs),
-    ...textFields(element),
+    ...textTypographyFields(element),
   };
 
   if (!isText3D(element)) {
     return {
       ...base,
+      ...flatTextPaintFields(element),
       type: 'text',
     };
   }
@@ -127,9 +134,7 @@ function migrateTextToLayer(
     ...base,
     type: 'text3d',
     ...(element.backText !== undefined ? { backText: element.backText } : {}),
-    ...(element.materialPreset !== undefined ? { materialPreset: element.materialPreset } : {}),
-    ...(element.extrusionDepth !== undefined ? { extrusionDepth: element.extrusionDepth } : {}),
-    ...(element.extrusionColor !== undefined ? { extrusionColor: element.extrusionColor } : {}),
+    style: createText3DStyleFromLegacy(element),
   };
 }
 

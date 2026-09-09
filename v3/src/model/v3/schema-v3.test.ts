@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDefaultImageEffects } from '../project';
+import { createDefaultText3DStyle } from '../../text3d/material-recipes';
 import {
   createDefaultProjectV3,
   type AnimationClipV3,
@@ -59,15 +60,8 @@ function sampleLayers(): SceneLayerV3[] {
       writingMode: 'horizontal',
       fontFamily: 'Impact',
       fontSize: 32,
-      fill: '#ffd75a',
-      stroke: '#4b2b00',
-      strokeWidth: 2,
-      shadowColor: '#000000',
-      shadowBlur: 8,
       align: 'center',
-      materialPreset: 'xara-gold',
-      extrusionDepth: 8,
-      extrusionColor: '#7c4800',
+      style: createDefaultText3DStyle(),
     },
     {
       ...baseLayer,

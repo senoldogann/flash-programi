@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { Text3DLayerV3, TextLayerV3 } from '../../../model/v3/project-v3';
+import type { TextLayerV3 } from '../../../model/v3/project-v3';
 import type { ResolvedLayerV3 } from '../../../timeline';
 import { ResolvedTextLayer } from './ResolvedTextLayer';
 
@@ -20,7 +20,8 @@ vi.mock('react-konva', async () => {
     }));
     return (
       <div
-        data-testid={props.name === 'flash-text-extrusion' ? 'extrusion' : `resolved-text-${String(props.id)}`}
+        data-testid={`resolved-text-${String(props.id)}`}
+        data-name={String(props.name ?? '')}
         data-x={String(props.x)}
         data-y={String(props.y)}
         data-scale-x={String(props.scaleX)}
@@ -29,7 +30,6 @@ vi.mock('react-konva', async () => {
         data-skew-x={String(props.skewX)}
         data-skew-y={String(props.skewY)}
         data-opacity={String(props.opacity)}
-        data-fill-priority={String(props.fillPriority ?? '')}
       >
         {String(props.text ?? '')}
       </div>
@@ -54,7 +54,8 @@ const baseTransform = {
   skewY: -1,
 };
 
-function plainLayer(): ResolvedLayerV3 & { source: TextLayerV3; type: 'text' } {
+function plainLayer(writingMode: TextLayerV3['writingMode'] = 'horizontal'):
+ResolvedLayerV3 & { source: TextLayerV3; type: 'text' } {
   const source: TextLayerV3 = {
     id: 'text-1',
     name: 'Text',
@@ -65,7 +66,7 @@ function plainLayer(): ResolvedLayerV3 & { source: TextLayerV3; type: 'text' } {
     transform: { x: 10, y: 10, width: 180, height: 60, rotation: 0, scaleX: 1, scaleY: 1 },
     clips: [],
     text: 'Merhaba',
-    writingMode: 'horizontal',
+    writingMode,
     fontFamily: 'Arial',
     fontSize: 30,
     fill: '#ffffff',
@@ -95,27 +96,6 @@ function plainLayer(): ResolvedLayerV3 & { source: TextLayerV3; type: 'text' } {
   };
 }
 
-function text3dLayer(alternateFace = false): ResolvedLayerV3 & { source: Text3DLayerV3; type: 'text3d' } {
-  const source: Text3DLayerV3 = {
-    ...plainLayer().source,
-    id: 'text3d-1',
-    type: 'text3d',
-    text: 'FRONT',
-    backText: 'BACK',
-    materialPreset: 'xara-gold',
-    extrusionDepth: 3,
-    extrusionColor: '#6b4300',
-  };
-  return {
-    ...plainLayer(),
-    source,
-    id: source.id,
-    name: source.name,
-    type: 'text3d',
-    animation: { ...plainLayer().animation, alternateFace },
-  };
-}
-
 const props = {
   isSelected: false,
   previewScale: 1,
@@ -125,7 +105,7 @@ const props = {
 };
 
 describe('ResolvedTextLayer', () => {
-  it('renders plain text from resolved geometry and opacity', () => {
+  it('renders one flat text shape from resolved geometry and opacity', () => {
     render(<ResolvedTextLayer layer={plainLayer()} {...props} />);
     const text = screen.getByTestId('resolved-text-text-1');
     expect(text).toHaveTextContent('Merhaba');
@@ -136,18 +116,11 @@ describe('ResolvedTextLayer', () => {
     expect(text).toHaveAttribute('data-rotation', '11');
     expect(text).toHaveAttribute('data-skew-x', '4');
     expect(text).toHaveAttribute('data-opacity', '0.3');
-    expect(screen.queryAllByTestId('extrusion')).toHaveLength(0);
+    expect(screen.getAllByTestId('resolved-text-text-1')).toHaveLength(1);
   });
 
-  it('uses the alternate Xara back face from resolved scene state', () => {
-    render(<ResolvedTextLayer layer={text3dLayer(true)} {...props} />);
-    expect(screen.getByTestId('resolved-text-text3d-1')).toHaveTextContent('BACK');
-  });
-
-  it('preserves migrated text3d extrusion and material gradient behavior', () => {
-    render(<ResolvedTextLayer layer={text3dLayer(false)} {...props} />);
-    expect(screen.getAllByTestId('extrusion')).toHaveLength(3);
-    expect(screen.getByTestId('resolved-text-text3d-1')).toHaveTextContent('FRONT');
-    expect(screen.getByTestId('resolved-text-text3d-1')).toHaveAttribute('data-fill-priority', 'linear-gradient');
+  it('keeps vertical-stacked display formatting in the flat renderer', () => {
+    render(<ResolvedTextLayer layer={plainLayer('vertical-stacked')} {...props} />);
+    expect(screen.getByTestId('resolved-text-text-1')).toHaveTextContent('M e r h a b a');
   });
 });
