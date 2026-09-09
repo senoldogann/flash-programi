@@ -69,7 +69,7 @@ function drawTextShape(
     ? context.fillText.bind(context)
     : context.strokeText.bind(context);
 
-  if (plan.writingMode !== 'vertical') {
+  if (plan.writingMode !== 'vertical-stacked') {
     draw(plan.text, origin.x + offsetX * scale, origin.y + offsetY * scale);
     return;
   }
