@@ -85,8 +85,8 @@ function createRecordingFactory(options: { nullContext?: boolean } = {}) {
       restore: () => events.push(`${label}:restore`),
       clearRect: () => events.push(`${label}:clearRect`),
       fillRect: () => events.push(`${label}:fillRect`),
-      fillText: (text: string) => events.push(`${label}:fillText:${text}`),
-      strokeText: (text: string) => events.push(`${label}:strokeText:${text}`),
+      fillText: (text: string, x: number, y: number) => events.push(`${label}:fillText:${text}:${x}:${y}`),
+      strokeText: (text: string, x: number, y: number) => events.push(`${label}:strokeText:${text}:${x}:${y}`),
       drawImage: () => events.push(`${label}:drawImage`),
       beginPath: () => events.push(`${label}:beginPath`),
       moveTo: () => undefined,
@@ -187,6 +187,43 @@ describe('FlashText3D Canvas2D rasterizer', () => {
     expect(frontGradientIndex).toBeGreaterThan(sideIndex);
     expect(frontGradientEndIndex).toBeGreaterThan(frontGradientIndex);
     expect(outlineIndex).toBeGreaterThan(frontGradientEndIndex);
+  });
+
+  it('keeps vertical-stacked graphemes intact and uses font-based centered line spacing', async () => {
+    const module = await loadRasterizerModule();
+    requireModule(module);
+    const recording = createRecordingFactory();
+    const plan: Text3DRenderPlan = {
+      ...planFixture(),
+      text: 'A👨‍👩‍👧‍👦B',
+      fontSize: 20,
+      writingMode: 'vertical-stacked',
+      logicalHeight: 100,
+      passes: [{
+        kind: 'face',
+        surface: { color: '#ffffff', gradient: [], metallicity: 0 },
+      }],
+    };
+
+    module.renderText3DToCanvas(plan, recording.createCanvas);
+
+    const maskEvents = recording.events.filter((event) => event.startsWith('canvas-0:fillText:'));
+    expect(maskEvents).toHaveLength(3);
+    expect(maskEvents[0]).toContain(':fillText:A:');
+    expect(maskEvents[1]).toContain(':fillText:👨‍👩‍👧‍👦:');
+    expect(maskEvents[2]).toContain(':fillText:B:');
+
+    const yPositions = maskEvents.map((event) => Number(event.split(':').at(-1)));
+    const expectedGap = plan.fontSize * 1.1 * plan.supersample;
+    expect(yPositions[1] - yPositions[0]).toBeCloseTo(expectedGap, 5);
+    expect(yPositions[2] - yPositions[1]).toBeCloseTo(expectedGap, 5);
+
+    const expectedFirstY = (
+      plan.padding
+      + (plan.logicalHeight - plan.fontSize * 1.1 * 3) / 2
+      + (plan.fontSize * 1.1) / 2
+    ) * plan.supersample;
+    expect(yPositions[0]).toBeCloseTo(expectedFirstY, 5);
   });
 
   it('runs gloss/texture after the face and downsamples with high-quality smoothing', async () => {
