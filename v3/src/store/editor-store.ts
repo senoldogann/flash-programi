@@ -21,6 +21,8 @@ import { applyDesignTemplate } from '../templates/templates';
 
 const HISTORY_LIMIT = 50;
 
+export type ImagePlacementMode = 'contain' | 'cover' | 'center';
+
 export type ElementPatch =
   | Partial<Omit<TextElement, 'id' | 'type'>>
   | Partial<Omit<ImageElement, 'id' | 'type'>>;
@@ -40,6 +42,7 @@ export type EditorStore = {
   selectElement: (id: string | null) => void;
   addText: (text?: string) => string;
   addImage: (assetUrl: string, naturalWidth: number, naturalHeight: number) => string;
+  fitImageToCanvas: (id: string, mode: ImagePlacementMode) => void;
   updateElement: (id: string, patch: ElementPatch, options?: UpdateElementOptions) => void;
   setElementAnimation: (id: string, patch: Partial<AnimationDefinition>) => void;
   setImageEffects: (id: string, patch: Partial<ImageEffects>) => void;
@@ -84,6 +87,36 @@ function mutationWithHistory(state: EditorStore, nextProject: Project) {
     project: nextProject,
     past: appendHistory(state.past, state.project),
     future: [],
+  };
+}
+
+function placedImageGeometry(
+  project: Project,
+  image: ImageElement,
+  mode: ImagePlacementMode,
+): Pick<ImageElement, 'x' | 'y' | 'width' | 'height'> {
+  if (mode === 'center') {
+    return {
+      width: image.width,
+      height: image.height,
+      x: (project.width - image.width) / 2,
+      y: (project.height - image.height) / 2,
+    };
+  }
+
+  const safeWidth = Math.max(1, image.width);
+  const safeHeight = Math.max(1, image.height);
+  const scale = mode === 'cover'
+    ? Math.max(project.width / safeWidth, project.height / safeHeight)
+    : Math.min((project.width * 0.94) / safeWidth, (project.height * 0.94) / safeHeight);
+  const width = safeWidth * scale;
+  const height = safeHeight * scale;
+
+  return {
+    width,
+    height,
+    x: (project.width - width) / 2,
+    y: (project.height - height) / 2,
   };
 }
 
@@ -231,6 +264,18 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       historyBatchStart: null,
     });
     return id;
+  },
+
+  fitImageToCanvas: (id, mode) => {
+    const state = get();
+    const index = state.project.elements.findIndex((element) => element.id === id);
+    if (index < 0 || state.project.elements[index].type !== 'image') return;
+
+    const image = state.project.elements[index] as ImageElement;
+    const geometry = placedImageGeometry(state.project, image, mode);
+    const nextElements = [...state.project.elements];
+    nextElements[index] = { ...image, ...geometry };
+    set(mutationWithHistory(state, { ...state.project, elements: nextElements }));
   },
 
   updateElement: (id, patch, options = {}) => {
