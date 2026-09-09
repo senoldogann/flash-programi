@@ -122,6 +122,39 @@ describe('project IndexedDB persistence', () => {
     expect(revokeObjectUrl).toHaveBeenCalledWith('blob:restored-image');
   });
 
+  it('does not let an older slow save overwrite a newer project state', async () => {
+    const staleProject = createEmptyProject();
+    staleProject.name = 'Eski Otomatik Kayıt';
+    staleProject.elements = [createImageElement('blob:slow-image')];
+
+    const latestProject = createEmptyProject();
+    latestProject.name = 'En Yeni Otomatik Kayıt';
+    latestProject.background = '#334455';
+
+    let signalResolveStarted!: () => void;
+    let releaseAsset!: (blob: Blob) => void;
+    const resolveStarted = new Promise<void>((resolve) => {
+      signalResolveStarted = resolve;
+    });
+    const assetPromise = new Promise<Blob>((resolve) => {
+      releaseAsset = resolve;
+    });
+    const resolveAsset = vi.fn(async () => {
+      signalResolveStarted();
+      return assetPromise;
+    });
+
+    const staleSave = saveCurrentProject(staleProject, { resolveAsset });
+    await resolveStarted;
+
+    await saveCurrentProject(latestProject);
+    releaseAsset(new Blob(['slow-image-bytes'], { type: 'image/png' }));
+    await staleSave;
+
+    const restored = await loadCurrentProject();
+    expect(restored?.project).toEqual(latestProject);
+  });
+
   it('does not let an older in-flight save resurrect a project after clear', async () => {
     const project = createEmptyProject();
     project.elements = [createImageElement('blob:slow-image')];
