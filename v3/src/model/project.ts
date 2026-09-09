@@ -173,7 +173,7 @@ export type ElementBase = {
 export type TextElement = ElementBase & {
   type: 'text';
   text: string;
-  backText: string;
+  backText?: string;
   writingMode: TextWritingMode;
   fontFamily: string;
   fontSize: number;
@@ -183,9 +183,9 @@ export type TextElement = ElementBase & {
   shadowColor: string;
   shadowBlur: number;
   align: TextAlign;
-  materialPreset: TextMaterialPreset;
-  extrusionDepth: number;
-  extrusionColor: string;
+  materialPreset?: TextMaterialPreset;
+  extrusionDepth?: number;
+  extrusionColor?: string;
 };
 
 export type ImageElement = ElementBase & {
