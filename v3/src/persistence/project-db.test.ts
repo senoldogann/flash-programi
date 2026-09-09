@@ -32,6 +32,30 @@ function createImageElement(assetUrl: string): ImageElement {
   };
 }
 
+async function seedStoredProject(project: unknown): Promise<void> {
+  const database = await new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open('flash-nick-v3', 1);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction('projects', 'readwrite');
+      transaction.objectStore('projects').put({
+        key: 'current',
+        project,
+        savedAt: Date.now(),
+      });
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error);
+    });
+  } finally {
+    database.close();
+  }
+}
+
 describe('project IndexedDB persistence', () => {
   beforeEach(async () => {
     await clearCurrentProject();
@@ -46,6 +70,33 @@ describe('project IndexedDB persistence', () => {
     const restored = await loadCurrentProject();
 
     expect(restored?.project).toEqual(project);
+  });
+
+  it('migrates a previously stored version-1 project during restore', async () => {
+    await seedStoredProject({
+      version: 1,
+      id: 'stored-v1',
+      name: 'Eski Kayıt',
+      width: 300,
+      height: 100,
+      durationMs: 3000,
+      fps: 24,
+      background: '#101827',
+      elements: [],
+      decorations: [],
+      frame: { preset: 'none', width: 8 },
+    });
+
+    const restored = await loadCurrentProject();
+
+    expect(restored?.project).toMatchObject({
+      version: 2,
+      id: 'stored-v1',
+      name: 'Eski Kayıt',
+      width: 300,
+      height: 100,
+      exportSettings: { scale: 1, gifProfile: 'balanced' },
+    });
   });
 
   it('stores image blobs and recreates runtime object URLs on restore', async () => {

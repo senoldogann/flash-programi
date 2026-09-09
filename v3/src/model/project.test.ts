@@ -3,16 +3,17 @@ import { createEmptyProject } from './project';
 import { parseProject } from './schema';
 
 describe('project model', () => {
-  it('creates a valid version-1 rich project', () => {
+  it('creates a valid version-2 editor pro project', () => {
     const project = createEmptyProject();
 
     expect(parseProject(project)).toEqual(project);
-    expect(project.version).toBe(1);
+    expect(project.version).toBe(2);
     expect(project.width).toBe(300);
     expect(project.height).toBe(300);
     expect(project.elements).toEqual([]);
     expect(project.decorations).toEqual([]);
     expect(project.frame).toEqual({ preset: 'none', width: 8 });
+    expect(project.exportSettings).toEqual({ scale: 1, gifProfile: 'balanced' });
   });
 
   it('rejects impossible canvas dimensions', () => {
@@ -21,8 +22,14 @@ describe('project model', () => {
     expect(() => parseProject(project)).toThrow();
   });
 
-  it('rejects unsupported schema versions', () => {
-    const project = { ...createEmptyProject(), version: 2 };
+  it('keeps strict parsing limited to the current schema version', () => {
+    const project = { ...createEmptyProject(), version: 1 };
+
+    expect(() => parseProject(project)).toThrow();
+  });
+
+  it('rejects unsupported future schema versions', () => {
+    const project = { ...createEmptyProject(), version: 3 };
 
     expect(() => parseProject(project)).toThrow();
   });
