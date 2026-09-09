@@ -127,15 +127,7 @@ export const text3DLayerV3Schema = z.object({
   writingMode: textElementSchema.shape.writingMode,
   fontFamily: textElementSchema.shape.fontFamily,
   fontSize: textElementSchema.shape.fontSize,
-  fill: textElementSchema.shape.fill,
-  stroke: textElementSchema.shape.stroke,
-  strokeWidth: textElementSchema.shape.strokeWidth,
-  shadowColor: textElementSchema.shape.shadowColor,
-  shadowBlur: textElementSchema.shape.shadowBlur,
   align: textElementSchema.shape.align,
-  materialPreset: textElementSchema.shape.materialPreset,
-  extrusionDepth: textElementSchema.shape.extrusionDepth,
-  extrusionColor: textElementSchema.shape.extrusionColor,
   style: text3DStyleV3Schema,
 }).strict();
 
