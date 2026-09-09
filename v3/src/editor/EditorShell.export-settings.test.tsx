@@ -80,6 +80,18 @@ async function renderReadyEditorShell() {
   return view;
 }
 
+async function findOperationErrorAlert(title: string): Promise<HTMLElement> {
+  await screen.findByText(title);
+  const alerts = screen.getAllByRole('alert');
+  const matchingAlert = alerts.find((alert) => alert.textContent?.includes(title));
+
+  if (!matchingAlert) {
+    throw new Error(`Expected operation error alert: ${title}`);
+  }
+
+  return matchingAlert;
+}
+
 describe('EditorShell export settings integration', () => {
   beforeEach(() => {
     useEditorStore.getState().reset();
@@ -129,7 +141,8 @@ describe('EditorShell export settings integration', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'PNG İndir' }));
 
-    expect(await screen.findByText(/4096/i)).toBeInTheDocument();
+    const errorAlert = await findOperationErrorAlert('PNG oluşturulamadı.');
+    expect(errorAlert).toHaveTextContent(/4096/i);
     expect(runtime.stage.toDataURL).not.toHaveBeenCalled();
   });
 
@@ -161,7 +174,8 @@ describe('EditorShell export settings integration', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'GIF İndir' }));
 
-    expect(await screen.findByText(/4096/i)).toBeInTheDocument();
+    const errorAlert = await findOperationErrorAlert('GIF oluşturulamadı.');
+    expect(errorAlert).toHaveTextContent(/4096/i);
     expect(runtime.loadGifConstructor).not.toHaveBeenCalled();
     expect(runtime.createBrowserGifEncoder).not.toHaveBeenCalled();
     expect(runtime.encodeGifFrames).not.toHaveBeenCalled();
