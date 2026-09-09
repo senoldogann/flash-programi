@@ -24,6 +24,16 @@ function normalizeHue(value: number): number {
   return ((value % 360) + 360) % 360;
 }
 
+function deterministicUnit(seed: number): number {
+  let value = seed >>> 0;
+  value ^= value >>> 16;
+  value = Math.imul(value, 0x7feb352d);
+  value ^= value >>> 15;
+  value = Math.imul(value, 0x846ca68b);
+  value ^= value >>> 16;
+  return (value >>> 0) / 0xffffffff;
+}
+
 function createTemperatureTintFilter(temperature: number, tint: number): ImageFilter {
   const warmth = (temperature / 100) * 64;
   const magenta = (tint / 100) * 48;
@@ -34,6 +44,20 @@ function createTemperatureTintFilter(temperature: number, tint: number): ImageFi
       data[index] = clampByte(data[index] + warmth + magenta * 0.5);
       data[index + 1] = clampByte(data[index + 1] - magenta);
       data[index + 2] = clampByte(data[index + 2] - warmth + magenta * 0.5);
+    }
+  };
+}
+
+function createDeterministicNoiseFilter(amount: number): ImageFilter {
+  const amplitude = amount * 255;
+
+  return (imageData) => {
+    const { data } = imageData;
+    for (let index = 0; index < data.length; index += 4) {
+      const pixel = index / 4;
+      data[index] = clampByte(data[index] + (deterministicUnit(pixel * 3 + 1) - 0.5) * amplitude);
+      data[index + 1] = clampByte(data[index + 1] + (deterministicUnit(pixel * 3 + 2) - 0.5) * amplitude);
+      data[index + 2] = clampByte(data[index + 2] + (deterministicUnit(pixel * 3 + 3) - 0.5) * amplitude);
     }
   };
 }
@@ -97,8 +121,7 @@ export function buildImageEffectRenderPlan(
   if (effects.invert) filters.push(asImageFilter(Konva.Filters.Invert));
 
   if (effects.noise > 0) {
-    filters.push(asImageFilter(Konva.Filters.Noise));
-    attrs.noise = effects.noise;
+    filters.push(createDeterministicNoiseFilter(effects.noise));
   }
 
   if (effectivePixelate > 0) {
