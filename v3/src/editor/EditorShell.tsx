@@ -13,6 +13,7 @@ import {
 } from '../export/profiles';
 import { clearCurrentProject, loadCurrentProject, saveCurrentProject } from '../persistence/project-db';
 import { useEditorStore } from '../store/editor-store';
+import { CanvasPreview } from './canvas/CanvasPreview';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { readImageFile } from './canvas/image-loader';
 import './editor-controls.css';
@@ -304,19 +305,13 @@ export function EditorShell() {
           <CanvasSizePanel />
           <ExportPanel />
 
-          <div className="canvas-zone">
-            <div
-              className="canvas-card"
-              aria-label="Tasarım alanı"
-              style={{ aspectRatio: `${project.width} / ${project.height}` }}
-            >
-              <EditorCanvas
-                onStageReady={handleStageReady}
-                timeOverrideMs={exportTimeMs}
-                onRequestImage={() => startImageInputRef.current?.click()}
-              />
-            </div>
-          </div>
+          <CanvasPreview canvasWidth={project.width} canvasHeight={project.height}>
+            <EditorCanvas
+              onStageReady={handleStageReady}
+              timeOverrideMs={exportTimeMs}
+              onRequestImage={() => startImageInputRef.current?.click()}
+            />
+          </CanvasPreview>
 
           <footer className="workspace-footer">
             <span>{project.width} × {project.height} px</span>

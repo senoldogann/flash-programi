@@ -1,6 +1,7 @@
 import type { EditorElement, TextAlign, TextElement, TextWritingMode } from '../../model/project';
 import { useEditorStore } from '../../store/editor-store';
 import { getWritingModeBox, segmentGraphemes } from '../../text/layout';
+import { ImagePlacementControls } from './ImagePlacementControls';
 
 const FONT_OPTIONS = [
   'Arial',
@@ -336,10 +337,13 @@ export function TextInspector() {
             endHistoryBatch={endHistoryBatch}
           />
         ) : (
-          <section className="inspector-section inspector-section-first image-inspector-summary">
-            <strong>Fotoğraf düzenleme</strong>
-            <p>Efekt ve hareket ayarları soldaki panellerde. Konum, boyut ve dönüşü doğrudan tuvalden değiştirebilirsin.</p>
-          </section>
+          <>
+            <ImagePlacementControls element={selectedElement} />
+            <section className="inspector-section image-inspector-summary">
+              <strong>Fotoğraf düzenleme</strong>
+              <p>Efekt ve hareket ayarları soldaki panellerde. Konum, boyut ve dönüşü doğrudan tuvalden değiştirebilirsin.</p>
+            </section>
+          </>
         )}
 
         <CommonElementControls
