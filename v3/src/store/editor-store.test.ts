@@ -65,6 +65,29 @@ describe('editor store history', () => {
     expect(useEditorStore.getState().project.frame.preset).toBe('none');
   });
 
+  it('updates validated export settings without creating visual history', () => {
+    useEditorStore.getState().addText('Tasarım');
+    const historyBefore = useEditorStore.getState().past.length;
+
+    useEditorStore.getState().setExportSettings({ scale: 3, gifProfile: 'quality' });
+
+    expect(useEditorStore.getState().project.exportSettings).toEqual({
+      scale: 3,
+      gifProfile: 'quality',
+    });
+    expect(useEditorStore.getState().past).toHaveLength(historyBefore);
+
+    const beforeInvalid = structuredClone(useEditorStore.getState().project);
+    const setRuntimeExportSettings = useEditorStore.getState().setExportSettings as (
+      patch: Record<string, unknown>,
+    ) => void;
+
+    expect(() => setRuntimeExportSettings({ scale: 5 })).toThrow();
+    expect(() => setRuntimeExportSettings({ gifProfile: 'turbo' })).toThrow();
+    expect(useEditorStore.getState().project).toEqual(beforeInvalid);
+    expect(useEditorStore.getState().past).toHaveLength(historyBefore);
+  });
+
   it('undoes and redoes a completed text mutation', () => {
     const id = useEditorStore.getState().addText('SevDa');
     const originalX = useEditorStore.getState().project.elements[0].x;
