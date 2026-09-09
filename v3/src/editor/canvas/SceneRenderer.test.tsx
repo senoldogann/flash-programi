@@ -1,11 +1,73 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { ParticleLayerV3, FrameLayerV3, ProjectV3 } from '../../model/v3/project-v3';
+import type {
+  ParticleLayerV3,
+  FrameLayerV3,
+  ProjectV3,
+  Text3DLayerV3,
+} from '../../model/v3/project-v3';
+import { createDefaultText3DStyle } from '../../text3d/material-recipes';
 import { evaluateScene } from '../../timeline';
 import { SceneRenderer } from './SceneRenderer';
 
+vi.mock('../../text3d/rasterizer', () => ({
+  renderText3DToCanvas: (plan: { padding: number; logicalWidth: number; logicalHeight: number }) => ({
+    canvas: document.createElement('canvas'),
+    padding: plan.padding,
+    width: plan.logicalWidth + plan.padding * 2,
+    height: plan.logicalHeight + plan.padding * 2,
+  }),
+}));
+
 vi.mock('react-konva', async () => {
   const React = await import('react');
+  const { forwardRef, useImperativeHandle } = React;
+
+  const MockGroup = forwardRef<unknown, { children?: React.ReactNode } & Record<string, unknown>>((props, ref) => {
+    useImperativeHandle(ref, () => ({
+      x: () => Number(props.x ?? 0),
+      y: () => Number(props.y ?? 0),
+      width: () => Number(props.width ?? 0),
+      height: () => Number(props.height ?? 0),
+      rotation: () => Number(props.rotation ?? 0),
+      scaleX: () => Number(props.scaleX ?? 1),
+      scaleY: () => Number(props.scaleY ?? 1),
+      getLayer: () => ({ batchDraw: () => undefined }),
+    }));
+    const isText3D = props.name === 'resolved-text3d-layer';
+    return (
+      <div
+        data-testid={isText3D ? 'text3d-group' : String(props.name ?? 'group')}
+        data-visible={String(props.visible ?? true)}
+        data-opacity={String(props.opacity ?? 1)}
+        data-x={String(props.x ?? 0)}
+        data-y={String(props.y ?? 0)}
+      >
+        {isText3D ? <span data-testid="text3d-render">text3d:{String(props.id)}</span> : null}
+        {props.children}
+      </div>
+    );
+  });
+
+  const MockText = forwardRef<unknown, Record<string, unknown>>((props, ref) => {
+    useImperativeHandle(ref, () => ({
+      x: () => Number(props.x ?? 0),
+      y: () => Number(props.y ?? 0),
+      width: () => Number(props.width ?? 0),
+      height: () => Number(props.height ?? 0),
+      rotation: () => Number(props.rotation ?? 0),
+      scaleX: () => Number(props.scaleX ?? 1),
+      scaleY: () => Number(props.scaleY ?? 1),
+      getLayer: () => ({ batchDraw: () => undefined }),
+    }));
+    return <span data-testid="flat-text">flat:{String(props.id)}</span>;
+  });
+
+  const MockTransformer = forwardRef<unknown>((_props, ref) => {
+    useImperativeHandle(ref, () => ({ nodes: () => undefined, getLayer: () => ({ batchDraw: () => undefined }) }));
+    return null;
+  });
+
   return {
     Rect: (props: Record<string, unknown>) => (
       <div
@@ -13,17 +75,10 @@ vi.mock('react-konva', async () => {
         data-fill={String(props.fill ?? '')}
       />
     ),
-    Group: ({ children, ...props }: { children?: React.ReactNode } & Record<string, unknown>) => (
-      <div
-        data-testid={String(props.name ?? 'group')}
-        data-visible={String(props.visible ?? true)}
-        data-opacity={String(props.opacity ?? 1)}
-        data-x={String(props.x ?? 0)}
-        data-y={String(props.y ?? 0)}
-      >
-        {children}
-      </div>
-    ),
+    Group: MockGroup,
+    Text: MockText,
+    Image: () => <span data-testid="text3d-image" />,
+    Transformer: MockTransformer,
   };
 });
 
@@ -51,6 +106,21 @@ function baseLayerFields(id: string) {
   };
 }
 
+function text3dFixture(): Text3DLayerV3 {
+  return {
+    ...baseLayerFields('text3d-1'),
+    transform: { x: 20, y: 30, width: 133, height: 33, rotation: 0, scaleX: 1, scaleY: 1 },
+    type: 'text3d',
+    text: 'SENOL',
+    backText: 'DOGAN',
+    writingMode: 'horizontal',
+    fontFamily: 'Impact',
+    fontSize: 28,
+    align: 'center',
+    style: createDefaultText3DStyle(),
+  } as unknown as Text3DLayerV3;
+}
+
 function projectFixture(): ProjectV3 {
   const particle: ParticleLayerV3 = {
     ...baseLayerFields('particle-1'),
@@ -72,7 +142,7 @@ function projectFixture(): ProjectV3 {
     mode: 'classic',
     canvas: { width: 300, height: 180, background: '#112233' },
     timeline: { durationMs: 3000, fps: 24 },
-    layers: [particle, frame],
+    layers: [particle, text3dFixture(), frame],
     exportSettings: { scale: 1, gifProfile: 'balanced' },
   };
 }
@@ -80,7 +150,7 @@ function projectFixture(): ProjectV3 {
 const noop = () => undefined;
 
 describe('SceneRenderer', () => {
-  it('renders the background and resolved layers in exact scene order', () => {
+  it('renders particle, dedicated Text3D raster, and frame in exact scene order', () => {
     const scene = evaluateScene(projectFixture(), 640);
     const { container } = render(
       <SceneRenderer
@@ -93,7 +163,8 @@ describe('SceneRenderer', () => {
       />,
     );
 
-    expect(container.textContent).toContain('particle:particle-1:t640frame:gold:t640');
+    expect(container.textContent).toContain('particle:particle-1:t640text3d:text3d-1frame:gold:t640');
+    expect(container.querySelector('[data-testid="text3d-render"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="scene-background"]')).toHaveAttribute('data-fill', '#112233');
   });
 
