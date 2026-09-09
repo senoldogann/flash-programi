@@ -132,6 +132,20 @@ describe('editor store history', () => {
     });
   });
 
+  it('records a proportional canvas resize as exactly one undoable project change', () => {
+    useEditorStore.getState().addText('Boyut');
+    const beforeResize = structuredClone(useEditorStore.getState().project);
+    const historyBefore = useEditorStore.getState().past.length;
+
+    useEditorStore.getState().resizeProject(600, 200);
+
+    expect(useEditorStore.getState().project).toMatchObject({ width: 600, height: 200 });
+    expect(useEditorStore.getState().past).toHaveLength(historyBefore + 1);
+
+    useEditorStore.getState().undo();
+    expect(useEditorStore.getState().project).toEqual(beforeResize);
+  });
+
   it('hydrates a saved project as a fresh history root', () => {
     useEditorStore.getState().addText('Geçici');
     expect(useEditorStore.getState().past.length).toBeGreaterThan(0);
