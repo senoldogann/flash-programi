@@ -97,17 +97,25 @@ function drawTextShape(
 function surfacePaint(
   context: CanvasRenderingContext2D,
   surface: Text3DSurfaceV3,
-  width: number,
-  height: number,
+  plan: Text3DRenderPlan,
+  scale: number,
 ): string | CanvasGradient {
   if (surface.gradient.length < 2) return surface.color;
 
-  const gradient = context.createLinearGradient(0, 0, 0, height);
+  const top = plan.padding * scale;
+  const bottom = (plan.padding + plan.logicalHeight) * scale;
+  const gradient = context.createLinearGradient(0, top, 0, bottom);
   const sortedStops = [...surface.gradient].sort((left, right) => left.offset - right.offset);
   for (const stop of sortedStops) {
     gradient.addColorStop(clamp01(stop.offset), stop.color);
   }
   return gradient;
+}
+
+function metallicShade(shade: number, metallicity: number): number {
+  const normalizedShade = clamp01(shade);
+  const contrast = 1 + clamp01(metallicity) * 0.75;
+  return clamp01(0.5 + (normalizedShade - 0.5) * contrast);
 }
 
 function paintMask(
@@ -123,6 +131,7 @@ function paintMask(
 ): void {
   scratchContext.clearRect(0, 0, scratch.width, scratch.height);
   scratchContext.save();
+  scratchContext.globalCompositeOperation = 'source-over';
   scratchContext.globalAlpha = clamp01(alpha);
   scratchContext.drawImage(mask, offsetX * scale, offsetY * scale);
   scratchContext.globalCompositeOperation = 'source-in';
@@ -150,23 +159,50 @@ function renderShadow(
 
 function renderBevel(
   pass: Extract<Text3DPass, { kind: 'bevel' }>,
-  context: CanvasRenderingContext2D,
+  workContext: CanvasRenderingContext2D,
+  scratch: HTMLCanvasElement,
+  scratchContext: CanvasRenderingContext2D,
+  faceMask: HTMLCanvasElement,
   plan: Text3DRenderPlan,
   scale: number,
+  createCanvas: CanvasFactory,
+  workWidth: number,
+  workHeight: number,
 ): void {
   if (pass.size <= 0 || pass.strength <= 0) return;
-  context.save();
-  context.globalAlpha = clamp01(pass.strength * 0.6);
-  context.fillStyle = '#ffffff';
-  drawTextShape(
-    context,
-    plan,
+
+  const bevelMask = createCanvas(workWidth, workHeight);
+  const bevelContext = requireContext(bevelMask);
+  configureTextContext(bevelContext, plan, scale);
+  bevelContext.clearRect(0, 0, workWidth, workHeight);
+  bevelContext.strokeStyle = '#ffffff';
+  bevelContext.lineWidth = Math.max(1, pass.size * 2 * scale);
+  drawTextShape(bevelContext, plan, scale, 'stroke');
+  bevelContext.globalCompositeOperation = 'destination-out';
+  bevelContext.drawImage(faceMask, 0, 0);
+
+  paintMask(
+    scratch,
+    scratchContext,
+    workContext,
+    bevelMask,
+    '#000000',
+    pass.strength * 0.32,
+    -pass.highlightOffsetX * 0.35,
+    -pass.highlightOffsetY * 0.35,
     scale,
-    'fill',
-    pass.highlightOffsetX,
-    pass.highlightOffsetY,
   );
-  context.restore();
+  paintMask(
+    scratch,
+    scratchContext,
+    workContext,
+    bevelMask,
+    '#ffffff',
+    pass.strength * 0.58,
+    pass.highlightOffsetX * 0.35,
+    pass.highlightOffsetY * 0.35,
+    scale,
+  );
 }
 
 function renderOutline(
@@ -183,24 +219,48 @@ function renderOutline(
   context.restore();
 }
 
+function compositeFaceOverlay(
+  scratch: HTMLCanvasElement,
+  scratchContext: CanvasRenderingContext2D,
+  workContext: CanvasRenderingContext2D,
+  faceMask: HTMLCanvasElement,
+  paintOverlay: () => void,
+): void {
+  scratchContext.clearRect(0, 0, scratch.width, scratch.height);
+  scratchContext.save();
+  scratchContext.globalCompositeOperation = 'source-over';
+  paintOverlay();
+  scratchContext.globalCompositeOperation = 'destination-in';
+  scratchContext.drawImage(faceMask, 0, 0);
+  scratchContext.restore();
+  workContext.drawImage(scratch, 0, 0);
+}
+
 function renderGloss(
   pass: Extract<Text3DPass, { kind: 'gloss' }>,
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
+  workContext: CanvasRenderingContext2D,
+  scratch: HTMLCanvasElement,
+  scratchContext: CanvasRenderingContext2D,
+  faceMask: HTMLCanvasElement,
+  plan: Text3DRenderPlan,
+  scale: number,
 ): void {
   if (pass.strength <= 0 || pass.size <= 0) return;
-  const glossHeight = Math.max(1, Math.round(height * clamp01(pass.size)));
-  context.save();
-  context.globalCompositeOperation = 'source-atop';
-  context.globalAlpha = clamp01(pass.strength * 0.55);
-  const gradient = context.createLinearGradient(0, 0, width, glossHeight);
-  gradient.addColorStop(0, 'rgba(255,255,255,0)');
-  gradient.addColorStop(0.5, 'rgba(255,255,255,0.9)');
-  gradient.addColorStop(1, 'rgba(255,255,255,0)');
-  context.fillStyle = gradient;
-  context.fillRect(0, 0, width, glossHeight);
-  context.restore();
+
+  const left = plan.padding * scale;
+  const top = plan.padding * scale;
+  const width = plan.logicalWidth * scale;
+  const glossHeight = Math.max(1, plan.logicalHeight * scale * clamp01(pass.size));
+
+  compositeFaceOverlay(scratch, scratchContext, workContext, faceMask, () => {
+    scratchContext.globalAlpha = clamp01(pass.strength * 0.55);
+    const gradient = scratchContext.createLinearGradient(left, top, left + width, top + glossHeight);
+    gradient.addColorStop(0, 'rgba(255,255,255,0)');
+    gradient.addColorStop(0.5, 'rgba(255,255,255,0.9)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    scratchContext.fillStyle = gradient;
+    scratchContext.fillRect(left, top, width, glossHeight);
+  });
 }
 
 function nextRandom(state: number): { state: number; value: number } {
@@ -210,38 +270,44 @@ function nextRandom(state: number): { state: number; value: number } {
 
 function renderTexture(
   pass: Extract<Text3DPass, { kind: 'texture' }>,
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
+  workContext: CanvasRenderingContext2D,
+  scratch: HTMLCanvasElement,
+  scratchContext: CanvasRenderingContext2D,
+  faceMask: HTMLCanvasElement,
+  plan: Text3DRenderPlan,
+  scale: number,
 ): void {
   if (pass.texture.kind === 'none' || pass.texture.strength <= 0) return;
 
-  context.save();
-  context.globalCompositeOperation = 'source-atop';
-  context.globalAlpha = clamp01(pass.texture.strength * 0.5);
-  context.fillStyle = 'rgba(255,255,255,0.72)';
+  const left = plan.padding * scale;
+  const top = plan.padding * scale;
+  const width = plan.logicalWidth * scale;
+  const height = plan.logicalHeight * scale;
 
-  if (pass.texture.kind === 'brushed') {
-    const spacing = Math.max(2, Math.round(height / 18));
-    for (let y = 0; y < height; y += spacing) {
-      context.fillRect(0, y, width, 1);
+  compositeFaceOverlay(scratch, scratchContext, workContext, faceMask, () => {
+    scratchContext.globalAlpha = clamp01(pass.texture.strength * 0.5);
+    scratchContext.fillStyle = 'rgba(255,255,255,0.72)';
+
+    if (pass.texture.kind === 'brushed') {
+      const spacing = Math.max(2, Math.round(height / 18));
+      for (let y = top; y < top + height; y += spacing) {
+        scratchContext.fillRect(left, y, width, 1);
+      }
+      return;
     }
-    context.restore();
-    return;
-  }
 
-  let state = pass.seed >>> 0;
-  const count = Math.max(12, Math.min(96, Math.round((width * height) / 12_000)));
-  for (let index = 0; index < count; index += 1) {
-    const randomX = nextRandom(state);
-    state = randomX.state;
-    const randomY = nextRandom(state);
-    state = randomY.state;
-    const x = Math.floor(randomX.value * width);
-    const y = Math.floor(randomY.value * height);
-    context.fillRect(x, y, 1, 1);
-  }
-  context.restore();
+    let state = pass.seed >>> 0;
+    const count = Math.max(12, Math.min(96, Math.round((width * height) / 12_000)));
+    for (let index = 0; index < count; index += 1) {
+      const randomX = nextRandom(state);
+      state = randomX.state;
+      const randomY = nextRandom(state);
+      state = randomY.state;
+      const x = left + Math.floor(randomX.value * width);
+      const y = top + Math.floor(randomY.value * height);
+      scratchContext.fillRect(x, y, 1, 1);
+    }
+  });
 }
 
 export function renderText3DToCanvas(
@@ -275,14 +341,14 @@ export function renderText3DToCanvas(
         renderShadow(pass, workContext, mask, scale);
         break;
       case 'side': {
-        const paint = surfacePaint(scratchContext, pass.surface, workWidth, workHeight);
+        const paint = surfacePaint(scratchContext, pass.surface, plan, scale);
         paintMask(
           scratch,
           scratchContext,
           workContext,
           mask,
           paint,
-          pass.shade,
+          metallicShade(pass.shade, pass.surface.metallicity),
           pass.offsetX,
           pass.offsetY,
           scale,
@@ -290,10 +356,21 @@ export function renderText3DToCanvas(
         break;
       }
       case 'bevel':
-        renderBevel(pass, workContext, plan, scale);
+        renderBevel(
+          pass,
+          workContext,
+          scratch,
+          scratchContext,
+          mask,
+          plan,
+          scale,
+          createCanvas,
+          workWidth,
+          workHeight,
+        );
         break;
       case 'face': {
-        const paint = surfacePaint(scratchContext, pass.surface, workWidth, workHeight);
+        const paint = surfacePaint(scratchContext, pass.surface, plan, scale);
         paintMask(scratch, scratchContext, workContext, mask, paint, 1, 0, 0, scale);
         break;
       }
@@ -301,10 +378,10 @@ export function renderText3DToCanvas(
         renderOutline(pass, workContext, plan, scale);
         break;
       case 'gloss':
-        renderGloss(pass, workContext, workWidth, workHeight);
+        renderGloss(pass, workContext, scratch, scratchContext, mask, plan, scale);
         break;
       case 'texture':
-        renderTexture(pass, workContext, workWidth, workHeight);
+        renderTexture(pass, workContext, scratch, scratchContext, mask, plan, scale);
         break;
     }
   }
