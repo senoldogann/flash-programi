@@ -158,6 +158,20 @@ describe('EditorCanvas', () => {
     expect(useEditorStore.getState().selectedElementId).toBe(textId);
   });
 
+  it('renders vertical stacked text from graphemes without mutating source text', () => {
+    const textId = useEditorStore.getState().addText('A👨‍👩‍👧‍👦B');
+    useEditorStore.getState().updateElement(textId, { writingMode: 'vertical-stacked' });
+
+    render(<EditorCanvas />);
+
+    expect(screen.getByTestId(`text-${textId}`).textContent).toBe('A\n👨‍👩‍👧‍👦\nB');
+    expect(useEditorStore.getState().project.elements.find((item) => item.id === textId)).toMatchObject({
+      type: 'text',
+      text: 'A👨‍👩‍👧‍👦B',
+      writingMode: 'vertical-stacked',
+    });
+  });
+
   it('renders image elements from the project and selects them when clicked', () => {
     const imageId = useEditorStore.getState().addImage('blob:fixture', 640, 480);
     useEditorStore.getState().selectElement(null);
