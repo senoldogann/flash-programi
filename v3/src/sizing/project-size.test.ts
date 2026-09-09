@@ -5,6 +5,7 @@ import {
   type Project,
   type TextElement,
 } from '../model/project';
+import { parseProject } from '../model/schema';
 import { resizeProjectProportionally } from './project-size';
 
 function createFixture(): Project {
@@ -88,6 +89,49 @@ describe('resizeProjectProportionally', () => {
       strokeWidth: 2,
       shadowBlur: 5,
     });
+  });
+
+  it('keeps extreme growth inside project schema limits', () => {
+    const project = createFixture();
+    const text = project.elements[0];
+    if (text.type !== 'text') throw new Error('text fixture expected');
+    text.width = 800;
+    text.height = 800;
+    text.fontSize = 512;
+    text.strokeWidth = 64;
+    text.shadowBlur = 128;
+    project.width = 300;
+    project.height = 300;
+    project.frame.width = 32;
+
+    const resized = resizeProjectProportionally(project, 4096, 4096);
+    const resizedText = resized.elements[0];
+
+    expect(() => parseProject(resized)).not.toThrow();
+    expect(resized.frame.width).toBe(32);
+    expect(resizedText).toMatchObject({ width: 8192, height: 8192 });
+    expect(resizedText.type === 'text' ? resizedText : null).toMatchObject({
+      fontSize: 512,
+      strokeWidth: 64,
+      shadowBlur: 128,
+    });
+  });
+
+  it('keeps extreme shrink inside project schema minimums', () => {
+    const project = createFixture();
+    const text = project.elements[0];
+    if (text.type !== 'text') throw new Error('text fixture expected');
+    text.fontSize = 6;
+    project.width = 4096;
+    project.height = 4096;
+    project.frame.width = 1;
+
+    const resized = resizeProjectProportionally(project, 32, 32);
+    const resizedText = resized.elements[0];
+
+    expect(() => parseProject(resized)).not.toThrow();
+    expect(resized.frame.width).toBe(1);
+    expect(resizedText.type === 'text' ? resizedText.fontSize : null).toBe(6);
   });
 
   it.each([
