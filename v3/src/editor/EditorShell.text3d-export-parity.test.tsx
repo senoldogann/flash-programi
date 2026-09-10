@@ -125,4 +125,26 @@ describe('EditorShell Text3D GIF parity', () => {
     expect(runtime.stage.toCanvas).toHaveBeenNthCalledWith(1, { pixelRatio: 1 });
     expect(runtime.stage.toCanvas).toHaveBeenNthCalledWith(2, { pixelRatio: 1 });
   });
+
+  it('keeps a full Neo recipe on the same EditorCanvas and Stage during GIF export', async () => {
+    useEditorStore.getState().addText('SENOL');
+    useEditorStore.getState().applyNeoRecipe('neon-night');
+    expect(useEditorStore.getState().project.mode).toBe('neo');
+
+    render(<EditorShell />);
+    const loadPromise = runtime.loadCurrentProject.mock.results.at(-1)?.value;
+    await act(async () => {
+      await loadPromise;
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'GIF İndir' }));
+
+    await waitFor(() => expect(runtime.downloadBlob).toHaveBeenCalledTimes(1));
+    expect(runtime.canvasTimes).toContain(0);
+    expect(runtime.canvasTimes).toContain(800);
+    expect(runtime.canvasTimes.at(-1)).toBeNull();
+    expect(runtime.stage.toCanvas).toHaveBeenCalledTimes(2);
+    expect(runtime.stage.toCanvas).toHaveBeenNthCalledWith(1, { pixelRatio: 1 });
+    expect(runtime.stage.toCanvas).toHaveBeenNthCalledWith(2, { pixelRatio: 1 });
+  });
 });
