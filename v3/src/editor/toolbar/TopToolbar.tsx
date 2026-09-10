@@ -28,16 +28,16 @@ export function TopToolbar({
         className="secondary-action"
         disabled={!onNewProject || gifExporting}
         onClick={onNewProject}
-        aria-label="Yeni Tasarım"
+        aria-label="Baştan Başla"
       >
-        Yeni Tasarım
+        Baştan Başla
       </button>
       <button
         type="button"
         className="secondary-action"
         disabled={!canUndo || gifExporting}
         onClick={undo}
-        aria-label="Geri Al"
+        aria-label="Son İşlemi Geri Al"
       >
         Geri Al
       </button>
@@ -46,27 +46,27 @@ export function TopToolbar({
         className="secondary-action"
         disabled={!canRedo || gifExporting}
         onClick={redo}
-        aria-label="Yinele"
+        aria-label="Geri Alınan İşlemi Yeniden Yap"
       >
-        Yinele
+        Yeniden Yap
       </button>
       <button
         type="button"
         className="secondary-action"
-        disabled={!onGifExport || gifExporting}
-        onClick={onGifExport}
-        aria-label="GIF İndir"
+        disabled={!onExport || gifExporting}
+        onClick={onExport}
+        aria-label="Resim Olarak İndir"
       >
-        {gifExporting ? `GIF %${progressPercent}` : 'GIF İndir'}
+        Resim İndir
       </button>
       <button
         type="button"
         className="primary-action"
-        disabled={!onExport || gifExporting}
-        onClick={onExport}
-        aria-label="PNG İndir"
+        disabled={!onGifExport || gifExporting}
+        onClick={onGifExport}
+        aria-label="GIF Olarak İndir"
       >
-        PNG İndir
+        {gifExporting ? `GIF Hazırlanıyor %${progressPercent}` : 'GIF Olarak İndir'}
       </button>
     </div>
   );
