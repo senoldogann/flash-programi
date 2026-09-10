@@ -18,9 +18,11 @@ import { CanvasPreview } from './canvas/CanvasPreview';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { readImageFile } from './canvas/image-loader';
 import { PlaybackStrip } from './chrome/PlaybackStrip';
+import { PresetLibrary } from './chrome/PresetLibrary';
 import { StudioHeader } from './chrome/StudioHeader';
 import { WorkspaceChrome } from './chrome/WorkspaceChrome';
 import { WorkflowRail, type WorkflowStep } from './chrome/WorkflowRail';
+import './chrome/preset-library.css';
 import './chrome/workspace-chrome.css';
 import './editor-controls.css';
 import { handleEditorShortcut } from './keyboard-shortcuts';
@@ -68,12 +70,15 @@ export function EditorShell() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [previewTimeMs, setPreviewTimeMs] = useState(0);
   const [previewPlaying, setPreviewPlaying] = useState(true);
+  const [presetQuery, setPresetQuery] = useState('');
+  const [presetLibraryOpen, setPresetLibraryOpen] = useState(false);
   const assetRevokers = useRef(new Set<() => void>());
   const stageRef = useRef<Konva.Stage | null>(null);
   const startImageInputRef = useRef<HTMLInputElement>(null);
   const workspaceRef = useRef<HTMLElement>(null);
   const toolDetailRef = useRef<HTMLDivElement>(null);
   const exportSettingsRef = useRef<HTMLDivElement>(null);
+  const presetLibraryRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const revokers = assetRevokers.current;
@@ -154,6 +159,8 @@ export function EditorShell() {
       setActiveToolSection('effects');
       setPreviewTimeMs(0);
       setPreviewPlaying(true);
+      setPresetQuery('');
+      setPresetLibraryOpen(false);
     } catch (error) {
       setErrorNotice({ title: 'Yeni tasarım açılamadı.', message: `Mevcut tasarım korunuyor. ${getErrorMessage(error)}` });
     }
@@ -231,9 +238,22 @@ export function EditorShell() {
     setActiveToolSection(WORKFLOW_TOOL[step]);
   };
 
+  const revealPresetLibrary = () => {
+    setPresetLibraryOpen(true);
+    window.requestAnimationFrame(() => {
+      presetLibraryRef.current?.focus();
+      scrollIntoViewSafely(presetLibraryRef.current);
+    });
+  };
+
   const handleShowTemplates = () => {
     handleStepChange('style');
-    window.requestAnimationFrame(() => scrollIntoViewSafely(toolDetailRef.current));
+    revealPresetLibrary();
+  };
+
+  const handlePresetQueryChange = (query: string) => {
+    setPresetQuery(query);
+    if (query.trim()) setPresetLibraryOpen(true);
   };
 
   const handlePreviewTimeChange = (valueMs: number) => {
@@ -247,6 +267,7 @@ export function EditorShell() {
   };
 
   const previewOverrideMs = exportTimeMs ?? (previewPlaying ? null : previewTimeMs);
+  const showPresetLibrary = presetLibraryOpen || presetQuery.trim().length > 0;
 
   return (
     <main className="app-shell studio-app-shell">
@@ -264,9 +285,14 @@ export function EditorShell() {
       />
 
       <StudioHeader
-        onCreate={() => workspaceRef.current?.focus()}
+        onCreate={() => {
+          setPresetLibraryOpen(false);
+          workspaceRef.current?.focus();
+        }}
         onShowTemplates={handleShowTemplates}
         onShowHelp={() => setHelpOpen((open) => !open)}
+        searchQuery={presetQuery}
+        onSearchQueryChange={handlePresetQueryChange}
         actions={<TopToolbar onNewProject={handleNewProject} onExport={handlePngExport} onGifExport={handleGifExport} gifExporting={gifExporting} gifProgress={gifProgress} />}
       />
 
@@ -286,6 +312,17 @@ export function EditorShell() {
           <span>{errorNotice.message}</span>
           <button type="button" aria-label="Hata mesajını kapat" onClick={() => setErrorNotice(null)}>Kapat</button>
         </div>
+      ) : null}
+
+      {showPresetLibrary ? (
+        <section ref={presetLibraryRef} className="studio-library-shell" aria-label="Hazır tasarımlar" tabIndex={-1}>
+          <div className="studio-library-close-row">
+            <button type="button" className="studio-library-close" onClick={() => setPresetLibraryOpen(false)}>
+              Tasarımları Kapat
+            </button>
+          </div>
+          <PresetLibrary query={presetQuery} />
+        </section>
       ) : null}
 
       <section className="editor-layout studio-editor-layout" aria-busy={gifExporting}>
