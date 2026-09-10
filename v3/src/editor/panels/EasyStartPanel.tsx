@@ -75,10 +75,9 @@ export function EasyStartPanel({
   };
 
   const applyQuickStyle = (style: (typeof QUICK_STYLES)[number]) => {
-    const value = nick.trim();
-    if (value) {
-      if (lastText?.type === 'text') updateElement(lastText.id, { text: value });
-      else addText(value);
+    if (!hasText) {
+      setMessage('Önce 2. adımda nickini ekle.');
+      return;
     }
 
     if (style.kind === 'classic') applyClassicRecipe(style.recipeId);
@@ -139,12 +138,14 @@ export function EasyStartPanel({
         <div className="easy-step-body">
           <strong>Bir görünüm seç</strong>
           <span>Sonradan istediğin kadar değiştirebilirsin.</span>
+          {!hasText ? <small className="easy-step-tip">Önce 2. adımda nickini ekle.</small> : null}
           <div className="easy-style-grid" aria-label="Kolay hazır görünümler">
             {QUICK_STYLES.map((style) => (
               <button
                 key={style.id}
                 type="button"
                 className="easy-style-button"
+                disabled={!hasText}
                 onClick={() => applyQuickStyle(style)}
               >
                 <strong>{style.label}</strong>
