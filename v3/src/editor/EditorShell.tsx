@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type Konva from 'konva';
 import { createBrowserGifEncoder, downloadBlob, loadGifConstructor } from '../export/gif-browser';
+import { processGifFrameCanvas } from '../export/gif-color-profile';
 import { encodeGifFrames } from '../export/gif';
 import { captureStageCanvas, downloadStagePng } from '../export/png';
 import {
@@ -179,6 +180,8 @@ export function EditorShell() {
 
     try {
       const { scale, gifProfile } = project.exportSettings;
+      const gifPalette = project.exportSettings.gifPalette ?? 'adaptive';
+      const gifDither = project.exportSettings.gifDither ?? 'none';
       const dimensions = getExportDimensions(project.width, project.height, scale);
       const framePlan = getGifFramePlan(project.durationMs, gifProfile);
       const work = getGifWorkBudget(dimensions.width, dimensions.height, framePlan.frameCount);
@@ -198,6 +201,7 @@ export function EditorShell() {
           stage.draw();
           return captureStageCanvas(stage, scale);
         },
+        processFrame: (frame) => processGifFrameCanvas(frame, gifPalette, gifDither),
         onProgress: setGifProgress,
       });
 
@@ -216,6 +220,8 @@ export function EditorShell() {
   }, [
     gifExporting,
     project.durationMs,
+    project.exportSettings.gifDither,
+    project.exportSettings.gifPalette,
     project.exportSettings.gifProfile,
     project.exportSettings.scale,
     project.fps,

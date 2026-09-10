@@ -1,3 +1,4 @@
+import { CLASSIC_SCENE_RECIPES } from '../../classic/recipes';
 import type { AnimationPreset, TextElement, TextMaterialPreset } from '../../model/project';
 import { useEditorStore } from '../../store/editor-store';
 import { FLASH_TEXT_MATERIALS, getFlashTextMaterial } from '../../text/flash-materials';
@@ -59,6 +60,7 @@ export function FlashNickPanel() {
   const resizeProject = useEditorStore((state) => state.resizeProject);
   const updateElement = useEditorStore((state) => state.updateElement);
   const setElementAnimation = useEditorStore((state) => state.setElementAnimation);
+  const applyClassicRecipe = useEditorStore((state) => state.applyClassicRecipe);
 
   const createClassicNick = () => {
     resizeProject(133, 33);
@@ -142,6 +144,26 @@ export function FlashNickPanel() {
           <small>Xara3D dönemindeki SesliChat nicklerini modern editörle üret.</small>
         </div>
       </div>
+
+      <section className="cinematic-motion-section" aria-label="Klasik hazır tasarımlar">
+        <strong>Klasik Hazır Tasarımlar</strong>
+        <small>Nick ve fotoğrafını koruyup ölçü, Xara malzemesi, hareket, süs ve GIF renk stilini tek tıkla uygula.</small>
+        <div className="preset-grid preset-grid-2">
+          {CLASSIC_SCENE_RECIPES.map((recipe) => (
+            <button
+              key={recipe.id}
+              type="button"
+              className="preset-card"
+              onClick={() => applyClassicRecipe(recipe.id)}
+            >
+              <span aria-hidden="true">
+                {recipe.layout === 'nick' ? '✧' : recipe.layout === 'portrait-left' ? '▣T' : '▣'}
+              </span>
+              <strong>{recipe.name}</strong>
+            </button>
+          ))}
+        </div>
+      </section>
 
       <section className="cinematic-motion-section" aria-label="Klasik flash boyutları">
         <strong>Hızlı Başlangıç</strong>

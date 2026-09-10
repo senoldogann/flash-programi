@@ -1,4 +1,9 @@
-import type { ExportScale, GifProfile } from '../../model/project';
+import type {
+  ExportScale,
+  GifDitherProfile,
+  GifPaletteProfile,
+  GifProfile,
+} from '../../model/project';
 import {
   getExportDimensions,
   getGifFramePlan,
@@ -13,11 +18,22 @@ const GIF_PROFILES: Array<{ value: GifProfile; label: string }> = [
   { value: 'balanced', label: 'Dengeli' },
   { value: 'quality', label: 'Kaliteli' },
 ];
+const GIF_PALETTES: Array<{ value: GifPaletteProfile; label: string }> = [
+  { value: 'adaptive', label: 'Uyarlanabilir' },
+  { value: 'classic-64', label: 'Klasik 64' },
+  { value: 'classic-27', label: 'Klasik 27' },
+];
+const GIF_DITHERS: Array<{ value: GifDitherProfile; label: string }> = [
+  { value: 'none', label: 'Kapalı' },
+  { value: 'ordered-4x4', label: 'Ordered 4×4' },
+];
 
 export function ExportPanel() {
   const project = useEditorStore((state) => state.project);
   const setExportSettings = useEditorStore((state) => state.setExportSettings);
   const { scale, gifProfile } = project.exportSettings;
+  const gifPalette = project.exportSettings.gifPalette ?? 'adaptive';
+  const gifDither = project.exportSettings.gifDither ?? 'none';
   const dimensions = getExportDimensions(project.width, project.height, scale);
   const gifPlan = getGifFramePlan(project.durationMs, gifProfile);
   const gifWork = getGifWorkBudget(dimensions.width, dimensions.height, gifPlan.frameCount);
@@ -61,6 +77,40 @@ export function ExportPanel() {
               className={gifProfile === option.value ? 'selected' : ''}
               aria-pressed={gifProfile === option.value}
               onClick={() => setExportSettings({ gifProfile: option.value })}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="export-control-group">
+        <span>GIF Renk Paleti</span>
+        <div className="segmented-control" aria-label="GIF renk paleti">
+          {GIF_PALETTES.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={gifPalette === option.value ? 'selected' : ''}
+              aria-pressed={gifPalette === option.value}
+              onClick={() => setExportSettings({ gifPalette: option.value })}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="export-control-group">
+        <span>Dither</span>
+        <div className="segmented-control" aria-label="GIF dither profili">
+          {GIF_DITHERS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={gifDither === option.value ? 'selected' : ''}
+              aria-pressed={gifDither === option.value}
+              onClick={() => setExportSettings({ gifDither: option.value })}
             >
               {option.label}
             </button>

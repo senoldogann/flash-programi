@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CLASSIC_HISTORICAL_SIZES } from '../../classic/historical-sizes';
 import { useEditorStore } from '../../store/editor-store';
 
 const CUSTOM_MIN_WIDTH = 50;
@@ -7,15 +8,14 @@ const CUSTOM_MIN_HEIGHT = 30;
 const CUSTOM_MAX_HEIGHT = 1200;
 
 const SIZE_PRESETS = [
-  [133, 33],
-  [300, 100],
-  [350, 120],
-  [450, 150],
-  [600, 200],
-  [150, 150],
-  [200, 200],
-  [300, 300],
-] as const;
+  ...CLASSIC_HISTORICAL_SIZES.map(({ width, height }) => [width, height] as const),
+  [350, 120] as const,
+  [450, 150] as const,
+  [600, 200] as const,
+  [150, 150] as const,
+  [200, 200] as const,
+  [300, 300] as const,
+];
 
 function isIntegerInRange(value: number, min: number, max: number): boolean {
   return Number.isFinite(value) && Number.isInteger(value) && value >= min && value <= max;

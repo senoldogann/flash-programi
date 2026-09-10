@@ -188,6 +188,8 @@ describe('EditorShell editor-pro integration', () => {
     expect(useEditorStore.getState().project.exportSettings).toEqual({
       scale: 2,
       gifProfile: 'balanced',
+      gifPalette: 'adaptive',
+      gifDither: 'none',
     });
     expect(visualGeometry()).toEqual(geometryBeforeExportSettings);
     expect(useEditorStore.getState().past).toHaveLength(historyBeforeExportSettings);

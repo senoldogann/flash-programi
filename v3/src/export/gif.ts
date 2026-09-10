@@ -20,6 +20,7 @@ export type EncodeGifFramesOptions = {
   frameDelayMs?: number;
   encoder: GifEncoderLike;
   renderFrame: (timeMs: number) => Promise<HTMLCanvasElement>;
+  processFrame?: (frame: HTMLCanvasElement) => HTMLCanvasElement | Promise<HTMLCanvasElement>;
   onProgress?: (value: number) => void;
 };
 
@@ -74,11 +75,12 @@ export function createGifPlan(
 }
 
 export async function encodeGifFrames(options: EncodeGifFramesOptions): Promise<Blob> {
-  const { encoder, renderFrame, onProgress } = options;
+  const { encoder, renderFrame, processFrame, onProgress } = options;
   const plan = resolveFramePlan(options);
 
   for (const timeMs of plan.times) {
-    const frame = await renderFrame(timeMs);
+    const capturedFrame = await renderFrame(timeMs);
+    const frame = processFrame ? await processFrame(capturedFrame) : capturedFrame;
     encoder.addFrame(frame, {
       copy: true,
       delay: plan.frameDelayMs,

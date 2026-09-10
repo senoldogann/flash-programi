@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { applyClassicSceneRecipe, type ClassicRecipeId } from '../classic/recipes';
 import {
   createDefaultAnimation,
   createDefaultImageEffects,
@@ -52,6 +53,7 @@ export type EditorStore = {
   setExportSettings: (patch: Partial<ExportSettings>) => void;
   resizeProject: (width: number, height: number) => void;
   applyTemplate: (templateId: string) => void;
+  applyClassicRecipe: (recipeId: ClassicRecipeId) => void;
   removeElement: (id: string) => void;
   commitTransform: (beforeProject: Project, afterProject: Project) => void;
   undo: () => void;
@@ -397,6 +399,22 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     if (projectsEqual(state.project, nextProject)) return;
     set({
       project: nextProject,
+      past: appendHistory(state.past, state.project),
+      future: [],
+      historyBatchStart: null,
+    });
+  },
+
+  applyClassicRecipe: (recipeId) => {
+    const state = get();
+    const nextProject = applyClassicSceneRecipe(state.project, recipeId);
+    if (projectsEqual(state.project, nextProject)) return;
+    const selectedElementId = containsElement(nextProject, state.selectedElementId)
+      ? state.selectedElementId
+      : [...nextProject.elements].reverse().find((element) => element.type === 'text')?.id ?? null;
+    set({
+      project: nextProject,
+      selectedElementId,
       past: appendHistory(state.past, state.project),
       future: [],
       historyBatchStart: null,

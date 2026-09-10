@@ -18,6 +18,22 @@ describe('CanvasSizePanel', () => {
     expect(useEditorStore.getState().project).toMatchObject({ width: 600, height: 200 });
   });
 
+  it('exposes all approved historical Classic sizes as presets', () => {
+    render(<CanvasSizePanel />);
+
+    for (const label of [
+      '120 × 70',
+      '125 × 75',
+      '130 × 70',
+      '130 × 95',
+      '130 × 100',
+      '133 × 33',
+      '300 × 100',
+    ]) {
+      expect(screen.getByRole('button', { name: label })).toBeInTheDocument();
+    }
+  });
+
   it('keeps custom dimensions as drafts until a valid apply action', () => {
     const before = structuredClone(useEditorStore.getState().project);
     render(<CanvasSizePanel />);
