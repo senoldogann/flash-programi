@@ -149,7 +149,7 @@ export function createText3DStyleFromLegacy(element: TextElement): Text3DStyleV3
       back: surface(darkenHexColor(frontColor, neo ? 0.68 : 0.58), [], Math.max(0.1, metallicity * (neo ? 0.8 : 0.7))),
     },
     outline: {
-      color: usesMaterial ? material.stroke : element.stroke,
+      color: neo ? material.stroke : element.stroke,
       width: Math.max(0, Math.min(16, neo ? Math.min(element.strokeWidth, material.strokeWidth) : element.strokeWidth)),
     },
     shadow: {
