@@ -73,6 +73,28 @@ describe('FlashNickPanel', () => {
     });
   });
 
+  it('promotes a photo to a subject and applies Neo cutout motion in one edit', () => {
+    const id = useEditorStore.getState().addImage('blob:transparent-person', 120, 180);
+    const historyBefore = useEditorStore.getState().past.length;
+    render(<FlashNickPanel />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Neo Flash' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Nefes' }));
+
+    const state = useEditorStore.getState();
+    const image = state.project.elements.find((element) => element.id === id);
+    expect(image).toMatchObject({
+      type: 'image',
+      role: 'subject',
+      animation: {
+        preset: 'breathing-zoom',
+        speed: 'slow',
+        intensity: 'subtle',
+      },
+    });
+    expect(state.past).toHaveLength(historyBefore + 1);
+  });
+
   it('supports different front and back nick text for the classic double-sided rotation', () => {
     const id = useEditorStore.getState().addText('SENOL');
     useEditorStore.getState().selectElement(id);

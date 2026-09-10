@@ -53,6 +53,39 @@ export type ImageLayerV3 = SceneLayerBaseV3 & {
   effects: ImageEffects;
 };
 
+export type SubjectCutoutV3 = {
+  mode: 'alpha';
+  shadow: {
+    enabled: boolean;
+    color: string;
+    blur: number;
+    offsetX: number;
+    offsetY: number;
+    opacity: number;
+  };
+};
+
+export type SubjectLayerV3 = SceneLayerBaseV3 & {
+  type: 'subject';
+  assetUrl: string;
+  effects: ImageEffects;
+  cutout: SubjectCutoutV3;
+};
+
+export function createDefaultSubjectCutoutV3(): SubjectCutoutV3 {
+  return {
+    mode: 'alpha',
+    shadow: {
+      enabled: true,
+      color: '#000000',
+      blur: 12,
+      offsetX: 0,
+      offsetY: 6,
+      opacity: 0.42,
+    },
+  };
+}
+
 export type TextLayerV3 = SceneLayerBaseV3 & {
   type: 'text';
   text: string;
@@ -147,6 +180,7 @@ export type FrameLayerV3 = SceneLayerBaseV3 & {
 
 export type SceneLayerV3 =
   | ImageLayerV3
+  | SubjectLayerV3
   | TextLayerV3
   | Text3DLayerV3
   | ParticleLayerV3

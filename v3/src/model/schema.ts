@@ -145,6 +145,7 @@ export const textElementSchema = z.object({
 export const imageElementSchema = z.object({
   ...elementBaseShape,
   type: z.literal('image'),
+  role: z.enum(['image', 'subject']).optional(),
   assetUrl: z.string().min(1),
   effects: imageEffectsSchema,
 }).strict();

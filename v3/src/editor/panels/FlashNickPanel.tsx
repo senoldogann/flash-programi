@@ -1,5 +1,5 @@
 import { CLASSIC_SCENE_RECIPES } from '../../classic/recipes';
-import type { AnimationPreset, FlashMode, TextElement, TextMaterialPreset } from '../../model/project';
+import type { AnimationPreset, FlashMode, ImageElement, TextElement, TextMaterialPreset } from '../../model/project';
 import { NEO_SCENE_RECIPES } from '../../neo/recipes';
 import { useEditorStore } from '../../store/editor-store';
 import { FLASH_TEXT_MATERIALS, getFlashTextMaterial } from '../../text/flash-materials';
@@ -15,6 +15,13 @@ const CLASSIC_MOTIONS: Array<{ preset: AnimationPreset; label: string; icon: str
   { preset: 'shimmer', label: 'Işıltı', icon: '✦' },
 ];
 
+const NEO_SUBJECT_MOTIONS: Array<{ preset: AnimationPreset; label: string; icon: string }> = [
+  { preset: 'parallax', label: 'Derinlik Parallax', icon: '◫' },
+  { preset: 'breathing-zoom', label: 'Nefes', icon: '◎' },
+  { preset: 'soft-sway', label: 'Yumuşak Salınım', icon: '⌁' },
+  { preset: 'float', label: 'Süzül', icon: '↟' },
+];
+
 const CLASSIC_MATERIALS = FLASH_TEXT_MATERIALS.filter((material) => !String(material.id).startsWith('neo-'));
 const NEO_MATERIALS = FLASH_TEXT_MATERIALS.filter((material) => String(material.id).startsWith('neo-'));
 
@@ -27,6 +34,18 @@ function selectedOrLastText(): TextElement | null {
 
   return [...state.project.elements].reverse().find(
     (element): element is TextElement => element.type === 'text',
+  ) ?? null;
+}
+
+function selectedOrLastImage(): ImageElement | null {
+  const state = useEditorStore.getState();
+  const selected = state.project.elements.find(
+    (element): element is ImageElement => element.id === state.selectedElementId && element.type === 'image',
+  );
+  if (selected) return selected;
+
+  return [...state.project.elements].reverse().find(
+    (element): element is ImageElement => element.type === 'image',
   ) ?? null;
 }
 
@@ -72,6 +91,11 @@ export function FlashNickPanel() {
     (element): element is TextElement => element.id === selectedElementId && element.type === 'text',
   ) ?? [...project.elements].reverse().find(
     (element): element is TextElement => element.type === 'text',
+  ) ?? null;
+  const selectedImage = project.elements.find(
+    (element): element is ImageElement => element.id === selectedElementId && element.type === 'image',
+  ) ?? [...project.elements].reverse().find(
+    (element): element is ImageElement => element.type === 'image',
   ) ?? null;
   const mode = project.mode ?? 'classic';
   const resizeProject = useEditorStore((state) => state.resizeProject);
@@ -154,6 +178,28 @@ export function FlashNickPanel() {
     useEditorStore.getState().setElementAnimation(text.id, {
       preset,
       speed: preset === 'xara-double-sided' ? 'normal' : text.animation.speed,
+    });
+  };
+
+  const toggleSubjectRole = () => {
+    const image = selectedOrLastImage();
+    if (!image) return;
+    updateElement(image.id, { role: image.role === 'subject' ? 'image' : 'subject' });
+  };
+
+  const applySubjectMotion = (preset: AnimationPreset) => {
+    const image = selectedOrLastImage();
+    if (!image) return;
+    updateElement(image.id, {
+      role: 'subject',
+      animation: {
+        ...image.animation,
+        preset,
+        speed: 'slow',
+        intensity: 'subtle',
+        delayMs: 0,
+        loop: true,
+      },
     });
   };
 
@@ -308,6 +354,35 @@ export function FlashNickPanel() {
                     {recipe.layout === 'nick' ? '✦' : recipe.layout === 'portrait-left' ? '◐' : '◉'}
                   </span>
                   <strong>{recipe.name}</strong>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="cinematic-motion-section" aria-label="Neo kişi hareketleri">
+            <strong>Kişi / Cutout Motion</strong>
+            <small>Şeffaf PNG/WebP kişi görsellerini ayrı alpha katmanı olarak hareketlendir. Görsel tarayıcıdan dışarı gönderilmez.</small>
+            <div className="preset-grid preset-grid-2">
+              <button
+                type="button"
+                className={`preset-card ${selectedImage?.role === 'subject' ? 'preset-card-active' : ''}`}
+                aria-pressed={selectedImage?.role === 'subject'}
+                disabled={!selectedImage}
+                onClick={toggleSubjectRole}
+              >
+                <span aria-hidden="true">◉</span>
+                <strong>Konu Katmanı</strong>
+              </button>
+              {NEO_SUBJECT_MOTIONS.map((motion) => (
+                <button
+                  key={motion.preset}
+                  type="button"
+                  className={`preset-card ${selectedImage?.role === 'subject' && selectedImage.animation.preset === motion.preset ? 'preset-card-active' : ''}`}
+                  disabled={!selectedImage}
+                  onClick={() => applySubjectMotion(motion.preset)}
+                >
+                  <span aria-hidden="true">{motion.icon}</span>
+                  <strong>{motion.label}</strong>
                 </button>
               ))}
             </div>

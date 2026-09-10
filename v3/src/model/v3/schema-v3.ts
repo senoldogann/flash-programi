@@ -104,6 +104,24 @@ export const imageLayerV3Schema = z.object({
   effects: imageEffectsSchema,
 }).strict();
 
+export const subjectLayerV3Schema = z.object({
+  ...sceneLayerBaseV3Shape,
+  type: z.literal('subject'),
+  assetUrl: z.string().min(1),
+  effects: imageEffectsSchema,
+  cutout: z.object({
+    mode: z.literal('alpha'),
+    shadow: z.object({
+      enabled: z.boolean(),
+      color: boundedColor,
+      blur: z.number().finite().min(0).max(64),
+      offsetX: z.number().finite().min(-64).max(64),
+      offsetY: z.number().finite().min(-64).max(64),
+      opacity: z.number().finite().min(0).max(1),
+    }).strict(),
+  }).strict(),
+}).strict();
+
 export const textLayerV3Schema = z.object({
   ...sceneLayerBaseV3Shape,
   type: z.literal('text'),
@@ -148,6 +166,7 @@ export const frameLayerV3Schema = z.object({
 
 export const sceneLayerV3Schema = z.discriminatedUnion('type', [
   imageLayerV3Schema,
+  subjectLayerV3Schema,
   textLayerV3Schema,
   text3DLayerV3Schema,
   particleLayerV3Schema,

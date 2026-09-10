@@ -8,15 +8,17 @@ import type {
   TextElement,
 } from '../project';
 import { createText3DStyleFromLegacy } from '../../text3d/material-recipes';
-import type {
-  AnimationClipV3,
-  FrameLayerV3,
-  ImageLayerV3,
-  LayerTransformV3,
-  ParticleLayerV3,
-  ProjectV3,
-  Text3DLayerV3,
-  TextLayerV3,
+import {
+  createDefaultSubjectCutoutV3,
+  type AnimationClipV3,
+  type FrameLayerV3,
+  type ImageLayerV3,
+  type LayerTransformV3,
+  type ParticleLayerV3,
+  type ProjectV3,
+  type SubjectLayerV3,
+  type Text3DLayerV3,
+  type TextLayerV3,
 } from './project-v3';
 import { parseProjectV3 } from './schema-v3';
 
@@ -104,12 +106,24 @@ function isText3D(element: TextElement): boolean {
 function migrateImageToLayer(
   element: ImageElement,
   durationMs: number,
-): ImageLayerV3 {
-  return {
+): ImageLayerV3 | SubjectLayerV3 {
+  const base = {
     ...baseLayerFields(element, durationMs),
-    type: 'image',
     assetUrl: element.assetUrl,
     effects: element.effects,
+  };
+
+  if (element.role === 'subject') {
+    return {
+      ...base,
+      type: 'subject',
+      cutout: createDefaultSubjectCutoutV3(),
+    };
+  }
+
+  return {
+    ...base,
+    type: 'image',
   };
 }
 
@@ -141,7 +155,7 @@ function migrateTextToLayer(
 function migrateElementToLayer(
   element: EditorElement,
   durationMs: number,
-): ImageLayerV3 | TextLayerV3 | Text3DLayerV3 {
+): ImageLayerV3 | SubjectLayerV3 | TextLayerV3 | Text3DLayerV3 {
   return element.type === 'image'
     ? migrateImageToLayer(element, durationMs)
     : migrateTextToLayer(element, durationMs);

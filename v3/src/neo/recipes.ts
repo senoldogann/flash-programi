@@ -375,6 +375,7 @@ export function applyNeoSceneRecipe(project: Project, recipeId: NeoRecipeId): Pr
     return {
       ...element,
       ...geometry,
+      role: recipe.layout === 'portrait-left' ? 'subject' : element.role,
       animation: {
         ...element.animation,
         preset: recipe.imageMotion,

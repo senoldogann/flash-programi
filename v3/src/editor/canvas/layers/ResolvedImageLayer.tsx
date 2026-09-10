@@ -2,14 +2,16 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Konva from 'konva';
 import { Image as KonvaImage } from 'react-konva';
 import { buildImageEffectRenderPlan } from '../../../effects/image-effects';
-import type { ImageLayerV3 } from '../../../model/v3/project-v3';
+import type { ImageLayerV3, SubjectLayerV3 } from '../../../model/v3/project-v3';
 import type { ResolvedLayerV3 } from '../../../timeline';
 import type { ResolvedLayerInteractionProps } from '../layer-interaction';
 import { SelectionTransformer } from '../selection-transformer';
 
+type ResolvedRasterSource = ImageLayerV3 | SubjectLayerV3;
+
 export type ResolvedImageLayerState = ResolvedLayerV3 & {
-  source: ImageLayerV3;
-  type: 'image';
+  source: ResolvedRasterSource;
+  type: ResolvedRasterSource['type'];
 };
 
 type ResolvedImageLayerProps = ResolvedLayerInteractionProps & {
@@ -68,6 +70,9 @@ export function ResolvedImageLayer({
 
   const { transform } = renderLayer;
   const opacity = renderLayer.opacity * renderLayer.animation.revealProgress;
+  const subjectShadow = source.type === 'subject' && source.cutout.shadow.enabled
+    ? source.cutout.shadow
+    : null;
 
   useEffect(() => {
     let active = true;
@@ -142,6 +147,7 @@ export function ResolvedImageLayer({
       <KonvaImage
         ref={shapeRef}
         id={source.id}
+        name={source.type === 'subject' ? 'subject-cutout' : undefined}
         image={image ?? undefined}
         x={transform.x}
         y={transform.y}
@@ -171,6 +177,11 @@ export function ResolvedImageLayer({
         pixelSize={effectAttrs.pixelSize}
         levels={effectAttrs.levels}
         threshold={effectAttrs.threshold}
+        shadowColor={subjectShadow?.color}
+        shadowBlur={subjectShadow?.blur}
+        shadowOffsetX={subjectShadow?.offsetX}
+        shadowOffsetY={subjectShadow?.offsetY}
+        shadowOpacity={subjectShadow?.opacity}
         onClick={onSelect}
         onTap={onSelect}
         onDragStart={beginInteraction}

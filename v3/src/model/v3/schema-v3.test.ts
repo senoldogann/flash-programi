@@ -36,6 +36,25 @@ function sampleLayers(): SceneLayerV3[] {
     },
     {
       ...baseLayer,
+      id: 'subject-1',
+      name: 'Kişi',
+      type: 'subject',
+      assetUrl: 'blob:transparent-person',
+      effects: createDefaultImageEffects(),
+      cutout: {
+        mode: 'alpha',
+        shadow: {
+          enabled: true,
+          color: '#000000',
+          blur: 12,
+          offsetX: 0,
+          offsetY: 6,
+          opacity: 0.42,
+        },
+      },
+    },
+    {
+      ...baseLayer,
       id: 'text-1',
       name: 'Nick',
       type: 'text',
@@ -89,7 +108,7 @@ describe('Project V3 schema', () => {
     expect(parseProjectV3(project)).toEqual(project);
   });
 
-  it('accepts every Slice 1 layer family', () => {
+  it('accepts every implemented V3 layer family including subject cutouts', () => {
     const project = {
       ...createDefaultProjectV3(),
       layers: sampleLayers(),
@@ -158,7 +177,7 @@ describe('Project V3 schema', () => {
     })).toThrow();
   });
 
-  it('rejects unknown fields in every Slice 1 layer family', () => {
+  it('rejects unknown fields in every implemented V3 layer family', () => {
     const project = createDefaultProjectV3();
 
     for (const layer of sampleLayers()) {

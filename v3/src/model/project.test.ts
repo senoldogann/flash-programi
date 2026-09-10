@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createEmptyProject } from './project';
+import { createDefaultAnimation, createDefaultImageEffects, createEmptyProject } from './project';
 import { parseProject } from './schema';
 
 describe('project model', () => {
@@ -36,6 +36,31 @@ describe('project model', () => {
     expect(parsed.exportSettings).toEqual({ scale: 1, gifProfile: 'balanced' });
     expect('gifPalette' in parsed.exportSettings).toBe(false);
     expect('gifDither' in parsed.exportSettings).toBe(false);
+  });
+
+  it('accepts an opt-in subject role without changing legacy image defaults', () => {
+    const project = createEmptyProject();
+    const subject = {
+      id: 'subject-1',
+      type: 'image' as const,
+      role: 'subject' as const,
+      name: 'Kişi',
+      assetUrl: 'blob:transparent-person',
+      x: 20,
+      y: 10,
+      width: 120,
+      height: 180,
+      rotation: 0,
+      opacity: 1,
+      visible: true,
+      locked: false,
+      animation: createDefaultAnimation(),
+      effects: createDefaultImageEffects(),
+    };
+
+    const parsed = parseProject({ ...project, elements: [subject] });
+
+    expect(parsed.elements[0]).toMatchObject({ type: 'image', role: 'subject' });
   });
 
   it('rejects impossible canvas dimensions', () => {

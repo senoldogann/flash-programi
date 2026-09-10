@@ -46,6 +46,7 @@ export function SceneRenderer({
       {scene.layers.map((layer) => {
         const key = resolvedLayerKey(layer);
         switch (layer.source.type) {
+          case 'subject':
           case 'image':
             return (
               <ResolvedImageLayer
