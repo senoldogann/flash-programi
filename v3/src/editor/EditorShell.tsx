@@ -78,7 +78,7 @@ export function EditorShell() {
       .catch((error) => {
         if (!active) return;
         setErrorNotice({
-          title: 'Kayıtlı proje açılamadı.',
+          title: 'Kayıtlı tasarım açılamadı.',
           message: getErrorMessage(error),
         });
       })
@@ -97,7 +97,7 @@ export function EditorShell() {
     const timer = window.setTimeout(() => {
       void saveCurrentProject(project).catch((error) => {
         setErrorNotice({
-          title: 'Proje kaydedilemedi.',
+          title: 'Tasarım kaydedilemedi.',
           message: getErrorMessage(error),
         });
       });
@@ -125,7 +125,7 @@ export function EditorShell() {
       downloadStagePng(stage, 'flash-nick.png', project.exportSettings.scale);
     } catch (error) {
       setErrorNotice({
-        title: 'PNG oluşturulamadı.',
+        title: 'Resim oluşturulamadı.',
         message: getErrorMessage(error),
       });
     }
@@ -151,7 +151,7 @@ export function EditorShell() {
     if (gifExporting) return;
 
     const confirmed = window.confirm(
-      'Mevcut tasarım silinecek. Yeni bir tasarıma başlamak istiyor musun?',
+      'Mevcut tasarım silinecek. Baştan başlamak istiyor musun?',
     );
     if (!confirmed) return;
 
@@ -274,8 +274,8 @@ export function EditorShell() {
         <div className="brand-block">
           <div className="brand-mark" aria-hidden="true">✦</div>
           <div>
-            <h1>Flash Nick Studio</h1>
-            <p>Fotoğrafını seç, nickini yaz, hareket ve efekt ekle.</p>
+            <h1>Flash Nick Hazırlayıcı</h1>
+            <p>Fotoğrafını seç, nickini yaz, hazır görünümü seç ve GIF dosyanı indir.</p>
           </div>
         </div>
         <TopToolbar
@@ -298,13 +298,20 @@ export function EditorShell() {
       ) : null}
 
       <section className="editor-layout" aria-busy={gifExporting}>
-        <ToolPanel onAddText={handleAddText} onImageFile={handleImageFile} />
+        <ToolPanel
+          onAddText={handleAddText}
+          onImageFile={handleImageFile}
+          onGifExport={handleGifExport}
+          gifExporting={gifExporting}
+          gifProgress={gifProgress}
+        />
 
         <section className="workspace" aria-label="Tasarım çalışma alanı">
           <div className="workspace-toolbar">
-            <span>Tuval Boyutu</span>
+            <span>Tasarım Boyutu</span>
             <strong>{project.width} × {project.height}</strong>
             <span className="workspace-spacer" />
+            <span className="workspace-help">Değişiklikleri ortadaki ön izlemede görebilirsin.</span>
             <span>{project.elements.length} öğe</span>
           </div>
 
@@ -321,7 +328,7 @@ export function EditorShell() {
 
           <footer className="workspace-footer">
             <span>{project.width} × {project.height} px</span>
-            <span>{gifExporting ? `GIF hazırlanıyor %${Math.round(gifProgress * 100)}` : 'V3 Rich Editor'}</span>
+            <span>{gifExporting ? `GIF hazırlanıyor %${Math.round(gifProgress * 100)}` : 'Tasarım otomatik kaydedilir'}</span>
           </footer>
         </section>
 
