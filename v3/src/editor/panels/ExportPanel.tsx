@@ -42,85 +42,12 @@ export function ExportPanel() {
 
   return (
     <section className="export-panel preset-panel" aria-label="Dışa aktarma ayarları">
-      <div className="panel-title-row">
+      <div className="panel-title-row export-panel-summary">
         <div>
-          <strong>Dışa Aktarma</strong>
-          <small>PNG ve GIF çıktı boyutunu kalite ihtiyacına göre ayarla.</small>
+          <strong>Çıktı Ayarları</strong>
+          <small>Varsayılan ayarlar çoğu kullanım için yeterli. Teknik seçenekleri yalnız gerekirse değiştir.</small>
         </div>
         <strong>{dimensions.width} × {dimensions.height} px</strong>
-      </div>
-
-      <div className="export-control-group">
-        <span>Çözünürlük</span>
-        <div className="export-scale-control" aria-label="Çıktı ölçeği">
-          {EXPORT_SCALES.map((option) => (
-            <button
-              key={option}
-              type="button"
-              className={scale === option ? 'selected' : ''}
-              aria-pressed={scale === option}
-              onClick={() => setExportSettings({ scale: option })}
-            >
-              {option}x
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="export-control-group">
-        <span>GIF Profili</span>
-        <div className="segmented-control" aria-label="GIF kalite profili">
-          {GIF_PROFILES.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={gifProfile === option.value ? 'selected' : ''}
-              aria-pressed={gifProfile === option.value}
-              onClick={() => setExportSettings({ gifProfile: option.value })}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="export-control-group">
-        <span>GIF Renk Paleti</span>
-        <div className="segmented-control" aria-label="GIF renk paleti">
-          {GIF_PALETTES.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={gifPalette === option.value ? 'selected' : ''}
-              aria-pressed={gifPalette === option.value}
-              onClick={() => setExportSettings({ gifPalette: option.value })}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="export-control-group">
-        <span>Dither</span>
-        <div className="segmented-control" aria-label="GIF dither profili">
-          {GIF_DITHERS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={gifDither === option.value ? 'selected' : ''}
-              aria-pressed={gifDither === option.value}
-              onClick={() => setExportSettings({ gifDither: option.value })}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="export-summary">
-        <span>PNG: {dimensions.width} × {dimensions.height} px</span>
-        <span>GIF: {gifPlan.frameCount} kare · {Math.round(gifPlan.delayMs)} ms/kare</span>
       </div>
 
       {exceedsDimensionLimit || exceedsGifBudget ? (
@@ -133,6 +60,84 @@ export function ExportPanel() {
           ) : null}
         </div>
       ) : null}
+
+      <details className="export-advanced">
+        <summary>Gelişmiş Ayarlar</summary>
+        <div className="export-advanced-grid">
+          <div className="export-control-group">
+            <span>Çözünürlük</span>
+            <div className="export-scale-control" aria-label="Çıktı ölçeği">
+              {EXPORT_SCALES.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={scale === option ? 'selected' : ''}
+                  aria-pressed={scale === option}
+                  onClick={() => setExportSettings({ scale: option })}
+                >
+                  {option}x
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="export-control-group">
+            <span>GIF Profili</span>
+            <div className="segmented-control" aria-label="GIF kalite profili">
+              {GIF_PROFILES.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={gifProfile === option.value ? 'selected' : ''}
+                  aria-pressed={gifProfile === option.value}
+                  onClick={() => setExportSettings({ gifProfile: option.value })}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="export-control-group">
+            <span>GIF Renk Paleti</span>
+            <div className="segmented-control" aria-label="GIF renk paleti">
+              {GIF_PALETTES.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={gifPalette === option.value ? 'selected' : ''}
+                  aria-pressed={gifPalette === option.value}
+                  onClick={() => setExportSettings({ gifPalette: option.value })}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="export-control-group">
+            <span>Dither</span>
+            <div className="segmented-control" aria-label="GIF dither profili">
+              {GIF_DITHERS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={gifDither === option.value ? 'selected' : ''}
+                  aria-pressed={gifDither === option.value}
+                  onClick={() => setExportSettings({ gifDither: option.value })}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="export-summary">
+            <span>PNG: {dimensions.width} × {dimensions.height} px</span>
+            <span>GIF: {gifPlan.frameCount} kare · {Math.round(gifPlan.delayMs)} ms/kare</span>
+          </div>
+        </div>
+      </details>
     </section>
   );
 }
