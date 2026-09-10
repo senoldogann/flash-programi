@@ -83,33 +83,30 @@ export function PresetLibrary({ query }: PresetLibraryProps) {
 
       {visibleEntries.length > 0 ? (
         <div className="preset-library-grid">
-          {visibleEntries.map((entry) => {
-            const { recipe } = entry;
-            return (
-              <button
-                key={`${entry.family}-${recipe.id}`}
-                type="button"
-                className="preset-library-card"
-                aria-label={`${recipe.name} uygula`}
-                onClick={() => {
-                  if (entry.family === 'classic') applyClassicRecipe(recipe.id);
-                  else applyNeoRecipe(recipe.id);
-                }}
+          {visibleEntries.map((entry) => (
+            <button
+              key={`${entry.family}-${entry.recipe.id}`}
+              type="button"
+              className="preset-library-card"
+              aria-label={`${entry.recipe.name} uygula`}
+              onClick={() => {
+                if (entry.family === 'classic') applyClassicRecipe(entry.recipe.id);
+                else applyNeoRecipe(entry.recipe.id);
+              }}
+            >
+              <span
+                className="preset-library-preview"
+                style={{ background: `radial-gradient(circle at 25% 20%, rgba(255,255,255,.16), transparent 38%), ${entry.recipe.background}` }}
+                aria-hidden="true"
               >
-                <span
-                  className="preset-library-preview"
-                  style={{ background: `radial-gradient(circle at 25% 20%, rgba(255,255,255,.16), transparent 38%), ${recipe.background}` }}
-                  aria-hidden="true"
-                >
-                  <span>{entry.family === 'classic' ? 'FLASH' : 'NEO'}</span>
-                </span>
-                <span className="preset-library-copy">
-                  <strong>{recipe.name}</strong>
-                  <small>{layoutLabel(recipe.layout)} · {recipe.width} × {recipe.height}</small>
-                </span>
-              </button>
-            );
-          })}
+                <span>{entry.family === 'classic' ? 'FLASH' : 'NEO'}</span>
+              </span>
+              <span className="preset-library-copy">
+                <strong>{entry.recipe.name}</strong>
+                <small>{layoutLabel(entry.recipe.layout)} · {entry.recipe.width} × {entry.recipe.height}</small>
+              </span>
+            </button>
+          ))}
         </div>
       ) : (
         <div className="preset-library-empty" role="status">
