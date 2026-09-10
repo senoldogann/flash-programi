@@ -134,7 +134,10 @@ export type DecorationPreset =
   | 'cherry-blossom'
   | 'money'
   | 'smoke'
-  | 'rain';
+  | 'rain'
+  | 'ambient-orbs'
+  | 'glow-dust'
+  | 'light-sweep';
 
 export type DecorationLayer = {
   id: string;
