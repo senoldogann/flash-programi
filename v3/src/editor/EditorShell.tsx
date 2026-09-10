@@ -71,7 +71,7 @@ export function EditorShell() {
   const [previewTimeMs, setPreviewTimeMs] = useState(0);
   const [previewPlaying, setPreviewPlaying] = useState(true);
   const [presetQuery, setPresetQuery] = useState('');
-  const [presetLibraryOpen, setPresetLibraryOpen] = useState(false);
+  const [presetLibraryOpen, setPresetLibraryOpen] = useState(true);
   const assetRevokers = useRef(new Set<() => void>());
   const stageRef = useRef<Konva.Stage | null>(null);
   const startImageInputRef = useRef<HTMLInputElement>(null);
@@ -160,7 +160,7 @@ export function EditorShell() {
       setPreviewTimeMs(0);
       setPreviewPlaying(true);
       setPresetQuery('');
-      setPresetLibraryOpen(false);
+      setPresetLibraryOpen(true);
     } catch (error) {
       setErrorNotice({ title: 'Yeni tasarım açılamadı.', message: `Mevcut tasarım korunuyor. ${getErrorMessage(error)}` });
     }
@@ -285,10 +285,7 @@ export function EditorShell() {
       />
 
       <StudioHeader
-        onCreate={() => {
-          setPresetLibraryOpen(false);
-          workspaceRef.current?.focus();
-        }}
+        onCreate={() => workspaceRef.current?.focus()}
         onShowTemplates={handleShowTemplates}
         onShowHelp={() => setHelpOpen((open) => !open)}
         searchQuery={presetQuery}
@@ -314,18 +311,7 @@ export function EditorShell() {
         </div>
       ) : null}
 
-      {showPresetLibrary ? (
-        <section ref={presetLibraryRef} className="studio-library-shell" aria-label="Hazır tasarımlar" tabIndex={-1}>
-          <div className="studio-library-close-row">
-            <button type="button" className="studio-library-close" onClick={() => setPresetLibraryOpen(false)}>
-              Tasarımları Kapat
-            </button>
-          </div>
-          <PresetLibrary query={presetQuery} />
-        </section>
-      ) : null}
-
-      <section className="editor-layout studio-editor-layout" aria-busy={gifExporting}>
+      <section className="editor-layout studio-editor-layout" aria-label="Ana düzenleyici" aria-busy={gifExporting}>
         <div className="studio-left-column">
           <WorkflowRail
             activeStep={activeStep}
@@ -370,6 +356,24 @@ export function EditorShell() {
         </section>
         <TextInspector />
       </section>
+
+      {showPresetLibrary ? (
+        <section ref={presetLibraryRef} className="studio-library-shell" aria-label="Hazır tasarımlar" tabIndex={-1}>
+          <div className="studio-library-close-row">
+            <button
+              type="button"
+              className="studio-library-close"
+              onClick={() => {
+                setPresetQuery('');
+                setPresetLibraryOpen(false);
+              }}
+            >
+              Tasarımları Kapat
+            </button>
+          </div>
+          <PresetLibrary query={presetQuery} />
+        </section>
+      ) : null}
     </main>
   );
 }
