@@ -30,7 +30,7 @@ export function TopToolbar({
         onClick={onNewProject}
         aria-label="Yeni Tasarım"
       >
-        Yeni Tasarım
+        Baştan Başla
       </button>
       <button
         type="button"
@@ -48,25 +48,25 @@ export function TopToolbar({
         onClick={redo}
         aria-label="Yinele"
       >
-        Yinele
+        Yeniden Yap
       </button>
       <button
         type="button"
         className="secondary-action"
-        disabled={!onGifExport || gifExporting}
-        onClick={onGifExport}
-        aria-label="GIF İndir"
-      >
-        {gifExporting ? `GIF %${progressPercent}` : 'GIF İndir'}
-      </button>
-      <button
-        type="button"
-        className="primary-action"
         disabled={!onExport || gifExporting}
         onClick={onExport}
         aria-label="PNG İndir"
       >
-        PNG İndir
+        Resim İndir
+      </button>
+      <button
+        type="button"
+        className="primary-action"
+        disabled={!onGifExport || gifExporting}
+        onClick={onGifExport}
+        aria-label="GIF İndir"
+      >
+        {gifExporting ? `GIF Hazırlanıyor %${progressPercent}` : 'GIF Olarak İndir'}
       </button>
     </div>
   );
