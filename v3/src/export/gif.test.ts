@@ -74,4 +74,31 @@ describe('GIF export', () => {
     expect(encoder.frames).toHaveLength(3);
     expect(encoder.frames.every(({ delay }) => delay === 125)).toBe(true);
   });
+
+  it('post-processes each captured Stage frame before it reaches the encoder', async () => {
+    const encoder = new FakeEncoder();
+    const source = document.createElement('canvas');
+    const processed = document.createElement('canvas');
+    const order: string[] = [];
+
+    await encodeGifFrames({
+      durationMs: 1000,
+      fps: 1,
+      frameTimesMs: [0],
+      frameDelayMs: 1000,
+      encoder,
+      renderFrame: async () => {
+        order.push('render');
+        return source;
+      },
+      processFrame: async (frame) => {
+        order.push('process');
+        expect(frame).toBe(source);
+        return processed;
+      },
+    });
+
+    expect(order).toEqual(['render', 'process']);
+    expect(encoder.frames[0]?.frame).toBe(processed);
+  });
 });
