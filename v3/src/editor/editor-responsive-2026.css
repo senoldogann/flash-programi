@@ -1,0 +1,285 @@
+.studio-app-shell {
+  overflow-x: clip;
+}
+
+.studio-compact-help {
+  display: none;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 11px;
+  color: #dbe4f4;
+  background: rgba(255,255,255,.035);
+  font-size: 13px;
+  font-weight: 740;
+  cursor: pointer;
+}
+
+@media (max-width: 1279px) {
+  .studio-header {
+    grid-template-columns: minmax(210px, .55fr) minmax(0, 1.45fr);
+    gap: 14px;
+  }
+
+  .studio-nav {
+    display: none;
+  }
+
+  .studio-header-tools {
+    min-width: 0;
+  }
+
+  .studio-compact-help {
+    display: inline-flex;
+    flex: 0 0 auto;
+  }
+
+  .studio-editor-layout {
+    grid-template-columns: minmax(240px, 285px) minmax(0, 1fr);
+  }
+
+  .inspector {
+    position: static;
+    grid-column: 1 / -1;
+    max-height: none;
+  }
+}
+
+@media (max-width: 799px) {
+  .studio-header {
+    position: relative;
+    min-height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .studio-brand {
+    justify-content: flex-start;
+  }
+
+  .studio-brand-copy p {
+    display: none;
+  }
+
+  .studio-header-tools {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .studio-search {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .studio-header-actions {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: stretch;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .studio-header-actions .header-actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .studio-header-actions .header-actions > .secondary-action {
+    flex: 1 1 92px;
+    min-width: 0;
+    min-height: 46px;
+    padding-inline: 9px;
+  }
+
+  .studio-header-actions .export-actions {
+    flex: 1 1 100%;
+  }
+
+  .studio-library-shell,
+  .studio-editor-layout,
+  .studio-help-panel,
+  .error-banner {
+    width: calc(100% - 16px);
+    max-width: none;
+  }
+
+  .studio-editor-layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px;
+    margin-top: 10px;
+    overflow: visible;
+  }
+
+  .studio-left-column {
+    display: contents;
+  }
+
+  .workflow-rail {
+    order: 1;
+    min-width: 0;
+    padding: 8px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(15,24,40,.96), rgba(9,16,29,.96));
+    box-shadow: var(--studio-shadow);
+    overflow: hidden;
+  }
+
+  .workflow-navigation {
+    display: flex;
+    gap: 7px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding-bottom: 5px;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  .workflow-step {
+    flex: 0 0 158px;
+    min-width: 158px;
+    min-height: 62px;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 9px;
+    padding: 8px 10px;
+    scroll-snap-align: start;
+  }
+
+  .workflow-step-number {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+  }
+
+  .workflow-step-copy strong {
+    font-size: 15px;
+  }
+
+  .workflow-step-copy small,
+  .workflow-step-glyph {
+    display: none;
+  }
+
+  .workflow-quick-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .workflow-quick-actions button:last-child {
+    grid-column: auto;
+  }
+
+  .workflow-export-entry {
+    min-height: 58px;
+  }
+
+  .workflow-privacy-note {
+    padding-bottom: 4px;
+  }
+
+  .studio-workspace {
+    order: 2;
+    position: static;
+    min-width: 0;
+    min-height: 500px;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .workflow-detail-panel {
+    order: 3;
+    min-width: 0;
+    max-height: none;
+    overflow: visible;
+    margin: 0;
+    padding: 0 10px 10px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(15,24,40,.96), rgba(9,16,29,.96));
+    box-shadow: var(--studio-shadow);
+  }
+
+  .inspector {
+    order: 4;
+    width: auto;
+    min-width: 0;
+    max-height: none;
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    box-shadow: var(--studio-shadow);
+  }
+
+  .canvas-zone {
+    min-height: 300px;
+    margin: 8px;
+    padding: 12px;
+  }
+
+  .canvas-size-panel,
+  .studio-export-settings .export-panel {
+    margin-inline: 8px;
+  }
+
+  .workspace-help {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  body {
+    font-size: 15px;
+  }
+
+  .studio-brand-mark {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+    border-radius: 14px;
+  }
+
+  .studio-brand-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .studio-brand-copy h1 {
+    font-size: 22px;
+  }
+
+  .workflow-step {
+    flex-basis: 138px;
+    min-width: 138px;
+  }
+
+  .workflow-quick-actions {
+    gap: 6px;
+  }
+
+  .workflow-quick-actions button {
+    min-height: 48px;
+  }
+
+  .studio-workspace {
+    min-height: 450px;
+  }
+
+  .canvas-zone {
+    min-height: 260px;
+    padding: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workflow-navigation {
+    scroll-behavior: auto;
+  }
+}

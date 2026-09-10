@@ -8,6 +8,16 @@ describe('TextInspector', () => {
     useEditorStore.getState().reset();
   });
 
+  it('presents selected text as plain Turkish nick settings', () => {
+    useEditorStore.getState().addText('KraL');
+    render(<TextInspector />);
+
+    expect(screen.getByRole('heading', { name: 'Nick Ayarları' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Yazı')).toBeInTheDocument();
+    expect(screen.getByLabelText('Yazı Tipi')).toBeInTheDocument();
+    expect(screen.getByLabelText('Parlama Gücü')).toBeInTheDocument();
+  });
+
   it('edits rich text styling and common element controls', () => {
     const id = useEditorStore.getState().addText('KraL');
     render(<TextInspector />);

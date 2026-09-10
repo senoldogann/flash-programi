@@ -1,0 +1,116 @@
+.workspace-title-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workspace-title-group > span {
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.workspace-title-group > strong {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-size-disclosure {
+  margin: 10px 12px 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  overflow: hidden;
+}
+
+.workspace-size-disclosure > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.workspace-size-disclosure > summary::marker {
+  color: var(--accent-violet);
+}
+
+.workspace-size-disclosure .canvas-size-panel {
+  margin: 0;
+  border-width: 1px 0 0;
+  border-radius: 0;
+}
+
+.playback-strip {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 44px auto minmax(120px, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  margin: 0 12px 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 13px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.028);
+}
+
+.playback-toggle {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(155, 108, 255, 0.35);
+  border-radius: 12px;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(244, 76, 216, 0.28), rgba(63, 140, 255, 0.28));
+  cursor: pointer;
+}
+
+.playback-toggle:disabled,
+.playback-strip input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.playback-strip input[type='range'] {
+  width: 100%;
+  min-width: 0;
+}
+
+.playback-time,
+.playback-fps {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.playback-fps {
+  padding: 5px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  color: #cfd8ea;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+@media (max-width: 620px) {
+  .playback-strip {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+  }
+
+  .playback-strip input[type='range'] {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .playback-duration,
+  .playback-fps {
+    display: none;
+  }
+}

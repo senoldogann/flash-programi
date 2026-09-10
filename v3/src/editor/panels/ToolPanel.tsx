@@ -8,13 +8,16 @@ import { MotionPanel } from './MotionPanel';
 import { TemplatesPanel } from './TemplatesPanel';
 import './rich-panels.css';
 
-type ToolSection = 'easy' | 'flashnick' | 'effects' | 'motion' | 'decorations' | 'frames' | 'templates';
+export type ToolSection = 'easy' | 'flashnick' | 'effects' | 'motion' | 'decorations' | 'frames' | 'templates';
 type ToolPanelProps = {
   onAddText: () => void;
   onImageFile: (file: File) => void;
   onGifExport?: () => void;
   gifExporting?: boolean;
   gifProgress?: number;
+  activeSection?: ToolSection;
+  onSectionChange?: (section: ToolSection) => void;
+  showNavigation?: boolean;
 };
 
 const TOOL_SECTIONS: Array<{ id: ToolSection; label: string; icon: string }> = [
@@ -27,74 +30,96 @@ const TOOL_SECTIONS: Array<{ id: ToolSection; label: string; icon: string }> = [
   { id: 'templates', label: 'Hazır Tasarımlar', icon: '▦' },
 ];
 
+const CONTEXTUAL_SECTIONS = TOOL_SECTIONS.filter((tool) => tool.id !== 'easy');
+
 export function ToolPanel({
   onAddText,
   onImageFile,
   onGifExport,
   gifExporting = false,
   gifProgress = 0,
+  activeSection,
+  onSectionChange,
+  showNavigation = true,
 }: ToolPanelProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const [activeSection, setActiveSection] = useState<ToolSection>('easy');
+  const [internalSection, setInternalSection] = useState<ToolSection>('easy');
+  const resolvedSection = activeSection ?? internalSection;
 
   useEffect(() => {
     if (contentRef.current) contentRef.current.scrollTop = 0;
-  }, [activeSection]);
+  }, [resolvedSection]);
+
+  const selectSection = (section: ToolSection) => {
+    if (activeSection === undefined) setInternalSection(section);
+    onSectionChange?.(section);
+  };
+
+  const renderSectionButtons = (sections: typeof TOOL_SECTIONS, ariaLabel: string, contextual = false) => (
+    <div
+      className={`tool-section-buttons ${contextual ? 'tool-section-buttons-contextual' : ''}`}
+      aria-label={ariaLabel}
+    >
+      {sections.map((tool) => (
+        <button
+          key={tool.id}
+          type="button"
+          className={`category-button ${resolvedSection === tool.id ? 'category-button-active' : ''}`}
+          aria-pressed={resolvedSection === tool.id}
+          onClick={() => selectSection(tool.id)}
+        >
+          <span aria-hidden="true">{tool.icon}</span>
+          <strong>{tool.label}</strong>
+        </button>
+      ))}
+    </div>
+  );
 
   return (
-    <aside className="tool-panel" aria-label="Tasarım araçları">
-      <div className="tool-panel-nav" data-testid="tool-panel-nav">
-        <input
-          ref={imageInputRef}
-          className="visually-hidden"
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/gif"
-          aria-label="Fotoğraf seç"
-          onChange={(event) => {
-            const file = event.currentTarget.files?.[0];
-            event.currentTarget.value = '';
-            if (file) onImageFile(file);
-          }}
-        />
+    <aside className={`tool-panel ${showNavigation ? '' : 'tool-panel-contextual'}`} aria-label="Tasarım araçları">
+      {showNavigation ? (
+        <div className="tool-panel-nav" data-testid="tool-panel-nav">
+          <input
+            ref={imageInputRef}
+            className="visually-hidden"
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            aria-label="Fotoğraf seç"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = '';
+              if (file) onImageFile(file);
+            }}
+          />
 
-        <div className="primary-tools" aria-label="Hızlı ekleme araçları">
-          <button
-            type="button"
-            className="tool-button tool-button-primary"
-            aria-label="Fotoğraf Seç"
-            onClick={() => imageInputRef.current?.click()}
-          >
-            <span className="tool-icon" aria-hidden="true">▧</span>
-            <span><strong>Fotoğraf Seç</strong><small>Bilgisayarından veya telefonundan fotoğraf ekle</small></span>
-          </button>
-          <button type="button" className="tool-button" aria-label="Yazı Ekle" onClick={onAddText}>
-            <span className="tool-icon" aria-hidden="true">T</span>
-            <span><strong>Yazı Ekle</strong><small>Nick veya kısa mesaj ekle</small></span>
-          </button>
-        </div>
-
-        <p className="advanced-tools-heading">Ne yapmak istiyorsun?</p>
-        <p className="advanced-tools-help">İlk kez kullanıyorsan “Kolay Başlangıç” bölümünde kal. Diğer araçlar isteğe bağlıdır.</p>
-
-        <div className="tool-section-buttons" aria-label="Tasarım kategorileri">
-          {TOOL_SECTIONS.map((tool) => (
+          <div className="primary-tools" aria-label="Hızlı ekleme araçları">
             <button
-              key={tool.id}
               type="button"
-              className={`category-button ${activeSection === tool.id ? 'category-button-active' : ''}`}
-              aria-pressed={activeSection === tool.id}
-              onClick={() => setActiveSection(tool.id)}
+              className="tool-button tool-button-primary"
+              aria-label="Fotoğraf Seç"
+              onClick={() => imageInputRef.current?.click()}
             >
-              <span aria-hidden="true">{tool.icon}</span>
-              <strong>{tool.label}</strong>
+              <span className="tool-icon" aria-hidden="true">▧</span>
+              <span><strong>Fotoğraf Seç</strong><small>Bilgisayarından veya telefonundan fotoğraf ekle</small></span>
             </button>
-          ))}
+            <button type="button" className="tool-button" aria-label="Yazı Ekle" onClick={onAddText}>
+              <span className="tool-icon" aria-hidden="true">T</span>
+              <span><strong>Yazı Ekle</strong><small>Nick veya kısa mesaj ekle</small></span>
+            </button>
+          </div>
+
+          <p className="advanced-tools-heading">Ne yapmak istiyorsun?</p>
+          <p className="advanced-tools-help">İlk kez kullanıyorsan “Kolay Başlangıç” bölümünde kal. Diğer araçlar isteğe bağlıdır.</p>
+
+          {renderSectionButtons(TOOL_SECTIONS, 'Tasarım kategorileri')}
         </div>
-      </div>
+      ) : (
+        renderSectionButtons(CONTEXTUAL_SECTIONS, 'Gelişmiş tasarım araçları', true)
+      )}
 
       <div ref={contentRef} className="tool-panel-content" data-testid="tool-panel-content">
-        {activeSection === 'easy' ? (
+        {resolvedSection === 'easy' ? (
           <EasyStartPanel
             onChooseImage={() => imageInputRef.current?.click()}
             onGifExport={onGifExport}
@@ -102,12 +127,12 @@ export function ToolPanel({
             gifProgress={gifProgress}
           />
         ) : null}
-        {activeSection === 'flashnick' ? <FlashNickPanel /> : null}
-        {activeSection === 'effects' ? <EffectsPanel /> : null}
-        {activeSection === 'motion' ? <MotionPanel /> : null}
-        {activeSection === 'decorations' ? <DecorationsPanel /> : null}
-        {activeSection === 'frames' ? <FramesPanel /> : null}
-        {activeSection === 'templates' ? <TemplatesPanel /> : null}
+        {resolvedSection === 'flashnick' ? <FlashNickPanel /> : null}
+        {resolvedSection === 'effects' ? <EffectsPanel /> : null}
+        {resolvedSection === 'motion' ? <MotionPanel /> : null}
+        {resolvedSection === 'decorations' ? <DecorationsPanel /> : null}
+        {resolvedSection === 'frames' ? <FramesPanel /> : null}
+        {resolvedSection === 'templates' ? <TemplatesPanel /> : null}
       </div>
     </aside>
   );

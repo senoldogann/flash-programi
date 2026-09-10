@@ -39,8 +39,8 @@ function CommonElementControls({
   return (
     <section className="inspector-section" aria-label="Öğe ayarları">
       <div className="inspector-section-title">
-        <strong>Öğe</strong>
-        <small>Görünüm ve düzenleme</small>
+        <strong>Diğer Ayarlar</strong>
+        <small>Opaklık, görünürlük ve kilit</small>
       </div>
 
       <label>
@@ -116,6 +116,11 @@ function TextStyleControls({
   return (
     <>
       <section className="inspector-section inspector-section-first" aria-label="Yazı içeriği">
+        <div className="inspector-section-title inspector-section-title-stacked">
+          <strong>Nick ve Yazı</strong>
+          <small>Metni, yazı tipini ve hizalamayı buradan değiştir.</small>
+        </div>
+
         <label>
           <span>Yazı</span>
           <input
@@ -128,30 +133,6 @@ function TextStyleControls({
             onChange={(event) => updateElement(element.id, { text: event.currentTarget.value })}
           />
         </label>
-
-        <div className="inspector-control-group">
-          <span>Yazım Yönü</span>
-          <div className="segmented-control inspector-align-control">
-            <button
-              type="button"
-              aria-label="Yatay"
-              aria-pressed={element.writingMode === 'horizontal'}
-              className={element.writingMode === 'horizontal' ? 'selected' : ''}
-              onClick={() => setWritingMode('horizontal')}
-            >
-              Yatay
-            </button>
-            <button
-              type="button"
-              aria-label="Dikey"
-              aria-pressed={element.writingMode === 'vertical-stacked'}
-              className={element.writingMode === 'vertical-stacked' ? 'selected' : ''}
-              onClick={() => setWritingMode('vertical-stacked')}
-            >
-              Dikey
-            </button>
-          </div>
-        </div>
 
         <label>
           <span>Yazı Tipi</span>
@@ -202,12 +183,36 @@ function TextStyleControls({
             ))}
           </div>
         </div>
+
+        <div className="inspector-control-group">
+          <span>Yazım Yönü</span>
+          <div className="segmented-control inspector-align-control">
+            <button
+              type="button"
+              aria-label="Yatay"
+              aria-pressed={element.writingMode === 'horizontal'}
+              className={element.writingMode === 'horizontal' ? 'selected' : ''}
+              onClick={() => setWritingMode('horizontal')}
+            >
+              Yatay
+            </button>
+            <button
+              type="button"
+              aria-label="Dikey"
+              aria-pressed={element.writingMode === 'vertical-stacked'}
+              className={element.writingMode === 'vertical-stacked' ? 'selected' : ''}
+              onClick={() => setWritingMode('vertical-stacked')}
+            >
+              Dikey
+            </button>
+          </div>
+        </div>
       </section>
 
       <section className="inspector-section" aria-label="Yazı görünümü">
-        <div className="inspector-section-title">
-          <strong>Renk ve Kenarlık</strong>
-          <small>Nick görünümünü belirle</small>
+        <div className="inspector-section-title inspector-section-title-stacked">
+          <strong>Renk, Kenarlık ve Parlama</strong>
+          <small>Nickin görünümünü kolayca belirle.</small>
         </div>
 
         <div className="color-grid">
@@ -319,11 +324,11 @@ export function TextInspector() {
   const isText = selectedElement.type === 'text';
 
   return (
-    <aside className="inspector" aria-label={isText ? 'Yazı ayarları' : 'Fotoğraf ayarları'}>
+    <aside className="inspector" aria-label={isText ? 'Nick ayarları' : 'Fotoğraf ayarları'}>
       <div className="inspector-header inspector-header-rich">
         <div>
-          <h2>{isText ? 'Yazı Ayarları' : 'Fotoğraf Ayarları'}</h2>
-          <small>{selectedElement.name}</small>
+          <h2>{isText ? 'Nick Ayarları' : 'Fotoğraf Ayarları'}</h2>
+          <small>{isText ? 'Yazını ve görünümünü buradan düzenle.' : selectedElement.name}</small>
         </div>
         <span className="element-type-badge">{isText ? 'T' : '▧'}</span>
       </div>
