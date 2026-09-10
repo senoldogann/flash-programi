@@ -193,6 +193,8 @@ export const frameDefinitionSchema = z.object({
 export const exportSettingsSchema = z.object({
   scale: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
   gifProfile: z.enum(['small', 'balanced', 'quality']),
+  gifPalette: z.enum(['adaptive', 'classic-64', 'classic-27']).optional(),
+  gifDither: z.enum(['none', 'ordered-4x4']).optional(),
 }).strict();
 
 export const projectSchema = z.object({
