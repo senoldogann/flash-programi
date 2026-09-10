@@ -8,7 +8,7 @@ describe('ExportPanel', () => {
     useEditorStore.getState().reset();
   });
 
-  it('updates export scale/profile and final pixels without changing visual geometry or history', () => {
+  it('updates export quality/color settings without changing visual geometry or history', () => {
     useEditorStore.getState().addText('Export');
     const geometryBefore = structuredClone(useEditorStore.getState().project.elements);
     const historyBefore = useEditorStore.getState().past.length;
@@ -21,12 +21,26 @@ describe('ExportPanel', () => {
     expect(screen.getByRole('button', { name: 'Küçük' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Dengeli' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Kaliteli' })).toBeInTheDocument();
+    expect(screen.getByText('GIF Renk Paleti')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Uyarlanabilir' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Klasik 64' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Klasik 27' })).toBeInTheDocument();
+    expect(screen.getByText('Dither')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Kapalı' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ordered 4×4' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: '2x' }));
     fireEvent.click(screen.getByRole('button', { name: 'Kaliteli' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Klasik 64' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ordered 4×4' }));
 
     const state = useEditorStore.getState();
-    expect(state.project.exportSettings).toEqual({ scale: 2, gifProfile: 'quality' });
+    expect(state.project.exportSettings).toEqual({
+      scale: 2,
+      gifProfile: 'quality',
+      gifPalette: 'classic-64',
+      gifDither: 'ordered-4x4',
+    });
     expect(state.project.elements).toEqual(geometryBefore);
     expect(state.past).toHaveLength(historyBefore);
     expect(screen.getByLabelText('Dışa aktarma ayarları')).toHaveTextContent('600 × 600 px');
