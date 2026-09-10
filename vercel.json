@@ -3,8 +3,7 @@
   "git": {
     "deploymentEnabled": {
       "**": false,
-      "main": true,
-      "feat/2026-editor-redesign": true
+      "main": true
     }
   },
   "installCommand": "npm --prefix v3 install",
