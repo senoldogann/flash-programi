@@ -4,6 +4,7 @@ import '../responsive.css';
 import '../editor/editor-workflow.css';
 import '../editor/easy-ui.css';
 import '../editor/editor-2026.css';
+import '../editor/editor-responsive-2026.css';
 
 export function App() {
   return <EditorShell />;
