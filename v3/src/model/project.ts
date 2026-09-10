@@ -65,6 +65,8 @@ export type AnimationIntensity = 'subtle' | 'normal' | 'strong';
 export type AnimationDirection = 'left' | 'right' | 'up' | 'down';
 export type ExportScale = 1 | 2 | 3 | 4;
 export type GifProfile = 'small' | 'balanced' | 'quality';
+export type GifPaletteProfile = 'adaptive' | 'classic-64' | 'classic-27';
+export type GifDitherProfile = 'none' | 'ordered-4x4';
 
 export type AnimationDefinition = {
   preset: AnimationPreset;
@@ -154,6 +156,8 @@ export type FrameDefinition = {
 export type ExportSettings = {
   scale: ExportScale;
   gifProfile: GifProfile;
+  gifPalette?: GifPaletteProfile;
+  gifDither?: GifDitherProfile;
 };
 
 export type ElementBase = {
@@ -267,6 +271,8 @@ export function createEmptyProject(): Project {
     exportSettings: {
       scale: 1,
       gifProfile: 'balanced',
+      gifPalette: 'adaptive',
+      gifDither: 'none',
     },
   };
 }
