@@ -17,11 +17,13 @@ import { useEditorStore } from '../store/editor-store';
 import { CanvasPreview } from './canvas/CanvasPreview';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { readImageFile } from './canvas/image-loader';
+import { PlaybackStrip } from './chrome/PlaybackStrip';
 import { StudioHeader } from './chrome/StudioHeader';
+import { WorkspaceChrome } from './chrome/WorkspaceChrome';
 import { WorkflowRail, type WorkflowStep } from './chrome/WorkflowRail';
+import './chrome/workspace-chrome.css';
 import './editor-controls.css';
 import { handleEditorShortcut } from './keyboard-shortcuts';
-import { CanvasSizePanel } from './panels/CanvasSizePanel';
 import { ExportPanel } from './panels/ExportPanel';
 import { TextInspector } from './panels/TextInspector';
 import { ToolPanel, type ToolSection } from './panels/ToolPanel';
@@ -64,6 +66,8 @@ export function EditorShell() {
   const [activeStep, setActiveStep] = useState<WorkflowStep>('photo');
   const [activeToolSection, setActiveToolSection] = useState<ToolSection>('effects');
   const [helpOpen, setHelpOpen] = useState(false);
+  const [previewTimeMs, setPreviewTimeMs] = useState(0);
+  const [previewPlaying, setPreviewPlaying] = useState(true);
   const assetRevokers = useRef(new Set<() => void>());
   const stageRef = useRef<Konva.Stage | null>(null);
   const startImageInputRef = useRef<HTMLInputElement>(null);
@@ -148,6 +152,8 @@ export function EditorShell() {
       reset();
       setActiveStep('photo');
       setActiveToolSection('effects');
+      setPreviewTimeMs(0);
+      setPreviewPlaying(true);
     } catch (error) {
       setErrorNotice({ title: 'Yeni tasarım açılamadı.', message: `Mevcut tasarım korunuyor. ${getErrorMessage(error)}` });
     }
@@ -230,6 +236,18 @@ export function EditorShell() {
     window.requestAnimationFrame(() => scrollIntoViewSafely(toolDetailRef.current));
   };
 
+  const handlePreviewTimeChange = (valueMs: number) => {
+    setPreviewTimeMs(valueMs);
+    setPreviewPlaying(false);
+  };
+
+  const handlePreviewPlayingChange = (playing: boolean) => {
+    if (playing) setPreviewTimeMs(0);
+    setPreviewPlaying(playing);
+  };
+
+  const previewOverrideMs = exportTimeMs ?? (previewPlaying ? null : previewTimeMs);
+
   return (
     <main className="app-shell studio-app-shell">
       <input
@@ -294,18 +312,20 @@ export function EditorShell() {
         </div>
 
         <section ref={workspaceRef} className="workspace studio-workspace" aria-label="Tasarım çalışma alanı" tabIndex={-1}>
-          <div className="workspace-toolbar">
-            <span>Tasarım Boyutu</span>
-            <strong>{project.width} × {project.height}</strong>
-            <span className="workspace-spacer" />
-            <span className="workspace-help">Değişiklikleri ortadaki ön izlemede görebilirsin.</span>
-            <span>{project.elements.length} öğe</span>
-          </div>
-          <CanvasSizePanel />
+          <WorkspaceChrome width={project.width} height={project.height} itemCount={project.elements.length} />
           <div ref={exportSettingsRef} className="studio-export-settings"><ExportPanel /></div>
           <CanvasPreview canvasWidth={project.width} canvasHeight={project.height}>
-            <EditorCanvas onStageReady={handleStageReady} timeOverrideMs={exportTimeMs} onRequestImage={() => startImageInputRef.current?.click()} />
+            <EditorCanvas onStageReady={handleStageReady} timeOverrideMs={previewOverrideMs} onRequestImage={() => startImageInputRef.current?.click()} />
           </CanvasPreview>
+          <PlaybackStrip
+            durationMs={project.durationMs}
+            fps={project.fps}
+            valueMs={previewTimeMs}
+            onChange={handlePreviewTimeChange}
+            playing={previewPlaying}
+            onPlayingChange={handlePreviewPlayingChange}
+            disabled={gifExporting}
+          />
           <footer className="workspace-footer">
             <span>{project.width} × {project.height} px</span>
             <span>{gifExporting ? `GIF hazırlanıyor %${Math.round(gifProgress * 100)}` : 'Tasarım otomatik kaydedilir'}</span>
