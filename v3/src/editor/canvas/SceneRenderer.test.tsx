@@ -1,10 +1,12 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { createDefaultImageEffects } from '../../model/project';
 import type {
   ParticleLayerV3,
   FrameLayerV3,
   ProjectV3,
   Text3DLayerV3,
+  SubjectLayerV3,
 } from '../../model/v3/project-v3';
 import { createDefaultText3DStyle } from '../../text3d/material-recipes';
 import { evaluateScene } from '../../timeline';
@@ -78,7 +80,15 @@ vi.mock('react-konva', async () => {
     ),
     Group: MockGroup,
     Text: MockText,
-    Image: () => <span data-testid="text3d-image" />,
+    Image: (props: Record<string, unknown>) => (
+      <span
+        data-testid={props.name === 'subject-cutout' ? 'subject-image' : 'text3d-image'}
+        data-shadow-blur={String(props.shadowBlur ?? '')}
+        data-shadow-opacity={String(props.shadowOpacity ?? '')}
+      >
+        {props.name === 'subject-cutout' ? `subject:${String(props.id)}` : ''}
+      </span>
+    ),
     Transformer: MockTransformer,
   };
 });
@@ -167,6 +177,37 @@ describe('SceneRenderer', () => {
     expect(container.textContent).toContain('particle:particle-1:t640text3d:text3d-1frame:gold:t640');
     expect(container.querySelector('[data-testid="text3d-render"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="scene-background"]')).toHaveAttribute('data-fill', '#112233');
+  });
+
+  it('dispatches subject cutouts through the shared raster renderer with alpha shadow', () => {
+    const project = projectFixture();
+    const subject: SubjectLayerV3 = {
+      ...baseLayerFields('subject-1'),
+      type: 'subject',
+      assetUrl: 'blob:transparent-person',
+      effects: createDefaultImageEffects(),
+      cutout: {
+        mode: 'alpha',
+        shadow: { enabled: true, color: '#000000', blur: 12, offsetX: 0, offsetY: 6, opacity: 0.42 },
+      },
+    };
+    project.layers.splice(1, 0, subject);
+    const scene = evaluateScene(project, 640);
+
+    const { getByTestId } = render(
+      <SceneRenderer
+        scene={scene}
+        selectedElementId={null}
+        previewScale={1}
+        onSelectElement={noop}
+        onInteractionStart={noop}
+        onInteractionFinish={noop}
+      />,
+    );
+
+    expect(getByTestId('subject-image')).toHaveTextContent('subject:subject-1');
+    expect(getByTestId('subject-image')).toHaveAttribute('data-shadow-blur', '12');
+    expect(getByTestId('subject-image')).toHaveAttribute('data-shadow-opacity', '0.42');
   });
 
   it('passes resolved visibility, opacity and transform to particle/frame groups', () => {

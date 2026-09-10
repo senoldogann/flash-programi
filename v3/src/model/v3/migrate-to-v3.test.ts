@@ -229,6 +229,21 @@ describe('migrateProjectToV3', () => {
     });
   });
 
+  it('promotes an opted-in V2 image to a dedicated V3 subject cutout layer', () => {
+    const source = buildV2Project();
+    const first = source.elements[0];
+    if (first.type !== 'image') throw new Error('fixture image missing');
+    first.role = 'subject';
+
+    const subject = migrateProjectToV3(source).layers.find((layer) => layer.id === 'image-1');
+
+    expect(subject).toMatchObject({
+      type: 'subject',
+      assetUrl: 'blob:portrait',
+      cutout: { mode: 'alpha' },
+    });
+  });
+
   it('keeps flat text flat and promotes Xara/extruded text to explicit text3d style', () => {
     const migrated = migrateProjectToV3(buildV2Project());
     const flat = migrated.layers.find((layer) => layer.id === 'text-flat');

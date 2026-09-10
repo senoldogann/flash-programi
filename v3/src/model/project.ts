@@ -1,6 +1,7 @@
 export type TextAlign = 'left' | 'center' | 'right';
 export type TextWritingMode = 'horizontal' | 'vertical-stacked';
 export type FlashMode = 'classic' | 'neo';
+export type ImageRole = 'image' | 'subject';
 export type TextMaterialPreset =
   | 'flat'
   | 'xara-gold'
@@ -213,6 +214,7 @@ export type TextElement = ElementBase & {
 
 export type ImageElement = ElementBase & {
   type: 'image';
+  role?: ImageRole;
   assetUrl: string;
   effects: ImageEffects;
 };

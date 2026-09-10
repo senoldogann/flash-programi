@@ -110,6 +110,18 @@ describe('Neo scene recipes', () => {
     expect(result.decorations.length).toBeLessThanOrEqual(3);
   });
 
+  it('promotes portrait-left Neo photos to subject layers for cutout motion', () => {
+    const result = applyNeoSceneRecipe(fixtureProject(), 'fashion-walk');
+    const image = result.elements.find(
+      (element): element is ImageElement => element.id === 'photo-stable' && element.type === 'image',
+    );
+
+    expect(image).toMatchObject({
+      role: 'subject',
+      animation: { preset: 'walk-25d', speed: 'slow', intensity: 'subtle' },
+    });
+  });
+
   it('creates a usable default nick when a project has no text', () => {
     const source = createEmptyProject();
     const result = applyNeoSceneRecipe(source, 'golden-queen');
