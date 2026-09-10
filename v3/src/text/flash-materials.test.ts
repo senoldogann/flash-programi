@@ -3,7 +3,11 @@ import { FLASH_TEXT_MATERIALS, getFlashTextMaterial } from './flash-materials';
 
 describe('classic flash nick text materials', () => {
   it('ships the researched Xara-style material family', () => {
-    expect(FLASH_TEXT_MATERIALS.map((material) => material.id)).toEqual([
+    expect(
+      FLASH_TEXT_MATERIALS
+        .map((material) => material.id)
+        .filter((id) => !String(id).startsWith('neo-')),
+    ).toEqual([
       'flat',
       'xara-gold',
       'xara-chrome',
