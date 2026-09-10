@@ -60,6 +60,10 @@ export function StudioHeader({
             onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
           />
         </label>
+        <button type="button" className="studio-compact-help" aria-label="Yardımı Aç" onClick={onShowHelp}>
+          <span aria-hidden="true">?</span>
+          <span>Yardım</span>
+        </button>
         <div className="studio-header-actions">{actions}</div>
       </div>
     </header>
