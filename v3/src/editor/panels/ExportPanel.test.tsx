@@ -16,6 +16,8 @@ describe('ExportPanel', () => {
     render(<ExportPanel />);
 
     expect(screen.getByLabelText('Dışa aktarma ayarları')).toHaveTextContent('300 × 300 px');
+    fireEvent.click(screen.getByText('Gelişmiş Ayarlar'));
+
     expect(screen.getByRole('button', { name: '1x' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '4x' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Küçük' })).toBeInTheDocument();
