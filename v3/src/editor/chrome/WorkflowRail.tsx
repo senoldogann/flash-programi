@@ -40,6 +40,7 @@ export function WorkflowRail({
               key={item.id}
               type="button"
               className={`workflow-step ${selected ? 'workflow-step-active' : ''}`}
+              aria-label={`${index + 1}. ${item.title}`}
               aria-current={selected ? 'step' : undefined}
               onClick={() => onStepChange(item.id)}
             >
