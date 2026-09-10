@@ -11,6 +11,7 @@ import {
   isSafeExportDimensions,
 } from '../../export/profiles';
 import { useEditorStore } from '../../store/editor-store';
+import './export-panel-2026.css';
 
 const EXPORT_SCALES: ExportScale[] = [1, 2, 3, 4];
 const GIF_PROFILES: Array<{ value: GifProfile; label: string }> = [
