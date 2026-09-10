@@ -92,16 +92,20 @@ describe('Neo scene recipes', () => {
   it('applies a full Neo composition while preserving existing photo/text identity and content', () => {
     const source = fixtureProject();
     const result = applyNeoSceneRecipe(source, 'cinematic-portrait');
+    const image = result.elements.find(
+      (element): element is ImageElement => element.id === 'photo-stable' && element.type === 'image',
+    );
+    const text = result.elements.find(
+      (element): element is TextElement => element.id === 'text-stable' && element.type === 'text',
+    );
 
     expect(parseProject(result)).toEqual(result);
     expect(result.mode).toBe('neo');
     expect(result.exportSettings.gifPalette).toBe('adaptive');
     expect(result.exportSettings.gifDither).toBe('none');
     expect(result.elements.map((element) => element.id)).toEqual(['photo-stable', 'text-stable']);
-    expect(result.elements.find((element) => element.id === 'photo-stable' && element.type === 'image')?.assetUrl)
-      .toBe('blob:portrait-stable');
-    expect(result.elements.find((element) => element.id === 'text-stable' && element.type === 'text')?.text)
-      .toBe('SENOL');
+    expect(image?.assetUrl).toBe('blob:portrait-stable');
+    expect(text?.text).toBe('SENOL');
     expect(result.decorations.length).toBeGreaterThanOrEqual(1);
     expect(result.decorations.length).toBeLessThanOrEqual(3);
   });
@@ -109,12 +113,11 @@ describe('Neo scene recipes', () => {
   it('creates a usable default nick when a project has no text', () => {
     const source = createEmptyProject();
     const result = applyNeoSceneRecipe(source, 'golden-queen');
-    const text = result.elements.find((element) => element.type === 'text');
+    const text = result.elements.find(
+      (element): element is TextElement => element.type === 'text',
+    );
 
-    expect(text?.type).toBe('text');
-    if (text?.type === 'text') {
-      expect(text.text).toBe('NICK');
-      expect(text.materialPreset).toBe('neo-gold');
-    }
+    expect(text?.text).toBe('NICK');
+    expect(text?.materialPreset).toBe('neo-gold');
   });
 });
