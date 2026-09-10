@@ -1,4 +1,5 @@
 import { useEditorStore } from '../../store/editor-store';
+import { ExportActions } from '../chrome/ExportActions';
 
 type TopToolbarProps = {
   onNewProject?: () => void;
@@ -19,7 +20,6 @@ export function TopToolbar({
   const canRedo = useEditorStore((state) => state.future.length > 0);
   const undo = useEditorStore((state) => state.undo);
   const redo = useEditorStore((state) => state.redo);
-  const progressPercent = Math.max(0, Math.min(100, Math.round(gifProgress * 100)));
 
   return (
     <div className="header-actions" aria-label="Tasarım işlemleri">
@@ -50,24 +50,12 @@ export function TopToolbar({
       >
         Yeniden Yap
       </button>
-      <button
-        type="button"
-        className="secondary-action"
-        disabled={!onExport || gifExporting}
-        onClick={onExport}
-        aria-label="PNG İndir"
-      >
-        Resim İndir
-      </button>
-      <button
-        type="button"
-        className="primary-action"
-        disabled={!onGifExport || gifExporting}
-        onClick={onGifExport}
-        aria-label="GIF İndir"
-      >
-        {gifExporting ? `GIF Hazırlanıyor %${progressPercent}` : 'GIF Olarak İndir'}
-      </button>
+      <ExportActions
+        onPngExport={onExport}
+        onGifExport={onGifExport}
+        gifExporting={gifExporting}
+        gifProgress={gifProgress}
+      />
     </div>
   );
 }
