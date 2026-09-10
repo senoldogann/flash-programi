@@ -33,6 +33,9 @@ describe('decoration presets', () => {
       'money',
       'smoke',
       'rain',
+      'ambient-orbs',
+      'glow-dust',
+      'light-sweep',
     ]);
   });
 
