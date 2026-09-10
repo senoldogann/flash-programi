@@ -4,6 +4,30 @@
   scroll-margin-top: 98px;
 }
 
+.studio-library-close-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 7px;
+}
+
+.studio-library-close {
+  min-height: 40px;
+  padding: 0 13px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, .03);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.studio-library-close:hover {
+  color: var(--text-primary);
+  border-color: rgba(155, 108, 255, .36);
+  background: rgba(155, 108, 255, .08);
+}
+
 .preset-library {
   padding: 16px;
   border: 1px solid var(--border-subtle);
