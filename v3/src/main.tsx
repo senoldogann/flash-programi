@@ -8,7 +8,7 @@ void retireLegacyPwa();
 const rootElement = document.getElementById('root');
 
 if (!rootElement) {
-  throw new Error('Flash Nick Studio başlatılamadı: root elementi bulunamadı.');
+  throw new Error('Flash Nick Hazırlayıcı başlatılamadı: ana uygulama alanı bulunamadı.');
 }
 
 createRoot(rootElement).render(
