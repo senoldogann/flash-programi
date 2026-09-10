@@ -30,6 +30,8 @@ const TOOL_SECTIONS: Array<{ id: ToolSection; label: string; icon: string }> = [
   { id: 'templates', label: 'Hazır Tasarımlar', icon: '▦' },
 ];
 
+const CONTEXTUAL_SECTIONS = TOOL_SECTIONS.filter((tool) => tool.id !== 'easy');
+
 export function ToolPanel({
   onAddText,
   onImageFile,
@@ -53,6 +55,26 @@ export function ToolPanel({
     if (activeSection === undefined) setInternalSection(section);
     onSectionChange?.(section);
   };
+
+  const renderSectionButtons = (sections: typeof TOOL_SECTIONS, ariaLabel: string, contextual = false) => (
+    <div
+      className={`tool-section-buttons ${contextual ? 'tool-section-buttons-contextual' : ''}`}
+      aria-label={ariaLabel}
+    >
+      {sections.map((tool) => (
+        <button
+          key={tool.id}
+          type="button"
+          className={`category-button ${resolvedSection === tool.id ? 'category-button-active' : ''}`}
+          aria-pressed={resolvedSection === tool.id}
+          onClick={() => selectSection(tool.id)}
+        >
+          <span aria-hidden="true">{tool.icon}</span>
+          <strong>{tool.label}</strong>
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <aside className={`tool-panel ${showNavigation ? '' : 'tool-panel-contextual'}`} aria-label="Tasarım araçları">
@@ -90,22 +112,11 @@ export function ToolPanel({
           <p className="advanced-tools-heading">Ne yapmak istiyorsun?</p>
           <p className="advanced-tools-help">İlk kez kullanıyorsan “Kolay Başlangıç” bölümünde kal. Diğer araçlar isteğe bağlıdır.</p>
 
-          <div className="tool-section-buttons" aria-label="Tasarım kategorileri">
-            {TOOL_SECTIONS.map((tool) => (
-              <button
-                key={tool.id}
-                type="button"
-                className={`category-button ${resolvedSection === tool.id ? 'category-button-active' : ''}`}
-                aria-pressed={resolvedSection === tool.id}
-                onClick={() => selectSection(tool.id)}
-              >
-                <span aria-hidden="true">{tool.icon}</span>
-                <strong>{tool.label}</strong>
-              </button>
-            ))}
-          </div>
+          {renderSectionButtons(TOOL_SECTIONS, 'Tasarım kategorileri')}
         </div>
-      ) : null}
+      ) : (
+        renderSectionButtons(CONTEXTUAL_SECTIONS, 'Gelişmiş tasarım araçları', true)
+      )}
 
       <div ref={contentRef} className="tool-panel-content" data-testid="tool-panel-content">
         {resolvedSection === 'easy' ? (
