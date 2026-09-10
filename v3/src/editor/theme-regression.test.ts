@@ -1,11 +1,15 @@
-// @ts-expect-error Node built-in is used only by this Vitest source-regression test.
-import { readFileSync } from 'node:fs';
-
-const editorCss = readFileSync(new URL('./editor-2026.css', import.meta.url), 'utf8');
-const controlsCss = readFileSync(new URL('./editor-controls.css', import.meta.url), 'utf8');
-const workflowCss = readFileSync(new URL('./editor-workflow.css', import.meta.url), 'utf8');
-const easyCss = readFileSync(new URL('./easy-ui.css', import.meta.url), 'utf8');
-const presetLibraryCss = readFileSync(new URL('./chrome/preset-library.css', import.meta.url), 'utf8');
+// @ts-expect-error Vite raw imports are test-only and not part of the app tsconfig ambient types.
+import editorCss from './editor-2026.css?raw';
+// @ts-expect-error Vite raw imports are test-only and not part of the app tsconfig ambient types.
+import controlsCss from './editor-controls.css?raw';
+// @ts-expect-error Vite raw imports are test-only and not part of the app tsconfig ambient types.
+import workflowCss from './editor-workflow.css?raw';
+// @ts-expect-error Vite raw imports are test-only and not part of the app tsconfig ambient types.
+import easyCss from './easy-ui.css?raw';
+// @ts-expect-error Vite raw imports are test-only and not part of the app tsconfig ambient types.
+import richPanelsCss from './panels/rich-panels.css?raw';
+// @ts-expect-error Vite raw imports are test-only and not part of the app tsconfig ambient types.
+import presetLibraryCss from './chrome/preset-library.css?raw';
 
 describe('2026 dark editor theme regressions', () => {
   it('keeps search and toolbar actions in a non-overlapping adaptive header layout', () => {
@@ -15,7 +19,7 @@ describe('2026 dark editor theme regressions', () => {
   });
 
   it('does not leak hard-coded light control surfaces into the dark studio', () => {
-    for (const css of [controlsCss, workflowCss, easyCss]) {
+    for (const css of [controlsCss, workflowCss, easyCss, richPanelsCss]) {
       expect(css).not.toMatch(/background:\s*#ffffff\b/i);
     }
 
