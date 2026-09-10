@@ -1,15 +1,16 @@
-// @ts-expect-error Vite raw imports are test-only and not part of the app tsconfig ambient types.
-import editorCss from './editor-2026.css?raw';
-// @ts-expect-error Vite raw imports are test-only and not part of the app tsconfig ambient types.
-import controlsCss from './editor-controls.css?raw';
-// @ts-expect-error Vite raw imports are test-only and not part of the app tsconfig ambient types.
-import workflowCss from './editor-workflow.css?raw';
-// @ts-expect-error Vite raw imports are test-only and not part of the app tsconfig ambient types.
-import easyCss from './easy-ui.css?raw';
-// @ts-expect-error Vite raw imports are test-only and not part of the app tsconfig ambient types.
-import richPanelsCss from './panels/rich-panels.css?raw';
-// @ts-expect-error Vite raw imports are test-only and not part of the app tsconfig ambient types.
-import presetLibraryCss from './chrome/preset-library.css?raw';
+// @ts-expect-error Node built-in is used only by this Vitest source-regression test.
+import { readFileSync } from 'node:fs';
+
+// @ts-expect-error process is provided by the Node Vitest runner.
+const editorRoot = `${process.cwd()}/src/editor`;
+const readEditorCss = (relativePath: string) => readFileSync(`${editorRoot}/${relativePath}`, 'utf8');
+
+const editorCss = readEditorCss('editor-2026.css');
+const controlsCss = readEditorCss('editor-controls.css');
+const workflowCss = readEditorCss('editor-workflow.css');
+const easyCss = readEditorCss('easy-ui.css');
+const richPanelsCss = readEditorCss('panels/rich-panels.css');
+const presetLibraryCss = readEditorCss('chrome/preset-library.css');
 
 describe('2026 dark editor theme regressions', () => {
   it('keeps search and toolbar actions in a non-overlapping adaptive header layout', () => {
