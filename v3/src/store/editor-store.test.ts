@@ -74,6 +74,8 @@ describe('editor store history', () => {
     expect(useEditorStore.getState().project.exportSettings).toEqual({
       scale: 3,
       gifProfile: 'quality',
+      gifPalette: 'adaptive',
+      gifDither: 'none',
     });
     expect(useEditorStore.getState().past).toHaveLength(historyBefore);
 
