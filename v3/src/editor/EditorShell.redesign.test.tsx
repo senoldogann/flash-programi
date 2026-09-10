@@ -42,6 +42,16 @@ describe('EditorShell 2026 redesign', () => {
     }
   });
 
+  it('shows the real preset library as part of the initial editor surface', async () => {
+    await renderReadyShell();
+
+    const library = screen.getByRole('region', { name: 'Hazır tasarımlar' });
+    const editor = screen.getByRole('region', { name: 'Ana düzenleyici' });
+    expect(library).toBeInTheDocument();
+    expect(editor.compareDocumentPosition(library) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(library).getByRole('button', { name: /Neon Night/i })).toBeInTheDocument();
+  });
+
   it('keeps primary workflow, export and help actions reachable in compact layouts', async () => {
     await renderReadyShell();
 
