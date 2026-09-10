@@ -217,6 +217,13 @@ body {
   line-height: 1.45;
 }
 
+.easy-step-tip {
+  color: #7a5c00;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
 .easy-action-button,
 .easy-download-button {
   min-height: 48px;
@@ -293,9 +300,13 @@ body {
   line-height: 1.35;
 }
 
-.easy-style-button:hover {
+.easy-style-button:not(:disabled):hover {
   border-color: #9f94ef;
   background: #f7f5ff;
+}
+
+.easy-style-button:disabled {
+  opacity: 0.62;
 }
 
 .easy-status {
@@ -316,7 +327,7 @@ body {
 }
 
 .advanced-tools-heading {
-  margin: 0 0 8px;
+  margin: 16px 0 5px;
   color: var(--text);
   font-size: 14px;
   font-weight: 800;
@@ -351,6 +362,10 @@ body {
   }
 
   .inspector {
+    display: none;
+  }
+
+  .workspace-help {
     display: none;
   }
 }
