@@ -125,7 +125,7 @@ export function EditorShell() {
       downloadStagePng(stage, 'flash-nick.png', project.exportSettings.scale);
     } catch (error) {
       setErrorNotice({
-        title: 'Resim oluşturulamadı.',
+        title: 'PNG oluşturulamadı.',
         message: getErrorMessage(error),
       });
     }
