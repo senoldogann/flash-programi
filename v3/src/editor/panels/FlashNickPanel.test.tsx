@@ -3,9 +3,56 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { useEditorStore } from '../../store/editor-store';
 import { FlashNickPanel } from './FlashNickPanel';
 
+const CLASSIC_RECIPE_NAMES = [
+  'Altın Döner Nick',
+  'Krom Döner Nick',
+  'Mor Bayan Flash',
+  'Kırmızı Kalpli Bayan',
+  'Mavi Erkek Flash',
+  'Şapkalı Flash',
+  'Ateş Nick',
+  'Türk Bayraklı',
+  'Gotik Siyah',
+  'Glitter Princess',
+  'Çift Nick',
+  'Resimli Döner Nick',
+  'Sinevizyon Portre',
+  'Aşk Flash',
+  'Kral / Taç Nick',
+] as const;
+
 describe('FlashNickPanel', () => {
   beforeEach(() => {
     useEditorStore.getState().reset();
+  });
+
+  it('exposes all 15 Classic scene recipes in easy mode', () => {
+    render(<FlashNickPanel />);
+
+    expect(screen.getByText('Klasik Hazır Tasarımlar')).toBeInTheDocument();
+    for (const name of CLASSIC_RECIPE_NAMES) {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+    }
+  });
+
+  it('applies a complete Classic recipe from one easy-mode card', () => {
+    render(<FlashNickPanel />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Altın Döner Nick' }));
+
+    const state = useEditorStore.getState();
+    const text = state.project.elements.find((element) => element.type === 'text');
+    expect(state.project).toMatchObject({
+      width: 133,
+      height: 33,
+      frame: { preset: 'gold' },
+      exportSettings: { gifPalette: 'classic-64', gifDither: 'ordered-4x4' },
+    });
+    expect(state.project.decorations.length).toBeGreaterThan(0);
+    expect(text).toMatchObject({
+      materialPreset: 'xara-gold',
+      animation: { preset: 'xara-double-sided' },
+    });
   });
 
   it('creates a classic 133x33 Xara-style nick without requiring an existing text element', () => {
