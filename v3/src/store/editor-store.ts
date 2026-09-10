@@ -17,6 +17,7 @@ import {
 } from '../model/project';
 import { migrateProject } from '../model/migrate';
 import { parseProject } from '../model/schema';
+import { applyNeoSceneRecipe, type NeoRecipeId } from '../neo/recipes';
 import { resizeProjectProportionally } from '../sizing/project-size';
 import { applyDesignTemplate } from '../templates/templates';
 
@@ -54,6 +55,7 @@ export type EditorStore = {
   resizeProject: (width: number, height: number) => void;
   applyTemplate: (templateId: string) => void;
   applyClassicRecipe: (recipeId: ClassicRecipeId) => void;
+  applyNeoRecipe: (recipeId: NeoRecipeId) => void;
   removeElement: (id: string) => void;
   commitTransform: (beforeProject: Project, afterProject: Project) => void;
   undo: () => void;
@@ -119,6 +121,20 @@ function placedImageGeometry(
     height,
     x: (project.width - width) / 2,
     y: (project.height - height) / 2,
+  };
+}
+
+function recipeMutation(state: EditorStore, nextProject: Project) {
+  if (projectsEqual(state.project, nextProject)) return null;
+  const selectedElementId = containsElement(nextProject, state.selectedElementId)
+    ? state.selectedElementId
+    : [...nextProject.elements].reverse().find((element) => element.type === 'text')?.id ?? null;
+  return {
+    project: nextProject,
+    selectedElementId,
+    past: appendHistory(state.past, state.project),
+    future: [],
+    historyBatchStart: null,
   };
 }
 
@@ -407,18 +423,14 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
   applyClassicRecipe: (recipeId) => {
     const state = get();
-    const nextProject = applyClassicSceneRecipe(state.project, recipeId);
-    if (projectsEqual(state.project, nextProject)) return;
-    const selectedElementId = containsElement(nextProject, state.selectedElementId)
-      ? state.selectedElementId
-      : [...nextProject.elements].reverse().find((element) => element.type === 'text')?.id ?? null;
-    set({
-      project: nextProject,
-      selectedElementId,
-      past: appendHistory(state.past, state.project),
-      future: [],
-      historyBatchStart: null,
-    });
+    const mutation = recipeMutation(state, applyClassicSceneRecipe(state.project, recipeId));
+    if (mutation) set(mutation);
+  },
+
+  applyNeoRecipe: (recipeId) => {
+    const state = get();
+    const mutation = recipeMutation(state, applyNeoSceneRecipe(state.project, recipeId));
+    if (mutation) set(mutation);
   },
 
   removeElement: (id) => {

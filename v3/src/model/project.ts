@@ -1,5 +1,6 @@
 export type TextAlign = 'left' | 'center' | 'right';
 export type TextWritingMode = 'horizontal' | 'vertical-stacked';
+export type FlashMode = 'classic' | 'neo';
 export type TextMaterialPreset =
   | 'flat'
   | 'xara-gold'
@@ -8,7 +9,22 @@ export type TextMaterialPreset =
   | 'xara-ice'
   | 'xara-purple-glass'
   | 'xara-emerald'
-  | 'xara-fire';
+  | 'xara-fire'
+  | 'neo-gold'
+  | 'neo-neon'
+  | 'neo-purple-glass'
+  | 'neo-cyber-blue'
+  | 'neo-royal-red'
+  | 'neo-diamond'
+  | 'neo-fire'
+  | 'neo-frozen'
+  | 'neo-dark-luxury'
+  | 'neo-angel'
+  | 'neo-dream'
+  | 'neo-fashion'
+  | 'neo-cinematic'
+  | 'neo-holographic'
+  | 'neo-chrome-future';
 
 export type AnimationPreset =
   | 'none'
@@ -118,7 +134,10 @@ export type DecorationPreset =
   | 'cherry-blossom'
   | 'money'
   | 'smoke'
-  | 'rain';
+  | 'rain'
+  | 'ambient-orbs'
+  | 'glow-dust'
+  | 'light-sweep';
 
 export type DecorationLayer = {
   id: string;
@@ -204,6 +223,7 @@ export type Project = {
   version: 2;
   id: string;
   name: string;
+  mode?: FlashMode;
   width: number;
   height: number;
   durationMs: number;
@@ -257,6 +277,7 @@ export function createEmptyProject(): Project {
     version: 2,
     id: createId(),
     name: 'Yeni Tasarım',
+    mode: 'classic',
     width: 300,
     height: 300,
     durationMs: 3000,

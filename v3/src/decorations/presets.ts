@@ -7,6 +7,8 @@ export type DecorationPresetDefinition = {
   color: string;
 };
 
+export type DecorationPointKind = 'glyph' | 'orb' | 'dust' | 'sweep';
+
 export type DecorationPoint = {
   x: number;
   y: number;
@@ -15,6 +17,7 @@ export type DecorationPoint = {
   opacity: number;
   symbol: string;
   color: string;
+  kind: DecorationPointKind;
 };
 
 export const DECORATION_PRESETS: DecorationPresetDefinition[] = [
@@ -38,6 +41,9 @@ export const DECORATION_PRESETS: DecorationPresetDefinition[] = [
   { id: 'money', label: 'Para', symbol: '$', color: '#78db9b' },
   { id: 'smoke', label: 'Duman', symbol: '☁', color: '#c8ced8' },
   { id: 'rain', label: 'Yağmur', symbol: '╱', color: '#72b9ff' },
+  { id: 'ambient-orbs', label: 'Ambient Orbs', symbol: '', color: '#86d9ff' },
+  { id: 'glow-dust', label: 'Glow Dust', symbol: '', color: '#fff4c9' },
+  { id: 'light-sweep', label: 'Light Sweep', symbol: '', color: '#ffffff' },
 ];
 
 const SPEED_FACTOR: Record<AnimationSpeed, number> = {
@@ -66,6 +72,13 @@ function positiveModulo(value: number, modulus: number): number {
   return ((value % modulus) + modulus) % modulus;
 }
 
+function pointKind(preset: DecorationPreset): DecorationPointKind {
+  if (preset === 'ambient-orbs') return 'orb';
+  if (preset === 'glow-dust') return 'dust';
+  if (preset === 'light-sweep') return 'sweep';
+  return 'glyph';
+}
+
 export function decorationNeedsClock(layer: DecorationLayer): boolean {
   return [
     'snow',
@@ -79,6 +92,9 @@ export function decorationNeedsClock(layer: DecorationLayer): boolean {
     'cherry-blossom',
     'smoke',
     'rain',
+    'ambient-orbs',
+    'glow-dust',
+    'light-sweep',
   ].includes(layer.preset);
 }
 
@@ -142,11 +158,33 @@ export function decorationPoints(
       x = positiveModulo(x - timeMs * 0.006 * speed, width);
       rotation = 18;
       size = 15 + us * 12;
+    } else if (layer.preset === 'ambient-orbs') {
+      x = positiveModulo(x + timeMs * 0.002 * speed + Math.sin(phase * 0.55) * width * 0.055, width);
+      y = positiveModulo(y + Math.cos(phase * 0.45) * height * 0.055, height);
+      size = 30 + us * 42;
+      rotation = 0;
+    } else if (layer.preset === 'glow-dust') {
+      x = positiveModulo(x + timeMs * 0.006 * speed, width);
+      y = positiveModulo(y - timeMs * 0.003 * speed + Math.sin(phase * 1.1) * 5, height);
+      size = 4 + us * 8;
+      rotation = 0;
+    } else if (layer.preset === 'light-sweep') {
+      const span = width * 1.6;
+      x = positiveModulo(ux * span + timeMs * 0.08 * speed, span) - width * 0.3;
+      y = height * (0.35 + uy * 0.3);
+      size = 22 + us * 14;
+      rotation = -14 + ur * 8;
     }
 
     const twinkle = layer.preset === 'smoke'
       ? 0.5 + Math.abs(Math.sin(phase * 0.6)) * 0.28
-      : 0.68 + Math.abs(Math.sin(phase * 1.7)) * 0.32;
+      : layer.preset === 'ambient-orbs'
+        ? 0.12 + Math.abs(Math.sin(phase * 0.45)) * 0.16
+        : layer.preset === 'glow-dust'
+          ? 0.28 + Math.abs(Math.sin(phase * 1.8)) * 0.45
+          : layer.preset === 'light-sweep'
+            ? 0.14 + Math.abs(Math.sin(phase * 0.7)) * 0.12
+            : 0.68 + Math.abs(Math.sin(phase * 1.7)) * 0.32;
 
     return {
       x,
@@ -156,6 +194,7 @@ export function decorationPoints(
       opacity: layer.opacity * twinkle,
       symbol: preset.symbol,
       color: preset.color,
+      kind: pointKind(layer.preset),
     };
   });
 }

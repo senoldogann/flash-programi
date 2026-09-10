@@ -211,7 +211,7 @@ function migrateV2Project(source: Project): ProjectV3 {
     version: 3,
     id: source.id,
     name: source.name,
-    mode: 'classic',
+    mode: source.mode ?? 'classic',
     canvas: {
       width: source.width,
       height: source.height,

@@ -1,5 +1,6 @@
 import { CLASSIC_SCENE_RECIPES } from '../../classic/recipes';
-import type { AnimationPreset, TextElement, TextMaterialPreset } from '../../model/project';
+import type { AnimationPreset, FlashMode, TextElement, TextMaterialPreset } from '../../model/project';
+import { NEO_SCENE_RECIPES } from '../../neo/recipes';
 import { useEditorStore } from '../../store/editor-store';
 import { FLASH_TEXT_MATERIALS, getFlashTextMaterial } from '../../text/flash-materials';
 
@@ -13,6 +14,9 @@ const CLASSIC_MOTIONS: Array<{ preset: AnimationPreset; label: string; icon: str
   { preset: 'bounce', label: 'Zıpla', icon: '↥' },
   { preset: 'shimmer', label: 'Işıltı', icon: '✦' },
 ];
+
+const CLASSIC_MATERIALS = FLASH_TEXT_MATERIALS.filter((material) => !String(material.id).startsWith('neo-'));
+const NEO_MATERIALS = FLASH_TEXT_MATERIALS.filter((material) => String(material.id).startsWith('neo-'));
 
 function selectedOrLastText(): TextElement | null {
   const state = useEditorStore.getState();
@@ -49,6 +53,18 @@ function classicTextGeometry(projectWidth: number, projectHeight: number) {
   };
 }
 
+function setProjectMode(mode: FlashMode) {
+  useEditorStore.setState((state) => {
+    if ((state.project.mode ?? 'classic') === mode) return {};
+    return {
+      project: {
+        ...state.project,
+        mode,
+      },
+    };
+  });
+}
+
 export function FlashNickPanel() {
   const project = useEditorStore((state) => state.project);
   const selectedElementId = useEditorStore((state) => state.selectedElementId);
@@ -57,10 +73,11 @@ export function FlashNickPanel() {
   ) ?? [...project.elements].reverse().find(
     (element): element is TextElement => element.type === 'text',
   ) ?? null;
+  const mode = project.mode ?? 'classic';
   const resizeProject = useEditorStore((state) => state.resizeProject);
   const updateElement = useEditorStore((state) => state.updateElement);
-  const setElementAnimation = useEditorStore((state) => state.setElementAnimation);
   const applyClassicRecipe = useEditorStore((state) => state.applyClassicRecipe);
+  const applyNeoRecipe = useEditorStore((state) => state.applyNeoRecipe);
 
   const createClassicNick = () => {
     resizeProject(133, 33);
@@ -114,7 +131,13 @@ export function FlashNickPanel() {
     const state = useEditorStore.getState();
     const material = getFlashTextMaterial(preset);
     state.updateElement(text.id, {
-      ...classicTextGeometry(state.project.width, state.project.height),
+      ...(mode === 'classic'
+        ? {
+            ...classicTextGeometry(state.project.width, state.project.height),
+            fontFamily: 'Impact',
+            align: 'center' as const,
+          }
+        : {}),
       materialPreset: material.id,
       extrusionDepth: material.extrusionDepth,
       extrusionColor: material.extrusionColor,
@@ -123,8 +146,6 @@ export function FlashNickPanel() {
       strokeWidth: material.strokeWidth,
       shadowColor: material.shadowColor,
       shadowBlur: material.shadowBlur,
-      fontFamily: 'Impact',
-      align: 'center',
     });
   };
 
@@ -137,107 +158,184 @@ export function FlashNickPanel() {
   };
 
   return (
-    <div className="preset-panel flash-nick-panel" aria-label="SesliChat classic flash nick">
+    <div className="preset-panel flash-nick-panel" aria-label="Flash nick tasarım modu">
       <div className="panel-title-row">
         <div>
-          <strong>Flash Nick Classic</strong>
-          <small>Xara3D dönemindeki SesliChat nicklerini modern editörle üret.</small>
+          <strong>{mode === 'classic' ? 'Flash Nick Classic' : 'Neo Flash Studio'}</strong>
+          <small>
+            {mode === 'classic'
+              ? 'Xara3D dönemindeki SesliChat nicklerini modern editörle üret.'
+              : 'Modern ışık, ambient efekt, sinematik hareket ve parlak 3D yazı presetleri.'}
+          </small>
         </div>
       </div>
 
-      <section className="cinematic-motion-section" aria-label="Klasik hazır tasarımlar">
-        <strong>Klasik Hazır Tasarımlar</strong>
-        <small>Nick ve fotoğrafını koruyup ölçü, Xara malzemesi, hareket, süs ve GIF renk stilini tek tıkla uygula.</small>
+      <section className="cinematic-motion-section" aria-label="Flash tasarım modu">
+        <strong>Tasarım Modu</strong>
+        <small>Mod değiştirirken mevcut fotoğraf, nick ve sahne içeriği korunur.</small>
         <div className="preset-grid preset-grid-2">
-          {CLASSIC_SCENE_RECIPES.map((recipe) => (
-            <button
-              key={recipe.id}
-              type="button"
-              className="preset-card"
-              onClick={() => applyClassicRecipe(recipe.id)}
-            >
-              <span aria-hidden="true">
-                {recipe.layout === 'nick' ? '✧' : recipe.layout === 'portrait-left' ? '▣T' : '▣'}
-              </span>
-              <strong>{recipe.name}</strong>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="cinematic-motion-section" aria-label="Klasik flash boyutları">
-        <strong>Hızlı Başlangıç</strong>
-        <small>Eski panel ölçüleri ve resimli flash düzenleri tek dokunuşta.</small>
-        <div className="preset-grid preset-grid-2">
-          <button type="button" className="preset-card" onClick={createClassicNick}>
-            <span aria-hidden="true">133×33</span>
-            <strong>Klasik Nick 133 × 33</strong>
+          <button
+            type="button"
+            className={`preset-card ${mode === 'classic' ? 'preset-card-active' : ''}`}
+            aria-pressed={mode === 'classic'}
+            onClick={() => setProjectMode('classic')}
+          >
+            <span aria-hidden="true">X3D</span>
+            <strong>Classic SesliChat</strong>
           </button>
-          <button type="button" className="preset-card" onClick={createImageFlash}>
-            <span aria-hidden="true">▣T</span>
-            <strong>Resimli Flash 300 × 100</strong>
+          <button
+            type="button"
+            className={`preset-card ${mode === 'neo' ? 'preset-card-active' : ''}`}
+            aria-pressed={mode === 'neo'}
+            onClick={() => setProjectMode('neo')}
+          >
+            <span aria-hidden="true">✦</span>
+            <strong>Neo Flash</strong>
           </button>
         </div>
       </section>
 
-      <section className="cinematic-motion-section" aria-label="Xara yazı malzemeleri">
-        <strong>3D Xara Malzemeleri</strong>
-        <small>Metal, cam ve neon görünümleri gerçek derinlik katmanlarıyla kullan.</small>
-        <div className="preset-grid preset-grid-2">
-          {FLASH_TEXT_MATERIALS.map((material) => (
-            <button
-              key={material.id}
-              type="button"
-              className={`preset-card ${selectedText?.materialPreset === material.id ? 'preset-card-active' : ''}`}
-              onClick={() => applyMaterial(material.id)}
-            >
-              <span aria-hidden="true">◆</span>
-              <strong>{material.label}</strong>
-            </button>
-          ))}
-        </div>
-      </section>
+      {mode === 'classic' ? (
+        <>
+          <section className="cinematic-motion-section" aria-label="Klasik hazır tasarımlar">
+            <strong>Klasik Hazır Tasarımlar</strong>
+            <small>Nick ve fotoğrafını koruyup ölçü, Xara malzemesi, hareket, süs ve GIF renk stilini tek tıkla uygula.</small>
+            <div className="preset-grid preset-grid-2">
+              {CLASSIC_SCENE_RECIPES.map((recipe) => (
+                <button
+                  key={recipe.id}
+                  type="button"
+                  className="preset-card"
+                  onClick={() => applyClassicRecipe(recipe.id)}
+                >
+                  <span aria-hidden="true">
+                    {recipe.layout === 'nick' ? '✧' : recipe.layout === 'portrait-left' ? '▣T' : '▣'}
+                  </span>
+                  <strong>{recipe.name}</strong>
+                </button>
+              ))}
+            </div>
+          </section>
 
-      <section className="cinematic-motion-section" aria-label="Çift taraflı nick">
-        <strong>Çift Taraflı Nick</strong>
-        <small>Ön yüzde bir isim, arka yüzde başka bir isim döner.</small>
-        <label>
-          <span>Arka yüz yazısı</span>
-          <input
-            type="text"
-            aria-label="Arka yüz yazısı"
-            maxLength={80}
-            value={selectedText?.backText ?? ''}
-            placeholder="Örn. DOGAN"
-            onChange={(event) => {
-              const text = ensureText();
-              updateElement(text.id, { backText: event.currentTarget.value });
-            }}
-          />
-        </label>
-      </section>
+          <section className="cinematic-motion-section" aria-label="Klasik flash boyutları">
+            <strong>Hızlı Başlangıç</strong>
+            <small>Eski panel ölçüleri ve resimli flash düzenleri tek dokunuşta.</small>
+            <div className="preset-grid preset-grid-2">
+              <button type="button" className="preset-card" onClick={createClassicNick}>
+                <span aria-hidden="true">133×33</span>
+                <strong>Klasik Nick 133 × 33</strong>
+              </button>
+              <button type="button" className="preset-card" onClick={createImageFlash}>
+                <span aria-hidden="true">▣T</span>
+                <strong>Resimli Flash 300 × 100</strong>
+              </button>
+            </div>
+          </section>
 
-      <section className="cinematic-motion-section" aria-label="Klasik Xara hareketleri">
-        <strong>Klasik Xara Hareketleri</strong>
-        <small>Dönen, sallanan ve parlayan nick stilleri.</small>
-        <div className="preset-grid preset-grid-2">
-          {CLASSIC_MOTIONS.map((motion) => (
-            <button
-              key={motion.preset}
-              type="button"
-              className={`preset-card ${selectedText?.animation.preset === motion.preset ? 'preset-card-active' : ''}`}
-              onClick={() => applyMotion(motion.preset)}
-            >
-              <span aria-hidden="true">{motion.icon}</span>
-              <strong>{motion.label}</strong>
-            </button>
-          ))}
-        </div>
-      </section>
+          <section className="cinematic-motion-section" aria-label="Xara yazı malzemeleri">
+            <strong>3D Xara Malzemeleri</strong>
+            <small>Metal, cam ve ateş görünümlerini klasik FlashText3D motoruyla kullan.</small>
+            <div className="preset-grid preset-grid-2">
+              {CLASSIC_MATERIALS.map((material) => (
+                <button
+                  key={material.id}
+                  type="button"
+                  className={`preset-card ${selectedText?.materialPreset === material.id ? 'preset-card-active' : ''}`}
+                  onClick={() => applyMaterial(material.id)}
+                >
+                  <span aria-hidden="true">◆</span>
+                  <strong>{material.label}</strong>
+                </button>
+              ))}
+            </div>
+          </section>
 
-      <p className="panel-note">
-        İpucu: Kısa ve kalın nickler 133×33 formatında daha okunaklıdır. Impact benzeri geniş fontlar klasik görünüme daha yakındır.
-      </p>
+          <section className="cinematic-motion-section" aria-label="Çift taraflı nick">
+            <strong>Çift Taraflı Nick</strong>
+            <small>Ön yüzde bir isim, arka yüzde başka bir isim döner.</small>
+            <label>
+              <span>Arka yüz yazısı</span>
+              <input
+                type="text"
+                aria-label="Arka yüz yazısı"
+                maxLength={80}
+                value={selectedText?.backText ?? ''}
+                placeholder="Örn. DOGAN"
+                onChange={(event) => {
+                  const text = ensureText();
+                  updateElement(text.id, { backText: event.currentTarget.value });
+                }}
+              />
+            </label>
+          </section>
+
+          <section className="cinematic-motion-section" aria-label="Klasik Xara hareketleri">
+            <strong>Klasik Xara Hareketleri</strong>
+            <small>Dönen, sallanan ve parlayan nick stilleri.</small>
+            <div className="preset-grid preset-grid-2">
+              {CLASSIC_MOTIONS.map((motion) => (
+                <button
+                  key={motion.preset}
+                  type="button"
+                  className={`preset-card ${selectedText?.animation.preset === motion.preset ? 'preset-card-active' : ''}`}
+                  onClick={() => applyMotion(motion.preset)}
+                >
+                  <span aria-hidden="true">{motion.icon}</span>
+                  <strong>{motion.label}</strong>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <p className="panel-note">
+            İpucu: Kısa ve kalın nickler 133×33 formatında daha okunaklıdır. Impact benzeri geniş fontlar klasik görünüme daha yakındır.
+          </p>
+        </>
+      ) : (
+        <>
+          <section className="cinematic-motion-section" aria-label="Neo hazır tasarımlar">
+            <strong>Neo Hazır Tasarımlar</strong>
+            <small>Fotoğraf ve nickini koruyup modern 3D malzeme, sinematik hareket ve ambient ışığı tek tıkla uygula.</small>
+            <div className="preset-grid preset-grid-2">
+              {NEO_SCENE_RECIPES.map((recipe) => (
+                <button
+                  key={recipe.id}
+                  type="button"
+                  className="preset-card"
+                  onClick={() => applyNeoRecipe(recipe.id)}
+                >
+                  <span aria-hidden="true">
+                    {recipe.layout === 'nick' ? '✦' : recipe.layout === 'portrait-left' ? '◐' : '◉'}
+                  </span>
+                  <strong>{recipe.name}</strong>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="cinematic-motion-section" aria-label="Neo yazı malzemeleri">
+            <strong>Neo 3D Malzemeleri</strong>
+            <small>Altın, neon, holografik, cam, buz, sinematik ve gelecek kromu dahil modern yüzeyler.</small>
+            <div className="preset-grid preset-grid-2">
+              {NEO_MATERIALS.map((material) => (
+                <button
+                  key={material.id}
+                  type="button"
+                  className={`preset-card ${selectedText?.materialPreset === material.id ? 'preset-card-active' : ''}`}
+                  onClick={() => applyMaterial(material.id)}
+                >
+                  <span aria-hidden="true">◆</span>
+                  <strong>{material.label}</strong>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <p className="panel-note">
+            Neo presetleri adaptive GIF renk paleti, modern ambient primitive'ler ve Project V3 sahne motorunu birlikte kullanır.
+          </p>
+        </>
+      )}
     </div>
   );
 }
