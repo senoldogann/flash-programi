@@ -17,22 +17,35 @@ import { useEditorStore } from '../store/editor-store';
 import { CanvasPreview } from './canvas/CanvasPreview';
 import { EditorCanvas } from './canvas/EditorCanvas';
 import { readImageFile } from './canvas/image-loader';
+import { StudioHeader } from './chrome/StudioHeader';
+import { WorkflowRail, type WorkflowStep } from './chrome/WorkflowRail';
 import './editor-controls.css';
 import { handleEditorShortcut } from './keyboard-shortcuts';
 import { CanvasSizePanel } from './panels/CanvasSizePanel';
 import { ExportPanel } from './panels/ExportPanel';
 import { TextInspector } from './panels/TextInspector';
-import { ToolPanel } from './panels/ToolPanel';
+import { ToolPanel, type ToolSection } from './panels/ToolPanel';
 import { TopToolbar } from './toolbar/TopToolbar';
 
-type ErrorNotice = {
-  title: string;
-  message: string;
+type ErrorNotice = { title: string; message: string };
+
+const WORKFLOW_TOOL: Record<WorkflowStep, ToolSection> = {
+  photo: 'effects',
+  nick: 'flashnick',
+  style: 'templates',
+  motion: 'motion',
+  decorate: 'decorations',
 };
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) return error.message;
   return 'İşlem tamamlanamadı. Lütfen tekrar deneyin.';
+}
+
+function scrollIntoViewSafely(element: HTMLElement | null) {
+  if (element && typeof element.scrollIntoView === 'function') {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 export function EditorShell() {
@@ -48,9 +61,15 @@ export function EditorShell() {
   const [exportTimeMs, setExportTimeMs] = useState<number | null>(null);
   const [gifExporting, setGifExporting] = useState(false);
   const [gifProgress, setGifProgress] = useState(0);
+  const [activeStep, setActiveStep] = useState<WorkflowStep>('photo');
+  const [activeToolSection, setActiveToolSection] = useState<ToolSection>('effects');
+  const [helpOpen, setHelpOpen] = useState(false);
   const assetRevokers = useRef(new Set<() => void>());
   const stageRef = useRef<Konva.Stage | null>(null);
   const startImageInputRef = useRef<HTMLInputElement>(null);
+  const workspaceRef = useRef<HTMLElement>(null);
+  const toolDetailRef = useRef<HTMLDivElement>(null);
+  const exportSettingsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const revokers = assetRevokers.current;
@@ -62,14 +81,12 @@ export function EditorShell() {
 
   useEffect(() => {
     let active = true;
-
     void loadCurrentProject()
       .then((restored) => {
         if (!active) {
           restored?.dispose();
           return;
         }
-
         if (restored) {
           loadProject(restored.project);
           assetRevokers.current.add(restored.dispose);
@@ -77,107 +94,71 @@ export function EditorShell() {
       })
       .catch((error) => {
         if (!active) return;
-        setErrorNotice({
-          title: 'Kayıtlı tasarım açılamadı.',
-          message: getErrorMessage(error),
-        });
+        setErrorNotice({ title: 'Kayıtlı tasarım açılamadı.', message: getErrorMessage(error) });
       })
       .finally(() => {
         if (active) setPersistenceReady(true);
       });
-
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [loadProject]);
 
   useEffect(() => {
     if (!persistenceReady) return;
-
     const timer = window.setTimeout(() => {
       void saveCurrentProject(project).catch((error) => {
-        setErrorNotice({
-          title: 'Tasarım kaydedilemedi.',
-          message: getErrorMessage(error),
-        });
+        setErrorNotice({ title: 'Tasarım kaydedilemedi.', message: getErrorMessage(error) });
       });
     }, 500);
-
     return () => window.clearTimeout(timer);
   }, [persistenceReady, project]);
 
-  const handleStageReady = useCallback((stage: Konva.Stage | null) => {
-    stageRef.current = stage;
-  }, []);
+  const handleStageReady = useCallback((stage: Konva.Stage | null) => { stageRef.current = stage; }, []);
 
   const handlePngExport = useCallback(() => {
     const stage = stageRef.current;
     if (!stage || gifExporting) return;
-
     try {
       setErrorNotice(null);
-      const dimensions = getExportDimensions(
-        project.width,
-        project.height,
-        project.exportSettings.scale,
-      );
+      const dimensions = getExportDimensions(project.width, project.height, project.exportSettings.scale);
       assertSafeExportDimensions(dimensions.width, dimensions.height);
       downloadStagePng(stage, 'flash-nick.png', project.exportSettings.scale);
     } catch (error) {
-      setErrorNotice({
-        title: 'PNG oluşturulamadı.',
-        message: getErrorMessage(error),
-      });
+      setErrorNotice({ title: 'PNG oluşturulamadı.', message: getErrorMessage(error) });
     }
-  }, [
-    gifExporting,
-    project.exportSettings.scale,
-    project.height,
-    project.width,
-  ]);
+  }, [gifExporting, project.exportSettings.scale, project.height, project.width]);
 
   useEffect(() => {
     if (gifExporting) return;
-
     const onKeyDown = (event: KeyboardEvent) => {
       handleEditorShortcut(event, { undo, redo, exportPng: handlePngExport });
     };
-
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [gifExporting, handlePngExport, redo, undo]);
 
   const handleNewProject = useCallback(async () => {
     if (gifExporting) return;
-
-    const confirmed = window.confirm(
-      'Mevcut tasarım silinecek. Baştan başlamak istiyor musun?',
-    );
+    const confirmed = window.confirm('Mevcut tasarım silinecek. Baştan başlamak istiyor musun?');
     if (!confirmed) return;
-
     try {
       setErrorNotice(null);
       await clearCurrentProject();
-
       for (const revoke of assetRevokers.current) revoke();
       assetRevokers.current.clear();
       reset();
+      setActiveStep('photo');
+      setActiveToolSection('effects');
     } catch (error) {
-      setErrorNotice({
-        title: 'Yeni tasarım açılamadı.',
-        message: `Mevcut tasarım korunuyor. ${getErrorMessage(error)}`,
-      });
+      setErrorNotice({ title: 'Yeni tasarım açılamadı.', message: `Mevcut tasarım korunuyor. ${getErrorMessage(error)}` });
     }
   }, [gifExporting, reset]);
 
   const handleGifExport = useCallback(async () => {
     const stage = stageRef.current;
     if (!stage || gifExporting) return;
-
     setGifExporting(true);
     setGifProgress(0);
     setErrorNotice(null);
-
     try {
       const { scale, gifProfile } = project.exportSettings;
       const gifPalette = project.exportSettings.gifPalette ?? 'adaptive';
@@ -187,7 +168,6 @@ export function EditorShell() {
       const work = getGifWorkBudget(dimensions.width, dimensions.height, framePlan.frameCount);
       assertSafeGifWorkBudget(work);
       assertSafeExportDimensions(dimensions.width, dimensions.height);
-
       const Gif = await loadGifConstructor();
       const encoder = createBrowserGifEncoder(Gif, dimensions.width, dimensions.height, gifProfile);
       const blob = await encodeGifFrames({
@@ -204,65 +184,60 @@ export function EditorShell() {
         processFrame: (frame) => processGifFrameCanvas(frame, gifPalette, gifDither),
         onProgress: setGifProgress,
       });
-
       downloadBlob(blob, 'flash-nick.gif');
     } catch (error) {
-      setErrorNotice({
-        title: 'GIF oluşturulamadı.',
-        message: getErrorMessage(error),
-      });
+      setErrorNotice({ title: 'GIF oluşturulamadı.', message: getErrorMessage(error) });
     } finally {
       flushSync(() => setExportTimeMs(null));
       stage.draw();
       setGifExporting(false);
       setGifProgress(0);
     }
-  }, [
-    gifExporting,
-    project.durationMs,
-    project.exportSettings.gifDither,
-    project.exportSettings.gifPalette,
-    project.exportSettings.gifProfile,
-    project.exportSettings.scale,
-    project.fps,
-    project.height,
-    project.width,
-  ]);
+  }, [gifExporting, project.durationMs, project.exportSettings.gifDither, project.exportSettings.gifPalette, project.exportSettings.gifProfile, project.exportSettings.scale, project.fps, project.height, project.width]);
 
   const handleAddText = () => {
     setErrorNotice(null);
     addText();
+    setActiveStep('nick');
+    setActiveToolSection('flashnick');
   };
 
   const handleImageFile = async (file: File) => {
     setErrorNotice(null);
-
     try {
       const asset = await readImageFile(file);
-
       try {
         addImage(asset.url, asset.width, asset.height);
         assetRevokers.current.add(asset.revoke);
+        setActiveStep('photo');
+        setActiveToolSection('effects');
       } catch (error) {
         asset.revoke();
         throw error;
       }
     } catch (error) {
-      setErrorNotice({
-        title: 'Fotoğraf eklenemedi.',
-        message: getErrorMessage(error),
-      });
+      setErrorNotice({ title: 'Fotoğraf eklenemedi.', message: getErrorMessage(error) });
     }
   };
 
+  const handleStepChange = (step: WorkflowStep) => {
+    setActiveStep(step);
+    setActiveToolSection(WORKFLOW_TOOL[step]);
+  };
+
+  const handleShowTemplates = () => {
+    handleStepChange('style');
+    window.requestAnimationFrame(() => scrollIntoViewSafely(toolDetailRef.current));
+  };
+
   return (
-    <main className="app-shell">
+    <main className="app-shell studio-app-shell">
       <input
         ref={startImageInputRef}
         className="visually-hidden"
         type="file"
         accept="image/png,image/jpeg,image/webp,image/gif"
-        aria-label="Tasarım alanından fotoğraf seç"
+        aria-label="Fotoğraf seç"
         onChange={(event) => {
           const file = event.currentTarget.files?.[0];
           event.currentTarget.value = '';
@@ -270,43 +245,55 @@ export function EditorShell() {
         }}
       />
 
-      <header className="app-header">
-        <div className="brand-block">
-          <div className="brand-mark" aria-hidden="true">✦</div>
+      <StudioHeader
+        onCreate={() => workspaceRef.current?.focus()}
+        onShowTemplates={handleShowTemplates}
+        onShowHelp={() => setHelpOpen((open) => !open)}
+        actions={<TopToolbar onNewProject={handleNewProject} onExport={handlePngExport} onGifExport={handleGifExport} gifExporting={gifExporting} gifProgress={gifProgress} />}
+      />
+
+      {helpOpen ? (
+        <section className="studio-help-panel" role="dialog" aria-label="Yardım">
           <div>
-            <h1>Flash Nick Hazırlayıcı</h1>
-            <p>Fotoğrafını seç, nickini yaz, hazır görünümü seç ve GIF dosyanı indir.</p>
+            <strong>Flash nick hazırlamak çok basit</strong>
+            <p>Fotoğrafını ekle, nickini yaz, bir stil seç, hareket veya süsleme ekle ve GIF olarak indir.</p>
           </div>
-        </div>
-        <TopToolbar
-          onNewProject={handleNewProject}
-          onExport={handlePngExport}
-          onGifExport={handleGifExport}
-          gifExporting={gifExporting}
-          gifProgress={gifProgress}
-        />
-      </header>
+          <button type="button" onClick={() => setHelpOpen(false)} aria-label="Yardımı kapat">Kapat</button>
+        </section>
+      ) : null}
 
       {errorNotice ? (
         <div className="error-banner" role="alert">
           <strong>{errorNotice.title}</strong>
           <span>{errorNotice.message}</span>
-          <button type="button" aria-label="Hata mesajını kapat" onClick={() => setErrorNotice(null)}>
-            Kapat
-          </button>
+          <button type="button" aria-label="Hata mesajını kapat" onClick={() => setErrorNotice(null)}>Kapat</button>
         </div>
       ) : null}
 
-      <section className="editor-layout" aria-busy={gifExporting}>
-        <ToolPanel
-          onAddText={handleAddText}
-          onImageFile={handleImageFile}
-          onGifExport={handleGifExport}
-          gifExporting={gifExporting}
-          gifProgress={gifProgress}
-        />
+      <section className="editor-layout studio-editor-layout" aria-busy={gifExporting}>
+        <div className="studio-left-column">
+          <WorkflowRail
+            activeStep={activeStep}
+            onStepChange={handleStepChange}
+            onChooseImage={() => startImageInputRef.current?.click()}
+            onAddText={handleAddText}
+            onShowExport={() => scrollIntoViewSafely(exportSettingsRef.current)}
+          />
+          <div ref={toolDetailRef} className="workflow-detail-panel">
+            <ToolPanel
+              onAddText={handleAddText}
+              onImageFile={handleImageFile}
+              onGifExport={handleGifExport}
+              gifExporting={gifExporting}
+              gifProgress={gifProgress}
+              activeSection={activeToolSection}
+              onSectionChange={setActiveToolSection}
+              showNavigation={false}
+            />
+          </div>
+        </div>
 
-        <section className="workspace" aria-label="Tasarım çalışma alanı">
+        <section ref={workspaceRef} className="workspace studio-workspace" aria-label="Tasarım çalışma alanı" tabIndex={-1}>
           <div className="workspace-toolbar">
             <span>Tasarım Boyutu</span>
             <strong>{project.width} × {project.height}</strong>
@@ -314,24 +301,16 @@ export function EditorShell() {
             <span className="workspace-help">Değişiklikleri ortadaki ön izlemede görebilirsin.</span>
             <span>{project.elements.length} öğe</span>
           </div>
-
           <CanvasSizePanel />
-          <ExportPanel />
-
+          <div ref={exportSettingsRef} className="studio-export-settings"><ExportPanel /></div>
           <CanvasPreview canvasWidth={project.width} canvasHeight={project.height}>
-            <EditorCanvas
-              onStageReady={handleStageReady}
-              timeOverrideMs={exportTimeMs}
-              onRequestImage={() => startImageInputRef.current?.click()}
-            />
+            <EditorCanvas onStageReady={handleStageReady} timeOverrideMs={exportTimeMs} onRequestImage={() => startImageInputRef.current?.click()} />
           </CanvasPreview>
-
           <footer className="workspace-footer">
             <span>{project.width} × {project.height} px</span>
             <span>{gifExporting ? `GIF hazırlanıyor %${Math.round(gifProgress * 100)}` : 'Tasarım otomatik kaydedilir'}</span>
           </footer>
         </section>
-
         <TextInspector />
       </section>
     </main>
