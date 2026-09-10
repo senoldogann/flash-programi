@@ -4,6 +4,8 @@ type StudioHeaderProps = {
   onCreate: () => void;
   onShowTemplates: () => void;
   onShowHelp: () => void;
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
   actions: ReactNode;
 };
 
@@ -17,7 +19,14 @@ function SparkleMark() {
   );
 }
 
-export function StudioHeader({ onCreate, onShowTemplates, onShowHelp, actions }: StudioHeaderProps) {
+export function StudioHeader({
+  onCreate,
+  onShowTemplates,
+  onShowHelp,
+  searchQuery,
+  onSearchQueryChange,
+  actions,
+}: StudioHeaderProps) {
   return (
     <header className="studio-header">
       <div className="studio-brand">
@@ -40,7 +49,19 @@ export function StudioHeader({ onCreate, onShowTemplates, onShowHelp, actions }:
         </button>
       </nav>
 
-      <div className="studio-header-actions">{actions}</div>
+      <div className="studio-header-tools">
+        <label className="studio-search">
+          <span aria-hidden="true">⌕</span>
+          <input
+            type="search"
+            aria-label="Hazır tasarım ara"
+            placeholder="Hazır tasarım ara..."
+            value={searchQuery}
+            onChange={(event) => onSearchQueryChange(event.currentTarget.value)}
+          />
+        </label>
+        <div className="studio-header-actions">{actions}</div>
+      </div>
     </header>
   );
 }
